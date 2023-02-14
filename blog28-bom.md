@@ -39,7 +39,7 @@ Navigator 对象主要是一些用户设备上的信息，比如操作系统、�
   - `Clipboard.read()`
   - `Clipboard.writeText()`
   - `Clipboard.write()`
-  这些 api 的具体操作可以参考<a href="https://wangdoc.com/webapi/clipboard.html">网道-剪切板 API</a>
+    这些 api 的具体操作可以参考<a href="https://wangdoc.com/webapi/clipboard.html">网道-剪切板 API</a>
 
 # Screen
 
@@ -122,32 +122,71 @@ let newCookies = Object.entries(userObj)
   .join("; ");
 ```
 
-另外，写入cookie时也可以同时写入这个cookie的属性，即expires、security等属性。比如：
+另外，写入 cookie 时也可以同时写入这个 cookie 的属性，即 expires、security 等属性。比如：
+
 ```js
-document.cookie = 'fontSize=14; '
-  + 'expires=' + someDate.toGMTString() + '; '
-  + 'path=/subdirectory; '
-  + 'domain=*.example.com';
+document.cookie =
+  "fontSize=14; " +
+  "expires=" +
+  someDate.toGMTString() +
+  "; " +
+  "path=/subdirectory; " +
+  "domain=*.example.com";
 ```
-属性只可以写入而不能读取。属性的读取只能依靠http请求中在服务端获取
+
+属性只可以写入而不能读取。属性的读取只能依靠 http 请求中在服务端获取
 
 # history
 
-可以用来读取历史浏览信息
-
+History 接口允许操作浏览器的曾经在标签页或者框架里访问的会话历史记录。
 ## 属性
 
 - length：访问的数量
+- state：表示history的状态，通过pushState等方式修改。这个state其实和history对象本身没有任何关系，完全由开发者通过pushState方法创建，传入什么对象，state就会是什么对象。
 
 ## 方法
 
 - `History.back()`
 - `History.forward()`
 - `History.go()`
+- history.pushState
+- history.replaceState
 
-这三个方法的参数都是数字，可以是负数表示反向；
+其中，后两个是最常用的方法，用于修改浏览器的url显示以及浏览记录。
+假设在 `http://mozilla.org/foo.html` 页面的 console 中执行了以下 JavaScript 代码：
+```js
+window.onpopstate = function(e) {
+   alert(2);
+}
 
-> go(0)可以刷新网页
+let stateObj = {
+    foo: "bar",
+};
+history.pushState(stateObj, "page 2", "bar.html");
+```
+这将使浏览器地址栏显示为 `http://mozilla.org/bar.html`，但并不会导致浏览器加载 bar.html ，甚至不会检查bar.html 是否存在。
+同时history.state对象将会变成`{foo: "bar"}`
+如果这时点击后退按钮，就会回到`http://mozilla.org/foo.html`。也就是相当于为浏览器添加了一条历史记录
+replaceState和pushState最大的差别在于pushState会像push栈一样添加历史记录，而replace则是替换。
+
+### onpopstate事件
+
+调用 `history.pushState()` 或者 `history.replaceState()` 不会触发 popstate 事件。但是仍然可以在popstate事件中获取到最新的由这两个api设置的state对象。
+popstate 事件只会在浏览器某些行为下触发，比如点击后退按钮，或者在 JavaScript 中调用 history.back/forward 之类的方法
+```js
+window.onpopstate = function(event) {
+  alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
+};
+
+history.pushState({page: 1}, "title 1", "?page=1");
+history.pushState({page: 2}, "title 2", "?page=2");
+history.replaceState({page: 3}, "title 3", "?page=3");
+history.back(); // 弹出 "location: http://example.com/example.html?page=1, state: {"page":1}"
+history.back(); // 弹出 "location: http://example.com/example.html, state: null
+history.go(2);  // 弹出 "location: http://example.com/example.html?page=3, state: {"page":3}
+```
+
+
 
 # Location
 
@@ -260,13 +299,14 @@ function handleFiles(files) {
 blob:http://localhost/c745ef73-ece9-46da-8f66-ebes574789b1
 ```
 
-还可以配合a标签的download属性使得链接成为一个下载。当点击这个标签时，就会下载一个文件。
+还可以配合 a 标签的 download 属性使得链接成为一个下载。当点击这个标签时，就会下载一个文件。
+
 ```js
 input.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    const url = URL.createObjectURL(file);
-    link.download = file.name;
-    link.href = url;
+  const file = e.target.files[0];
+  const url = URL.createObjectURL(file);
+  link.download = file.name;
+  link.href = url;
 });
 ```
 
@@ -278,25 +318,27 @@ input.addEventListener("change", (e) => {
 
 - `ArrayBuffer`：代表内存之中的一段二进制数据，是最基本的二进制对象，表示对固定长度的连续内存空间的引用。
 
-如果通过`new ArrayBuffer(n)`的形式创建一个长度为n的buffer，就会分配一个连续的、长度为n的连续内存空间。
+如果通过`new ArrayBuffer(n)`的形式创建一个长度为 n 的 buffer，就会分配一个连续的、长度为 n 的连续内存空间。
 同一段内存，不同数据有不同的解读方式，这就叫做“视图”（view）；可以通过“视图”进行操作。“视图”部署了数组接口，这意味着，可以用数组的方法操作内存。
 
 ---
 
 - `TypedArray`视图：共包括 9 种类型的视图，比如 Uint8Array（无符号 8 位整数）数组视图, Int16Array（16 位整数）数组视图, Float32Array（32 位浮点数）数组视图等等。
   视图对象本身并不存储任何东西。它是一副“眼镜”，透过它来解释存储在 ArrayBuffer 中的字节。我们选择用什么值来表示这些字节，就称作选择什么视图。通常情况下都是用二进制数字来表示：
-  - Uint8Array：将 ArrayBuffer 中的每个字节视为 0 到 255 之间的单个数字（每个字节是 8 位，即表示0~2^8-1）。这称为 “8 位无符号整数”。
+
+  - Uint8Array：将 ArrayBuffer 中的每个字节视为 0 到 255 之间的单个数字（每个字节是 8 位，即表示 0~2^8-1）。这称为 “8 位无符号整数”。
   - Uint16Array：将每 2 个字节视为一个 0 到 65535 之间的整数。这称为 “16 位无符号整数”。
   - Uint32Array：将每 4 个字节视为一个 0 到 4294967295 之间的整数。这称为 “32 位无符号整数”。
   - Float64Array：将每 8 个字节视为一个 5.0x10-324 到 1.8x10308 之间的浮点数。
-  ![](https://pic1.imgdb.cn/item/634fca3b16f2c2beb16d2d7f.jpg)
+    ![](https://pic1.imgdb.cn/item/634fca3b16f2c2beb16d2d7f.jpg)
 
   普通数组与 TypedArray 数组的差异主要在以下方面。
-    - TypedArray 数组的所有成员，都是同一种类型。
-    - TypedArray 数组的成员是连续的，不会有空位。
-    - TypedArray 数组成员的默认值为 0。比如，new Array(10)返回一个普通数组，里面没有任何成员，只是 10 个空位；new Uint8Array(10)返回一个 TypedArray 数组，里面 10 个成员都是 0。
-    - TypedArray 数组只是一层视图，本身不储存数据，它的数据都储存在底层的 ArrayBuffer 对象之中，要获取底层对象必须使用 buffer 属性。
-    - TypedArray 具有常规的 Array 方法，可以遍历（iterate），map，slice，find 和 reduce 等。
+
+  - TypedArray 数组的所有成员，都是同一种类型。
+  - TypedArray 数组的成员是连续的，不会有空位。
+  - TypedArray 数组成员的默认值为 0。比如，new Array(10)返回一个普通数组，里面没有任何成员，只是 10 个空位；new Uint8Array(10)返回一个 TypedArray 数组，里面 10 个成员都是 0。
+  - TypedArray 数组只是一层视图，本身不储存数据，它的数据都储存在底层的 ArrayBuffer 对象之中，要获取底层对象必须使用 buffer 属性。
+  - TypedArray 具有常规的 Array 方法，可以遍历（iterate），map，slice，find 和 reduce 等。
 
 ---
 
@@ -328,7 +370,7 @@ xhr.send();
 # Blob
 
 Blob 对象表示一个二进制文件的数据内容，比如一个图片文件的内容就可以通过 Blob 对象读写。它通常用来读写文件，它的名字是 Binary Large Object （二进制大型对象）的缩写。也就是说它可以用于**操作二进制文件**
-Blob 由一个可选的字符串 type（通常是 MIME 类型）和 blobParts 组成。blobParts可以是一个blob对象数组或字符串数组，也可以是混合的
+Blob 由一个可选的字符串 type（通常是 MIME 类型）和 blobParts 组成。blobParts 可以是一个 blob 对象数组或字符串数组，也可以是混合的
 ![](https://pic.imgdb.cn/item/622d738c5baa1a80ab200a7c.jpg)
 
 可以用 `new Blob()`生成 Blob 对象，通常有两个参数：
@@ -351,7 +393,7 @@ const myBlob = new Blob(htmlFragment, { type: "text/html" });
 
 Blob 可以很容易用作 `<a>`、`<img>` 或其他标签的 URL。
 核心方法是`URL.createObjectURL`，参数是一个 Blob 对象，返回一个唯一的 URL，形式为 `blob:<origin>/<uuid>`。
-这个 url 可以被用在标签上；浏览器为这个 url 形成了映射，使得这个 url 可以直接访问该 blob 对象，进行读取解析、下载等操作。浏览器处理 Blob URL 就跟普通的 URL 一样，如果 Blob 对象不存在，返回404状态码；如果跨域请求，返回403状态码。Blob URL 只对 GET 请求有效，如果请求成功，返回200状态码。由于 Blob URL 就是普通 URL，因此可以下载。
+这个 url 可以被用在标签上；浏览器为这个 url 形成了映射，使得这个 url 可以直接访问该 blob 对象，进行读取解析、下载等操作。浏览器处理 Blob URL 就跟普通的 URL 一样，如果 Blob 对象不存在，返回 404 状态码；如果跨域请求，返回 403 状态码。Blob URL 只对 GET 请求有效，如果请求成功，返回 200 状态码。由于 Blob URL 就是普通 URL，因此可以下载。
 这是一个下载的例子：
 
 ```html
@@ -372,7 +414,7 @@ Blob 可以很容易用作 `<a>`、`<img>` 或其他标签的 URL。
 
 核心方法是`FileReader.readAsDataURL()`，参数传入 Blob 对象，异步返回一个 Base64 data-url。
 
-> base64实际上也是一种url
+> base64 实际上也是一种 url
 
 ```js
 let blob = new Blob(["Hello, world!"], { type: "text/plain" });
@@ -838,144 +880,135 @@ async function asyncFn() {
 }
 ```
 
-相当于对数组中的每一项依次执行 await；但是前提是数组的项必须要是promise，就和promise.all类似。
-实际上直接在 for 循环中使用 await 也可以：
-
-```js
-async function asyncFn() {
-  const arr = [fn(3000), fn(1000), fn(1000), fn(2000), fn(500)];
-  for (let x of arr) {
-    //输出的是一个promise
-    const res = await x;
-    console.log(res);
-  }
-}
-```
-
-但是这两者有本质的区别。for await of的迭代对象必须是异步迭代对象，如果尝试迭代普通数组则会报错；但是await后面的也可以不是异步任务。
-
-
-
+相当于对数组中的每一项依次执行 await；但是前提是数组的项必须要是 promise，就和 promise.all 类似。
+这个api的主要作用是针对iterator对象。由于其使用了遍历for of，因此可以直接处理iterator或generator对象。
 
 # Generator
 
 Generator 函数是 ES6 提供的一种异步编程解决方案，语法行为与传统函数完全不同。
 
-## 基本Generator
+## 基本 Generator
 
 形式上，Generator 函数是一个普通函数，但是有两个特征。
-- function关键字与函数名之间有一个星号；
-- 函数体内部使用yield表达式，定义不同的内部状态
 
+- function 关键字与函数名之间有一个星号；
+- 函数体内部使用 yield 表达式，定义不同的内部状态
 
 ```js
-function* generate(){
-  console.log('hello world')
-  yield 'hello'
-  yield 'world'
-  yield 3+3
-  return 'stop'
+function* generate() {
+  console.log("hello world");
+  yield "hello";
+  yield "world";
+  yield 3 + 3;
+  return "stop";
 }
 
-const generateRes = generate()
-
+const generateRes = generate();
 ```
 
-generator函数执行会返回一个可迭代对象。如果不用迭代器或者用next等方法，则函数内部的代码不会执行。
+generator 函数执行会返回一个可迭代对象。如果不用迭代器或者用 next 等方法，则函数内部的代码不会执行。
 
 因为是可迭代对象，所以可以直接遍历函数返回值，或者用展开运算符展开到数组。
 
 ```js
-function* generate(){
-  console.log('hello world')
-  yield 'hello'
-  yield 'world'
-  yield 3+3
-  return 'stop'
+function* generate() {
+  console.log("hello world");
+  yield "hello";
+  yield "world";
+  yield 3 + 3;
+  return "stop";
 }
-const generateRes = generate()
+const generateRes = generate();
 
-generateRes.next() // {value:'hello',done:false}
-generateRes.next() // {value:'world',done:false}
-generateRes.next() // {value:6,done:false}
-generateRes.next() // {value:'stop',done:true}
+generateRes.next(); // {value:'hello',done:false}
+generateRes.next(); // {value:'world',done:false}
+generateRes.next(); // {value:6,done:false}
+generateRes.next(); // {value:'stop',done:true}
 
-for(let val of generateRes){
-  console.log(val) 
+for (let val of generateRes) {
+  console.log(val);
 }
 
-[...generateRes]
+[...generateRes];
 ```
 
-### next方法
+### next 方法
 
-next方法就像迭代对象的next方法一样，会向后迭代一步。在generator函数中它会从函数头部或上一次停下来的地方开始执行，直到遇到下一个yield表达式（或return语句）为止。
+next 方法就像迭代对象的 next 方法一样，会向后迭代一步。在 generator 函数中它会从函数头部或上一次停下来的地方开始执行，直到遇到下一个 yield 表达式（或 return 语句）为止。
 
-next函数每次执行，都会按顺序停在第n个yield语句。比如第一次执行next就会停在从头开始的第一个yield语句上；最后一次执行会停在return，或者走过最后一个yield语句（即函数结束）。
+next 函数每次执行，都会按顺序停在第 n 个 yield 语句。比如第一次执行 next 就会停在从头开始的第一个 yield 语句上；最后一次执行会停在 return，或者走过最后一个 yield 语句（即函数结束）。
 
-在generator函数中，next方法会返回一个对象，包括两个属性：
-- value：即当前执行的语句的yield的后面部分的返回值
-- done：如果执行到return或者没有返回值时走过了最后一个yield，则done为true。其他情况为false
+在 generator 函数中，next 方法会返回一个对象，包括两个属性：
 
-next方法可以传入一个参数，作为**上一个yield语句的结果**。比如：
+- value：即当前执行的语句的 yield 的后面部分的返回值
+- done：如果执行到 return 或者没有返回值时走过了最后一个 yield，则 done 为 true。其他情况为 false
+
+next 方法可以传入一个参数，作为**上一个 yield 语句的结果**。比如：
+
 ```js
 function* foo(x) {
-  var y = 2 * (yield (x + 1));
-  var z = yield (y / 3);
-  return (x + y + z);
+  var y = 2 * (yield x + 1);
+  var z = yield y / 3;
+  return x + y + z;
 }
 
 const b = foo(5);
-b.next() // { value:6, done:false }
-b.next(12) // { value:8, done:false }
-b.next(13) // { value:42, done:true }
+b.next(); // { value:6, done:false }
+b.next(12); // { value:8, done:false }
+b.next(13); // { value:42, done:true }
 ```
 
-这里第一次的value本来为6（即x+1），第二次调用时传入12，作为上一句yield的返回值（即y = 2 * 12），因此第二个yield返回8（2*12/3）。第三次设置z的值为13，得到返回值为42（24+5+13）
+这里第一次的 value 本来为 6（即 x+1），第二次调用时传入 12，作为上一句 yield 的返回值（即 y = 2 * 12），因此第二个 yield 返回 8（2*12/3）。第三次设置 z 的值为 13，得到返回值为 42（24+5+13）
 
-因为它的参数是设置上一句的结果，因此第一个next的调用传参就是无效的，会被忽略。
+因为它的参数是设置上一句的结果，因此第一个 next 的调用传参就是无效的，会被忽略。
 
 ### 其他方法
 
-- return：将yield表达式替换成一个return语句，并立即结束当前迭代
+- return：将 yield 表达式替换成一个 return 语句，并立即结束当前迭代
+
 ```js
 gen.return(2); // {value: 2, done: true}
 ```
-- throw：将yield表达式替换成一个throw语句，也是立即结束，同时会抛出一个错误
+
+- throw：将 yield 表达式替换成一个 throw 语句，也是立即结束，同时会抛出一个错误
+
 ```js
-gen.throw(new Error('出错了')); // Uncaught Error: 出错了
+gen.throw(new Error("出错了")); // Uncaught Error: 出错了
 ```
-- yield*：在generator函数中调用另一个generator函数。调用效果和普通函数相同。
+
+- yield\*：在 generator 函数中调用另一个 generator 函数。调用效果和普通函数相同。
+
 ```js
-function* gen(){
-  yield 1
-  yield* gen2()
-  yield 4
-  return 5
+function* gen() {
+  yield 1;
+  yield* gen2();
+  yield 4;
+  return 5;
 }
-function* gen2(){
-  yield 2
-  return 3
+function* gen2() {
+  yield 2;
+  return 3;
 }
 ```
-如果只是用yield执行，则会视作是执行普通函数，并且此yield的返回值是一个迭代对象，就像直接执行一样。
 
+如果只是用 yield 执行，则会视作是执行普通函数，并且此 yield 的返回值是一个迭代对象，就像直接执行一样。
 
+## 异步 Generator
 
-## 异步Generator
-
-异步Generator其实是协程在js中的实现。
+异步 Generator 其实是协程在 js 中的实现。
 
 > 协程：
 > 意思是多个线程互相协作，完成异步任务。
 > 协程有点像函数，又有点像线程。它的运行流程大致如下。
-> - 第一步，协程A开始执行。
-> - 第二步，协程A执行到一半，进入暂停，执行权转移到协程B。
-> - 第三步，（一段时间后）协程B交还执行权。
-> - 第四步，协程A恢复执行。
-> 上面流程的协程A，就是异步任务，因为它分成两段（或多段）执行。
+>
+> - 第一步，协程 A 开始执行。
+> - 第二步，协程 A 执行到一半，进入暂停，执行权转移到协程 B。
+> - 第三步，（一段时间后）协程 B 交还执行权。
+> - 第四步，协程 A 恢复执行。
+>   上面流程的协程 A，就是异步任务，因为它分成两段（或多段）执行。
 
 比如：
+
 ```js
 function* asyncJob() {
   // ...其他代码
@@ -983,16 +1016,18 @@ function* asyncJob() {
   // ...其他代码
 }
 ```
-其中的yield命令表示执行到此处，执行权将交给其他协程。也就是说，yield命令是异步两个阶段的分界线。协程遇到yield命令就暂停，等到执行权返回，再从暂停的地方继续往后执行。它的最大优点，就是代码的写法非常像同步操作。
 
-并且，generator还有自己的处理错误机制（throw）和从函数外改变函数内上下文的能力（next函数传参改变内部变量），因此非常适合封装异步任务。
+其中的 yield 命令表示执行到此处，执行权将交给其他协程。也就是说，yield 命令是异步两个阶段的分界线。协程遇到 yield 命令就暂停，等到执行权返回，再从暂停的地方继续往后执行。它的最大优点，就是代码的写法非常像同步操作。
+
+并且，generator 还有自己的处理错误机制（throw）和从函数外改变函数内上下文的能力（next 函数传参改变内部变量），因此非常适合封装异步任务。
 
 下面是一个简单的例子：
-```js
-const fetch = require('node-fetch');
 
-function* gen(){
-  const url = 'https://api.github.com/users/github';
+```js
+const fetch = require("node-fetch");
+
+function* gen() {
+  const url = "https://api.github.com/users/github";
   const result = yield fetch(url);
   console.log(result.bio);
 }
@@ -1000,12 +1035,13 @@ function* gen(){
 const g = gen();
 const result = g.next();
 
-result.value.then(function(data){
-  return data.json();
-}).then(function(data){
-  g.next(data);
-});
+result.value
+  .then(function (data) {
+    return data.json();
+  })
+  .then(function (data) {
+    g.next(data);
+  });
 ```
 
-实际上，async/await就是对这种形式的改进，async就是对generator执行的自动化的封装。
-
+实际上，async/await 就是对这种形式的改进，async 就是对 generator 执行的自动化的封装。

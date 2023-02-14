@@ -1850,35 +1850,22 @@ flex 有一个主轴和交叉轴的概念。
 
 通过 flex-direction: column 将主轴转为垂直，这时元素会纵向排成一列。
 
-### flex 本身属性
+### 容器属性
 
 - flex-wrap: flex 本身是不换行的, 多个元素就算超出长度也会挤在一行, 并且会缩小宽度;
   - wrap: 换行
-- flex-grow: 伸展空间, 默认为 0
-  - 元素的 `flex-grow` 设置为 1, 则它会充满留给它的全部空间;
-  - 所有元素都设置 1 则会等分空间;
-  - 不同元素可以设置不同的 grow ;如果有 a 设置为 2, b 设置为 1, 那么 a 的尺寸就是 b 的 2 倍
-- flex-shrink: 收缩空间, 默认为 1
-  - 如果设置为 0, 则如果容器空间不够该元素不会收缩而会挤压其他元素
-- flex-basis: 属性定义了在分配多余空间之前，项目占据的主轴空间。浏览器根据这个属性，计算主轴是否有多余空间。它的默认值为 auto，即项目的本来大小。
-  - 如果设置为具体的 px、em 等，则这格元素就会是设定的固定大小
-  - 如果设置为`0`或`0%`，则会像行内元素一样缩小到其最小值
-  - 如果不设置，默认就是 auto，即元素的自身大小
-- flex:1 设置`flex-grow:1;flex-shrink:1;flex-basis:0%`
 - flex-direction：设置主轴方向；这个默认值是 row，即水平方向的主轴，垂直方向为交叉轴，元素一列一列排列；
   如果设置为 column，则主轴变为垂直方向，元素一行一行排列
-
-### justify 相关
 
 - justify-content: 设置主轴对齐方式,
   - flex-start/flex-end: 头/尾填充
   - center
   - space-between：父容器空的空间平均插在子元素之间, 头尾紧挨
   - space-around: 父容器空的空间平均插在子元素之间, 头尾各占一半的插入空间
-    注意, 如果一个元素设定 `margin-right/left` 为 `auto`, 就会吞掉剩下所有空间从而把其他元素挤在一边
-- `justify-item` 和 `justify-self` 是用在 grid 里边的, 不要搞错了
 
-### align 相关
+注意, 如果一个元素设定 `margin-right/left` 为 `auto`, 就会吞掉剩下所有空间从而把其他元素挤在一边
+
+> `justify-item` 和 `justify-self` 是用在 grid 里边的, 不要搞错了
 
 - align-items: 设置元素在交叉轴上的位置和对齐方式
   - flex-start：元素和交叉轴的起点对齐。
@@ -1887,25 +1874,17 @@ flex 有一个主轴和交叉轴的概念。
   - baseline: 元素和项目的第一行文字的基线对齐。
   - stretch（默认）：如果项目未设置高度或设为 auto，将占满整个交叉轴的大小。比如主轴为 row 时，元素将默认占满高度
 - align-content: （个人理解）设置主轴在交叉轴上的位置。比如默认的 row 排列下，主轴为水平，交叉轴为垂直。这时如果设置 align-content 为 flex-end，则所有元素都会到最下方，像这样：
-
   ![image-20221015173358006](https://blog-img-1307852525.cos.ap-chengdu.myqcloud.com/img/image-20221015173358006.png)
-
-  在 column 排列下也是同理。
-
-  因此可以理解为，这个属性是用于调整主轴在交叉轴上的位置，前提是必须设置`flex-wrap: wrap/wrap-reverse`开启换行；如果主轴只有一条（比如上面的元素只能凑成一行），就不起作用
-
+  这个属性是用于调整主轴在交叉轴上的位置，前提是必须设置`flex-wrap: wrap/wrap-reverse`开启换行；如果主轴只有一条（比如上面的元素只能凑成一行），就不起作用
   - flex-start：主轴与交叉轴的起点对齐，即多根交叉轴轴线都顺序从上向下排列
   - flex-end：主轴与交叉轴的终点对齐。
   - center：主轴与交叉轴的中点对齐。
   - space-between：主轴与交叉轴两端对齐，轴线之间的间隔平均分布。
   - space-around：主轴每根轴线两侧的间隔都相等。所以，轴线之间的间隔比轴线与边框的间隔大一倍。
   - stretch（默认）：主轴轴线占满整个交叉轴。
-
 - align-self: 单个设置元素的 align 属性, 和 align-items 的值一样。区别在于它可以做到只设置单个元素而不影响整个的布局。比如设置大部分元素居中，而只有最后一个元素靠边，就可以单独设置最后一个元素的 align-self 为 flex-start 即可。
 
-### gap
-
-和 grid 布局一样，flex 也可以通过 gap 属性控制元素之间的间距
+- gap：和 grid 布局一样，flex 也可以通过 gap 属性控制元素之间的间距
 
 ```css
 .container {
@@ -1917,22 +1896,6 @@ flex 有一个主轴和交叉轴的概念。
 }
 ```
 
-### flex 自带的响应式
-
-利用 flex 的换行和不收缩可以创造一个响应式: 窗口缩小时行变列
-比如:
-元素的 flex 设置为 1 0 和一个最小宽度, 注意第三项不能为 0 或者 auto
-
-```css
-.nav {
-  flex: 1 0 20em;
-  background-color: antiquewhite;
-}
-.nav2 {
-  flex: 1 0 15em;
-  background-color: rgb(255, 171, 61);
-}
-```
 
 ### flex-grow/flex-shrink/flex-basis
 
@@ -1994,42 +1957,63 @@ CSS flex-shrink 属性指定了 flex 元素的收缩规则。flex 元素**仅在
 
 basis 设置的是不考虑任何 grow 或 shrink 的情况下的基本大小，和设置 width 或 height 的效果是一样的
 
+flex-basis的取值有：
+```css
+/* 指定<'width'> */
+flex-basis: 10em;
+flex-basis: 3px;
+flex-basis: auto;
+
+/* 固有的尺寸关键词 */
+flex-basis: fill;
+flex-basis: max-content;
+flex-basis: min-content;
+flex-basis: fit-content;
+
+/* 在 flex item 内容上的自动尺寸 */
+flex-basis: content;
+
+/* 全局数值 */
+flex-basis: inherit;
+flex-basis: initial;
+flex-basis: unset;
+
+```
+
 basis 有两个特殊的值：0 和 auto
 
-- 如果一个元素的 basis 值被设置为 0，那么就会缩小到最小，至于多小则取决于 flex-grow 和 flex-shrink 的设置。
+- 如果一个元素的 basis 值被设置为 0，那么flex会把这个元素视作尽可能小。正常排列时差别不大，但如果有grow或shrink就会出现差异
 
-可以理解为，为 0 时这个元素在主轴上占用的空间被视为 0。当 flex-grow 和 flex-shrink 计算剩余空间大小时，该元素会被视为不占大小。
+可以理解为，为 0 时这个元素在主轴上占用的空间被视为 0。
+当 flex-grow 和 flex-shrink 计算剩余空间大小时，该元素会被视为不占大小。
+
 比如说
 例如：
 
 ```jsx
-<div style={{ width: "375px", display: "flex" }}>
+<div style={{ width: "200px", display: "flex" }}>
   <div style={{ flex: 1 }}>子元素</div>
-  <div style={{ flex: 1, width: 20 }}>子元素</div>
+  <div style={{ flex: 1, flexBasis: 50 }}>子元素</div>
 </div>
 ```
 
-flex-basis: 0，那么第二个 div 的 width 就不生效，以 flex-basis 为准
-那么剩余空间为 375-0-0=375
-每项获得的空间就为 375/2 = 187.5
-所以最终第一个 div 的宽度为 187.5，第二个 div 的宽度为 187.5
+上面这个例子中，第二个元素的flex-basis为50，第一个的basis为0。
+首先（不设置任何grow和shrink，空间足够）第一个元素会缩小到content的大小，即自己的最小值。这里a的宽度收缩到了内容的宽度，而b的宽度为50px
+![](https://pic.imgdb.cn/item/63ea357f4757feff33e89be9.jpg)
+其次，如果两个都设置flex-grow: 1，那么b会比a大50px
+![](https://pic.imgdb.cn/item/63ea35f44757feff33ebc4ac.jpg)
+最后，如果触发shrink，那么第一个元素不会再缩小，而第二个元素也会缩小到content大小之后，不再会缩小。
+![](https://pic.imgdb.cn/item/63ea363e4757feff33edada4.jpg)
+
+总结：设置了`basis: 0`的元素会缩小到最小大小，即content的大小，如果通过flex-grow让其伸展，也会从0开始计算。
+
 
 - 如果元素的 basis 设置为 auto，那就是它的默认大小，和 width：auto 类似。即如果元素设置了宽度那就是它的宽度，如果没设置就是其内容的宽度
 
-比如：
+即，如果元素设置了width或height那就和正常一样，如果没设置就和上面`basis: 0`的情况一样。
 
-```jsx
-<div style={{ width: "375px", display: "flex" }}>
-  <div style={{ flex: "auto" }}>子元素</div>
-  <div style={{ flex: "auto", width: 20 }}>子元素</div>
-</div>
-```
 
-> flex: auto 是 flex-grow:1,flex-shrink:1,flex-basis: auto 的简写
-> flex:auto 的含义是如果有 width 就以宽度为准，如果没有宽度就以 content（内容）宽度为准，第一个 div 盒子就以内容宽度为准 42px，第二个 div 就以 width 为准，20px
-> 剩余宽度就为 375 - 42 - 20 = 313
-> 每份分配的声誉宽度为 313/2 = 156.5
-> 最终第一个 div 的宽度就为 156.5 + 42 = 198.5，第二个 div 的宽度为 156.5 + 20 = 176.5
+
 
 ## grid
 
@@ -2113,12 +2097,14 @@ flex-basis: 0，那么第二个 div 的 width 就不生效，以 flex-basis 为�
 - column dense：某些项目指定位置以后，剩下的项目"先列后行"，并且尽可能紧密填满每一列，尽量不出现空格。
 
 2. `grid-column-start`/`grid-column-end`/`grid-row-start`/`grid-row-end`：设置在容器内每个具体的元素上，用于控制元素的起始位置和终点位置。
-   单位是从 1 开始的序号，表示某一栏的起始，可以打开控制台查看具体是哪一行哪一列
-   ![](https://pic1.imgdb.cn/item/6335644416f2c2beb152a9ce.jpg)
-   可以看到每个位置的序号实际上是每格的起始线。因此比如从列的第一格横跨两格，就应该是 start 设为 1，end 设为 3（不是 2）
+
+单位是从 1 开始的序号，表示某一栏的起始，可以打开控制台查看具体是哪一行哪一列
+![](https://pic1.imgdb.cn/item/6335644416f2c2beb152a9ce.jpg)
+可以看到每个位置的序号实际上是每格的起始线。因此比如从列的第一格横跨两格，就应该是 start 设为 1，end 设为 3（不是 2）
 
 3. `grid-column`/`grid-row`：和上面的属性功能相同，但是简写，更推荐这一种方式。
-   写法是通过`start/end`的形式指定起始或结束位置，比如
+
+写法是通过`start/end`的形式指定起始或结束位置，比如
 
 ```
 grid-column: 1 / 3;
@@ -2127,7 +2113,8 @@ grid-column: 1 / 3;
 这会让网格项从左侧第一条线开始到第三条线结束，占用两列。
 
 4. `grid-area`：这个属性还可用作 grid-row-start、grid-column-start、grid-row-end、grid-column-end 的合并简写形式，直接指定项目的位置。
-   比如：
+
+比如：
 
 ```css
 .item {
@@ -2230,7 +2217,8 @@ CSS Sprites 并不能明显减小图片的总体积，甚至还会增加；但�
 - width/height：查询**视窗的宽高**。
   - max-width：当媒体查询值为 true 的最大宽度，也就是说当宽度小于 max-width 指定的值时，查询的值为 true，触发内部的样式。相当于`width <= xxx`
   - min-width：max-width 的反向，相当于`width >= xxx`
-    另外，新增的语法可以直接这样写：
+  
+  另外，新增的语法可以直接这样写：
   ```css
   @media (width <= 30em) {
     ...;
@@ -2260,7 +2248,7 @@ offset 主要有四个属性：
 - offsetTop
   元素的上外边框至包含元素的 offsetParent 元素的上内边框之间的像素距离。
 
-![](https://p1-jj.byteimg.com/tos-cn-i-t2oaga2asx/gold-user-assets/2018/11/7/166ec314e1bda0b5~tplv-t2oaga2asx-watermark.awebp)
+![](https://pic.imgdb.cn/item/63ea3e054757feff331ecbbd.webp)
 
 > 元素的 offsetTop 和 offsetLeft 都是基于其 offsetParent 元素的，即最近的 table,td,th,body 元素。一般情况下都是`body`元素，因此相当于一个元素距离文档最顶层的距离（包括不可见的部分）
 
@@ -2282,9 +2270,9 @@ client 的相关 api 是针对元素本身的
 
 - `scrollTop`：以获取或设置一个元素的内容垂直滚动的像素数。
 
-  > 一个元素的 scrollTop 值是这个元素的内容顶部（卷起来的）到它的视口可见内容（的顶部）的距离的度量。当一个元素的内容没有产生垂直方向的滚动条，那么它的 scrollTop 值为 0。  
-  > 也就是说，scrollTop 一定是在一个可滚动的元素上才不为 0，表示的是该元素被滚动条“卷起来”或者说是“藏起来”的大小。  
-  > 针对整个页面，可以使用`document.documentElement.scrollTop`获取整个页面被卷起来的部分（或者用`window.scrollY/window.pageYOffest`也可以），也就是页面最顶部（`<html>`标签）到用户可视区域最顶部的距离。
+> 一个元素的 scrollTop 值是这个元素的内容顶部（卷起来的）到它的视口可见内容（的顶部）的距离的度量。当一个元素的内容没有产生垂直方向的滚动条，那么它的 scrollTop 值为 0。  
+> 也就是说，scrollTop 一定是在一个可滚动的元素上才不为 0，表示的是该元素被滚动条“卷起来”或者说是“藏起来”的大小。  
+> 针对整个页面，可以使用`document.documentElement.scrollTop`获取整个页面被卷起来的部分（或者用`window.scrollY/window.pageYOffest`也可以），也就是页面最顶部（`<html>`签）到用户可视区域最顶部的距离。
 
 - `scrollLeft`：和 top 类似，不过是针对水平滚动条的。
 - `scrollHeight`：在没有滚动条的情况下，元素内容的总高度。
@@ -2318,8 +2306,7 @@ function isInViewPortOfOne(el) {
 
 #### `getBoundingClientRect`
 
-返回值是一个 DOMRect 对象，拥有 left, top, right, bottom, x, y, width, 和 height 属性
-其中，left, top, right, bottom 都是相对于**视口**的位置。
+返回值是一个 DOMRect 对象，是包含整个元素的最小矩形（包括 padding 和 border-width）。该对象使用 left、top、right、bottom、x、y、width 和 height 这几个以像素为单位的只读属性描述整个矩形的位置和大小。属性是**相对于视图窗口的左上角**来计算的。
 
 ```js
 const target = document.querySelector(".target");
@@ -2337,14 +2324,12 @@ console.log(clientRect);
 ```
 
 ![](https://pic.imgdb.cn/item/6243edbc27f86abb2a8af251.jpg)
-当页面发生滚动的时候，top 与 left 属性值都会随之改变
+当页面发生滚动的时候，top 与 left 属性值都会随之改变，可能会有四种情况：
+- 元素在页面上方（的不可视区域内）：top和bottom都为负数。这时如果bottom由负转正，就说明移动到了可视区域
+- 元素在页面下方：top的值大于等于可视区域高度，即`top <= window.innerHeight`时进入可视区域
+- 元素在页面左边：right的值为负数
+- 元素在页面右边：left的值大于等于可视区域宽度
 
-如果一个元素在视窗之内的话，那么它一定满足下面四个条件：
-
-- `top` 大于等于 0
-- `left` 大于等于 0
-- `bottom` 小于等于视窗高度
-- `right` 小于等于视窗宽度
 
 因此可以通过判断这四个条件是否满足，来确定是否在窗口内
 
@@ -2355,7 +2340,10 @@ function isInViewPort(element) {
     window.innerHeight || document.documentElement.clientHeight;
   const { top, right, bottom, left } = element.getBoundingClientRect();
 
-  return top >= 0 && left >= 0 && right <= viewWidth && bottom <= viewHeight;
+  return {
+    isVerticalVisible: top >= 0 && top <= viewHeight && bottom >= 0,
+    isHorizontalVisible: left >= 0 && right >= 0 && left <= viewWidth
+  }
 }
 ```
 
@@ -2674,7 +2662,9 @@ display 必须为 inline-block 或者 block，否则不起作用。
 包裹这三个元素的父元素有两个要求：
 
 1. 设置左右 padding，让 padding 装下布局的左右栏；否则会使得左右栏盖住 middle。下图的 middle 中本来有文本“middle”的，但是显然被左右盖住了。
-   ![](https://pic.imgdb.cn/item/621dfbcb2ab3f51d918741a5.jpg)
+
+![](https://pic.imgdb.cn/item/621dfbcb2ab3f51d918741a5.jpg)
+
 2. 设置为 BFC，主要原因是三个子元素都是浮动。
 
 #### 中间元素限制
@@ -2841,11 +2831,14 @@ display 必须为 inline-block 或者 block，否则不起作用。
 #### 1. `text-align:center`
 
 适用于任何**行内元素**，包括非文本行内块和行内元素，比如文本 text、图像 img、按钮超链接等。
+
+具体来说，这种方式只适用于形成ifc的场合，即一个块级元素内部只包含inline或inline-block元素时，其内部的水平排列可以用text-align控制
+
 对于子元素是块级元素的情况，也可以设置为`display: inline-block`，然后继续使用这种方法。
 
-#### 2. `margin:0 auto;`
+#### 2. `margin: auto;`
 
-上下 margin 为 0，左右为 auto，前提是**必须要指明子元素块级元素的宽度**（max-width 也可以）
+上下 margin 为任意值，左右为 auto，前提是**必须要指明子元素块级元素的宽度**（max-width 也可以），父元素宽度不需要指明
 
 ```html
 <body>
@@ -3016,7 +3009,7 @@ display 必须为 inline-block 或者 block，否则不起作用。
 ```
 
 注意这个值不能是 100% 或者 1，因此必须明确知道父元素高度。
-并且这个方法只限于单行文本居中，其他元素不可以；并且多行文本还需要 vertical-align 的辅助
+line-height本质上作用于行内元素，将其放在块级元素上实际上是继承到后代的行内元素上起作用的。因此如果要居中的是块级元素就没有效果，只有inline/inline-block以及单行文本元素才可以被居中。
 
 #### 4. `vertical-align`
 

@@ -2356,36 +2356,86 @@ plugin可以通过Compiler上的各种hook，访问到编译周期的不同阶�
 
 除了这两个对象之外，还有 Module、Resolver、Parser、Generator 等关键类型，也都相应暴露了许多 Hook。
 
-这些对象上常用的方法有：
-- complation 对象：构建管理器，使用率非常高，主要提供了一系列与单次构建相关的接口，包括：
-  - addModule：用于添加模块，例如 Module 遍历出依赖之后，就会调用该接口将新模块添加到构建需求中；
-  - addEntry：添加新的入口模块，效果与直接定义 entry 配置相似；
-  - emitAsset：用于添加产物文件，效果与 Loader Context 的 emitAsset 相同；
-  - getDependencyReference：从给定模块返回对依赖项的引用，常用于计算模块引用关系；
-  等等。
-- compiler 对象：全局构建管理器，提供如下接口：
-  - createChildCompiler：创建子 compiler 对象，子对象将继承原始 Compiler 对象的所有配置数据；
-  - createCompilation：创建 compilation 对象，可以借此实现并行编译；
-  close：结束编译；
-  - getCache：获取缓存接口，可借此复用 Webpack5 的缓存功能；
-  - getInfrastructureLogger：获取日志对象；
-  等等。
-- module 对象：资源模块，有诸如 NormalModule/RawModule/ContextModule 等子类型，其中 NormalModule 使用频率较高，提供如下接口：
-  - identifier：读取模块的唯一标识符；
-  - getCurrentLoader：获取当前正在执行的 Loader 对象；
-  - originalSource：读取模块原始内容；
-  - serialize/deserialize：模块序列化与反序列化函数，用于实现持久化缓存，一般不需要调用；
-  - issuer：模块的引用者；
-  - isEntryModule：用于判断该模块是否为入口文件；
-  等等。
-- chunk 对象：模块封装容器，提供如下接口：
-  - addModule：添加模块，之后该模块会与 Chunk 中其它模块一起打包，生成最终产物；
-  - removeModule：删除模块；
-  - containsModule：判断是否包含某个特定模块；
-  - size：推断最终构建出的产物大小；
-  - hasRuntime：判断 Chunk 中是否包含运行时代码；
-  - updateHash：计算 Hash 值。
-- stats 对象：构建过程收集到的统计信息，包括模块构建耗时、模块依赖关系、产物文件列表等。
+还有一些常用的钩子，这些钩子及其回调才是编写plugins的核心。常用的Compiler钩子有：
+- beforeRun：在 webpack 执行前调用；
+- run：在 webpack 执行时调用；
+- emit：在生成资源之前调用；
+- afterEmit：在生成资源之后调用；
+- done：在 webpack 完成构建后调用；
+- compilation：在每个新的编译(compilation)创建后调用；
+- make：在 webpack 开始创建新的编译(compilation)时调用；
+- afterPlugins：在插件集被应用之后调用；
+- afterResolvers：在解析器被应用之后调用；
+- watchRun：在每次编译前进行调用；
+- failed：当构建失败时调用；
+- invalid：在监听模式下，当某个文件被更新时调用。
+
+常用的Compilation钩子有：
+- buildModule：在模块构建开始之前触发，可以用来修改模块。
+- finishModules：异步钩子所有模块都完成构建并且没有错误时执行。
+- seal：seal阶段开始时
+- moduleAsset和chunkAsset：表示一个模块/一个chunk的asstet被添加到Compilation时调用。
+
+更多参考webpack api文档：https://webpack.docschina.org/api/
+
+
+### plugin编写示例：RemoveConsolePlugin
+
+这个插件用于去掉js文件中的console.log语句。主要功能逻辑如下：
+1. 在compiler的emit hook中注册事件，获取compilation对象。compiler的大多数钩子的回调都可以获取compilation对象，而compilation对象其实是控制输出输入的核心。emit钩子会在webpack生成chunk之后、准备输入资源之前调用，可以在这个hook内对将要输出的chunk进行修改
+
+chunk对象结构如下：
+```json
+{
+  "entry": true, // 指定 webpack 运行时是否包含 chunk
+  "files": [
+    // 包含 chunk 的文件名字符数组
+  ],
+  "filteredModules": 0, // 查看关于 [top-level structure](#structure) 描述
+  "id": 0, // chunk 对应的 ID
+  "initial": true, // 指定 chunk 是在页面初始化时加载还是[按需加载](/guides/lazy-loading)
+  "modules": [
+    // [module objects](#module-objects) 列表
+    "web.js?h=11593e3b3ac85436984a"
+  ],
+  "names": [
+    // 包含当前 chunk 的 chunk 名称列表
+  ],
+  "origins": [
+    // 查看后面的描述...
+  ],
+  "parents": [], // 父级 chunk ID
+  "rendered": true, // 指定 chunk 是否经过代码生成
+  "size": 188057 // chunk 大小，单位字节
+}
+```
+
+2. compilation.chunks可以获取已经生成的chunk列表，chunk.files获取chunk要输出的文件信息
+3. compilation.assets获取输出的资源列表，然后asset.source()获取输出的值。剩下的处理就和在loader中很像，通过正则处理字符串形式的asset即可。
+4. 通过compilation.emitAsset输出资源。
+
+
+```js
+class MyPlugin {
+  apply(compiler) {
+    compiler.hooks.emit.tap('MyPlugin', (compilation) => {
+      compilation.chunks.forEach((chunk) => {
+        chunk.files.forEach((filename) => {
+          if (filename.endsWith('.js')) {
+            let asset = compilation.assets[filename];
+            let source = asset.source();
+            source = source.replace(/console\.log\(.+?\);/g, '');
+            compilation.emitAsset(filename,source)
+          }
+        });
+      });
+    });
+  }
+}
+```
+这个插件会在构建完成后遍历生成的资源，如果发现是 JS 文件，则会去掉其中的所有 console.log() 语句。在这个例子中，我们使用了 emit 钩子。
+
+
 
 ## 环境变量
 
@@ -2506,6 +2556,18 @@ if (module.hot) {
 
 可以看到这种形式非常麻烦，需要自行控制怎么替换
 
+### 实际应用
+
+在实际项目中，以react项目为例，大多数时候使用的是两个hmr工具：react hot loader和react fast refresh，其中后者是当前版本更常用的方式。
+
+react hot loader是一种传统的实现方式，主要针对16.8之前的类组件。它利用的是webpack原生的hmr实现，比如module.hot.accept这样的api
+当文件触发更新时，它会对比新旧版本的模块，为模块创建一组“patching”（补丁），用以描述模块新旧版本的差异。这些补丁可以用于修改组件的方法、props、state等各方面，通过补丁的形式就可以更新组件树（当前组件及其后代组件），而不需要完全重新加载整个项目。
+同时它的缺陷也很明显，首先是当应用体积逐渐变大时，补丁对组件树造成的更新范围会越来越大，导致更新过程可能会越来越慢。其次相对于快速刷新更容易出现错误。最后，它可能需要更详细的配置去处理react特殊组件。
+
+react fast refresh是更新的实现方式，它采用webpack5提供的`HMRv2`，从react的调和过程出发，和hmr功能结合起来的实现。具体来说是调和过程的diff算法；它结合diff算法得知react更新了哪些部分，然后利用hmr更新这部分内容。这样就不需要重新加载整个组件，只是相当于调度了一次更新。
+fast refresh相对于hot reload，更新范围更小，只需要更新当前组件及其依赖，而不会影响到其他组件的内容。因此更新速度更快、更不易出错。
+
+> HMR v2（不是这个名字，但大概意思是一个全新的版本）是webpack5提供的更新的一种hmr方式，无需刷新页面即可更新组件。另外它还借助了babel的一个plugin，可以注入代码帮助确定在hmr期间需要更新哪些组件并保留状态。
 ### 原理
 
 热更新流程可以分为以下几步：
@@ -2541,6 +2603,7 @@ if (module.hot) {
 
 5. 浏览器加载发生变更的增量模块。
 6. Webpack 运行时触发变更模块的 module.hot.accept 回调，执行代码变更逻辑；到这一步时浏览器已经加载完了最新模块代码，执行回调内的逻辑其实就是相当于一段额外代码，会修改原有的逻辑。
+
 
 
 

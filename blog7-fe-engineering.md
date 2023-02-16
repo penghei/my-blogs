@@ -162,7 +162,9 @@ npm run 能正常运行的原因如下：
 
 ![](https://pic.imgdb.cn/item/6277d2da094754312964b429.jpg)
 
-这个目录不是任何一个 npm 包。目录下的文件，表示这是一个个软链接，打开文件可以看到文件顶部写着 #!/bin/sh ，表示这是一个 shell 脚本。
+> 这里名为webpack的软链接有三个，即webpack/webpack.cmd/webpack.ps1，这三个不同版本是在不同操作系统上使用的不同脚本，windows一般执行.cmd，unix一般执行webpack，而ps指的是shell脚本，是一个通用的
+
+这个目录不是任何一个 npm 包。目录下的文件，表示这是一个个软链接（这些文件就叫做软链接），打开文件可以看到文件顶部写着 #!/bin/sh ，表示这是一个 shell 脚本。
 比如打开 webpack，里边是这样的：
 
 ```shell
@@ -180,8 +182,11 @@ else
 fi
 ```
 
-这些被称为软链接。当执行 webpack 时，就会像脚本里边这样找到对应的 webpack.js 并执行。
+这些被称为软链接。当通过npm run执行`webpack`命令时，就相当于在`.bin`目录下找到名为webpack的软链接来执行。
+
 在 package-lock.json 中，可以查找到一个 bin 的配置项，这一项就是 npm 对于软链接的目标执行文件的配置，这一项的值就是要链接到的具体的文件，就像这样：
+
+这个配置是用于指明webpack这软链接指向的具体要执行的文件的目录（即/node_modules/webpack/bin/webpack.js）。这样执行软链接时就会找到对应的文件来执行。
 
 ```json
 "bin":{
@@ -1036,6 +1041,22 @@ Writing objects: 100% (6/6), 621 bytes | 621.00 KiB/s, done.
 Total 6 (delta 0), reused 0 (delta 0)
 To github.com:michaelliao/learngit.git
    7a5e5dd..57c53ab  dev -> dev
+```
+
+### 拉取远程分支
+
+这是一个比较常用的操作，即远程分支进行了更新，需要拉取远程以更新本地分支。
+实现这一目的的方法有两种：git fetch和git pull。两者的区别在于：
+- git fetch只会下载远程库，但不会修改文件，需要自己去合并更新。即，当通过git fetch拉取了远程分支之后，会在本地创建一个远程分支的副本，然后我们需要使用`git merge origin/<branch name>`合并到当前分支上去
+- git pull会直接拉取分支并合并，相当于直接修改了文件。也就是说，`git pull = git fetch + git merge`。如果远程分支的最新提交和本地出现冲突，就可能导致冲突，需要手动解决冲突才能合并。
+
+因此大多数情况下拉取远程分支的命令是：
+```
+git pull origin <branch name>
+
+// or
+git fetch origin <branch name>
+git merge origin/<branch name>
 ```
 
 ## 标签

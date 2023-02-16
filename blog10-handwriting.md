@@ -4,6 +4,7 @@ date: 2022-05-13 12:21:10
 tags: 面试
 cover: /img/JS.png
 categories: JavaScript
+sticky: 4
 ---
 
 # 手写题

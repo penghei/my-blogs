@@ -4,6 +4,7 @@ date: 2022-07-11 14:07:32
 tags: 日常学习
 categories: React
 cover: /img/react.png
+sticky: 7
 ---
 
 # React jsx

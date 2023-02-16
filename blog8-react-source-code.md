@@ -235,480 +235,6 @@ function renderWithHooks(
 - 对于类组件来说，底层只需要实例化一次，实例中保存了组件的 state 等状态。对于每一次更新只需要调用 render 方法以及对应的生命周期就可以了。
 - 在函数组件中，每一次更新都是一次新的函数执行，一次函数组件的更新，里面的变量会重新声明。为了能让函数组件可以保存一些状态，执行一些副作用钩子，React Hooks 可以帮助记录 React 中组件的状态，处理一些额外的副作用。
 
-# React diff
-
-
-## diff 源码
-
-单节点diff函数为reconcileSingleElement，代码如下：
-```ts
-function reconcileSingleElement(
-    returnFiber: Fiber,
-    currentFirstChild: Fiber | null,
-    element: ReactElement,
-    lanes: Lanes,
-  ): Fiber {
-    const key = element.key;
-    let child = currentFirstChild;
-    while (child !== null) {
-      // 先比较key
-      if (child.key === key) {
-        const elementType = element.type;
-        // 然后比较type
-        if (
-          child.elementType === elementType ||
-          (typeof elementType === 'object' &&
-            elementType !== null &&
-            elementType.$$typeof === REACT_LAZY_TYPE &&
-            resolveLazy(elementType) === child.type)
-        ) {
-          // 标记删除current fiber的兄弟节点
-          deleteRemainingChildren(returnFiber, child.sibling);
-          // 复用current fiber创建wip fiber
-          const existing = useFiber(child, element.props);
-          // 复用ref
-          existing.ref = coerceRef(returnFiber, child, element);
-          existing.return = returnFiber;
-          return existing;
-        }
-        // 剩余的current都不能复用，全删除
-        deleteRemainingChildren(returnFiber, child);
-        break;
-      } else {
-        // key不相同，一定不能复用，删除
-        deleteChild(returnFiber, child);
-      }
-      child = child.sibling;
-    }
-    const created = createFiberFromElement(element, returnFiber.mode, lanes);
-    created.ref = coerceRef(returnFiber, currentFirstChild, element);
-    created.return = returnFiber;
-    return created;
-    
-  }
-
-```
-
-diff 算法用于处理类型为数组的 children（多节点）部分的代码如下：
-
-```ts
-function reconcileChildrenArray(
-  returnFiber: Fiber,
-  currentFirstChild: Fiber | null,
-  newChildren: Array<any>,
-  lanes: Lanes
-): Fiber | null {
-  let resultingFirstChild: Fiber | null = null;
-  let previousNewFiber: Fiber | null = null;
-
-  let oldFiber = currentFirstChild;
-  let lastPlacedIndex = 0; // 最后一个可复用节点在 oldFiber 中的位置，也就是第一次遍历停下来后指针在oldFiber中的位置
-  let newIdx = 0; // 在newFiber中的指针
-  let nextOldFiber = null; // 指向下一个oldFiber
-
-  // 第一次遍历，终止条件是所有新节点遍历完或旧节点不存在
-  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
-    // 如果oldFiber的序号比当前newFiber还要多，说明oldFiber多了，将oldFiber设为null，下一次就跳出循环
-    if (oldFiber.index > newIdx) {
-      nextOldFiber = oldFiber;
-      oldFiber = null;
-    } else {
-      // 取下一个oldFiber
-      nextOldFiber = oldFiber.sibling;
-    }
-    // updateSlot 内部会判断当前的 tag 和 key 是否匹配，如果匹配复用老 fiber 形成新的 fiber
-    // 如果不匹配，返回 null ，此时 newFiber 等于 null 。
-    const newFiber = updateSlot(
-      returnFiber,
-      oldFiber,
-      newChildren[newIdx],
-      lanes
-    );
-    // 如果两个都走到空那就直接break
-    if (newFiber === null) {
-      if (oldFiber === null) {
-        oldFiber = nextOldFiber;
-      }
-      break;
-    }
-    // 如果是处于更新流程，找到与新节点对应的老 fiber
-    // 但是如果不能复用，即 alternate === null ，那么会删除老 fiber 。
-    if (shouldTrackSideEffects) {
-      if (oldFiber && newFiber.alternate === null) {
-        deleteChild(returnFiber, oldFiber);
-      }
-    }
-    // lastPlacedIndex表示为最后停下来的在oldFiber中的位置
-    lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-    // previousNewFiber表示newFiber中最后一个能复用的newFiber，也就是lastPlacedIndex的前一个
-    if (previousNewFiber === null) {
-      resultingFirstChild = newFiber;
-    } else {
-      previousNewFiber.sibling = newFiber;
-    }
-    previousNewFiber = newFiber;
-    oldFiber = nextOldFiber;
-  }
-
-  // 当第一次循环结束时有两种情况：
-  // 1. newFiber遍历完，但oldFiber !== null：oldFiber多余，删除多余的oldFiber（下面第一个if）
-  // 2. oldFiber === null，newFiber没遍历完：oldFiber不足，直接创建新的newFiber（下面第二个if）
-  // 3. newFiber遍历完，并且oldFiber也遍历完：这时不多不少，说明是发生了移动或者更复杂的情况，进入下一次循环（下面的for）
-
-  // 走到这里说明newFiber遍历完
-  // 如果进入下面的if说明所有newFiber都被遍历完，但oldFiber还有，那么剩下没有遍历 oldFiber 也就没有用了，
-  // 调用 deleteRemainingChildren 统一删除多余的 oldFiber 。
-  if (newIdx === newChildren.length) {
-    deleteRemainingChildren(returnFiber, oldFiber);
-    return resultingFirstChild;
-  }
-
-  // 当经历过第一步，oldFiber 为 null ， 证明 oldFiber 复用完毕
-  // 如果还有新的 children ，说明都是新的元素，只需要调用 createChild 创建新的 fiber 。
-  if (oldFiber === null) {
-    for (; newIdx < newChildren.length; newIdx++) {
-      const newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
-      if (newFiber === null) {
-        continue;
-      }
-      lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-      if (previousNewFiber === null) {
-        resultingFirstChild = newFiber;
-      } else {
-        previousNewFiber.sibling = newFiber;
-      }
-      previousNewFiber = newFiber;
-    }
-    return resultingFirstChild;
-  }
-
-  // 如果走到这里，说明节点发生移动，或者是移动+删除+增加等多种复杂情况，而不只是单纯的增加或删除
-  // existingChildren里存放剩余的老的 fiber 和对应的 key (或 index )的映射关系。
-  const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
-
-  for (; newIdx < newChildren.length; newIdx++) {
-    // 判断 existingChildren 中有没有可以复用 oldFiber
-    // 如果有，那么复用，如果没有，新创建一个 newFiber 。
-    const newFiber = updateFromMap(
-      existingChildren,
-      returnFiber,
-      newIdx,
-      newChildren[newIdx],
-      lanes
-    );
-    if (newFiber !== null) {
-      if (shouldTrackSideEffects) {
-        if (newFiber.alternate !== null) {
-          // 复用的 oldFiber 会从 existingChildren 删掉
-          existingChildren.delete(
-            newFiber.key === null ? newIdx : newFiber.key
-          );
-        }
-      }
-      lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
-      if (previousNewFiber === null) {
-        resultingFirstChild = newFiber;
-      } else {
-        previousNewFiber.sibling = newFiber;
-      }
-      previousNewFiber = newFiber;
-    }
-  }
-  // 删除剩余没有复用的oldFiber
-  if (shouldTrackSideEffects) {
-    existingChildren.forEach((child) => deleteChild(returnFiber, child));
-  }
-  // 这一步执行完成后，newFiber要么是在第一次遍历中就复用，要么是在第二次遍历中复用，或者在第二次遍历中被创建；总之newFiber一定是完成构建了的。
-  // oldFiber要么在第一次遍历被直接复用，要么在第二次遍历被从map中找出并删掉，要么在上面作为多余的被删掉；总之oldFiber一定没有多余的。
-
-  if (getIsHydrating()) {
-    const numberOfForks = newIdx;
-    pushTreeFork(returnFiber, numberOfForks);
-  }
-  return resultingFirstChild;
-}
-```
-
-基本流程已经写在注释里了。
-除此之外还有注意点：
-
-- 第一次遍历判断能不能复用的 updateSlot 函数，其实是比较新老 fiber 的 key。(就只是 key，没有其他别的属性)。因此 React 判断能不能复用的首要属性就是 key
-
-## 单节点 Diff
-
-单节点diff针对的是在更新后只有一个节点的fiber，即并非是数组类型的。
-
-确定 dom 节点是否可以复用需要经过几个步骤：
-
-首先：比较 key
-- key 不同则直接将该 fiber 标记为删除
-
-这点很好理解。如果key不相同，那就完全不能复用，直接将current fiber标记为删除就可以了
-
-key 相同会比较 type，即节点类型（tag）
-
-- type 相同则可复用，同时也会删除被复用的currentfiber的所有兄弟节点
-
-之所以删除兄弟节点，其实出于这样的考虑：
-比如更新前的节点数量有三个，更新后只有一个：
-```ts
-<ul>
-  <li key='1'></li>
-  <li key='2'></li>
-  <li key='3'></li>
-</ul>
-
-<ul>
-  <li key='1'></li>
-</ul>
-```
-更新后由于只有一个节点，因此会进入单节点diff。但显然此时只能复用一个，多余的就应该删除。
-
-- type 不同则将该 fiber 及其兄弟 fiber 标记为删除。因为key相同的那一个已经不能复用，它的兄弟自然也就没什么可以复用的必要了
-
-
-
-
-## 多节点 diff
-
-主要是针对列表渲染，比如
-
-```js
-function List() {
-  return (
-    <ul>
-      <li key="0">0</li>
-      <li key="1">1</li>
-      <li key="2">2</li>
-      <li key="3">3</li>
-    </ul>
-  );
-}
-```
-
-他的返回值 JSX 对象的 children 属性不是单一节点，而是包含四个对象的数组
-这时会对节点进行两轮遍历
-
-- 第一轮遍历：处理更新的节点，更新包括增删以及属性变化；
-- 第二轮遍历：处理剩下的不属于更新的节点，即移动节点。
-
-### 第一轮遍历
-
-1. 遍历`children[i]`，分别和 `oldFiber` 对应节点比较，比较方式等同单节点的比较；
-
-- 可复用，则 i++，继续下一个
-- 不可复用：
-  - key 不同导致不可复用，立即跳出整个遍历，第一轮遍历结束。
-  - key 相同 type 不同导致不可复用，会将 `oldFiber` 标记为 `DELETION`，并继续遍历
-
-2. 第一轮遍历的结果会有 4 种：
-
-- `newChildren` 与 `oldFiber` 同时遍历完：直接结束，只需要在第一轮更新即可
-
-```js
-//oldFiber
-<li key="0">0</li>
-<li key="1">1</li>
-<li key="2">2</li>
-<li key="3">3</li>
-//newChildren
-<li key="0">4</li>
-<li key="1">5</li>
-<li key="2">6</li>
-<li key="3">7</li>
-```
-
-- `newChildren` 没遍历完，`oldFiber` 遍历完：已有的 DOM 节点都复用了，这时还有新加入的节点，只需要遍历剩下的 `newChildren` 为生成的 `workInProgress fiber` 依次标记 `Placement`。
-
-```js
-//oldFiber
-<li key="0">0</li>
-<li key="1">1</li>
-<li key="2">2</li>
-<li key="3">3</li>
-//newChildren
-<li key="0">4</li>
-<li key="1">5</li>
-<li key="2">6</li>
-<li key="3">7</li>
-<li key="4">8</li>//新节点，创建新的fiber
-```
-
-- `newChildren` 遍历完，`oldFiber` 没遍历完：节点数量少，有节点被删除了。所以需要遍历剩下的 `oldFiber`，依次标记 `Deletion`
-
-```js
-//oldFiber
-<li key="0">0</li>
-<li key="1">1</li>
-<li key="2">2</li>
-<li key="3">3</li>
-//newChildren
-<li key="0">4</li>
-<li key="1">5</li>
-<li key="2">6</li>
-```
-
-- `newChildren` 与 `oldFiber` 都没遍历完
-
-```js
-//oldFiber
-<li key="0">0</li>
-<li key="1">1</li>
-<li key="2">2</li>
-<li key="3">3</li>
-//newChildren
-<li key="0">4</li>
-<li key="2">5</li>//这里发现和oldFiber的key不对应，不可复用，这时两者都没遍历完
-<li key="1">6</li>
-```
-
-对于第四种情况还有额外的处理：
-
-### 第二轮遍历
-
-> 关于第二轮的操作，我发现了一个不太一样的版本。
->
-> 因为进入第二次遍历就一定是有移动的，可能只是移动，也可能是移动、更新、删除等多种情况的复合。但不管什么样，都是利用 map；
->
-> 这时的操作就是用一个 map 记录 oldFiber 中的节点，然后用 newChild 里剩下的元素和 map 中的一一对应。
->
-> - 如果 map 中有就复用（无所谓顺序），并删掉 map 中的这个元素
-> - 如果 map 中没有就新创建
->
-> 最后就能正确生成新的 fiber 节点。
-
-第二轮遍历主要处理 key 不同的元素，即有可能产生移动的元素
-
-1. 以最后一个可复用节点在 `oldFiber` 中的位置为 `lastIndex`，在 `newChild` 中第一个不可复用的为 `lasindex+1`
-
-```
-<li key=0> --- <li key=0>
-<li key=1> --- <li key=1>//last index = 1
-<li key=2> --- <li key=3>//last index + 1 = 2
-<li key=3> --- <li key=2>
-```
-
-2. 选出 `newChildren` 在 `lastIndex+1` 的元素，即上次比较终止的下一个，在 `oldFiber` 中找，并取出序号和 `lastIndex` 比较。比如上面的例子，`key=3` 在 `oldFiber` 中找到，index 为 3，规定这个值为 `oldIndex`
-3. 比较 `oldIndex` 和 `lastIndex`
-
-- 如果 `oldIndex` >= `lastIndex` 代表该可复用节点不需要移动，并将 `lastIndex = oldIndex`;上面的例子 `oldindex === 3 > lastindex === 1`，因此 `oldIndex` 中 `key=3` 的元素位置不动（指相对于 old 不动，仍然在最后一个）
-- 如果 `oldIndex` < `lastIndex` 该可复用节点之前插入的位置索引小于这次更新需要插入的位置索引，代表该节点需要向右（后）移动。
-
-所以比较完成后，相当于只是把 `key=2` 的向后移动了一位，完成遍历
-
-这里还有一个更清晰的例子：
-
-```
-// 之前
-abcd
-
-// 之后
-dabc
-
-===第一轮遍历开始===
-d（之后）vs a（之前）
-key改变，不能复用，跳出遍历
-===第一轮遍历结束===
-
-===第二轮遍历开始===
-newChildren === dabc，没用完，不需要执行删除旧节点
-oldFiber === abcd，没用完，不需要执行插入新节点
-
-将剩余oldFiber（abcd）保存为map
-
-继续遍历剩余newChildren
-
-// 当前oldFiber：abcd
-// 当前newChildren dabc
-
-key === d 在 oldFiber中存在
-const oldIndex = d（之前）.index;
-此时 oldIndex === 3; // 之前节点为 abcd，所以d.index === 3
-比较 oldIndex 与 lastPlacedIndex;
-oldIndex 3 > lastPlacedIndex 0
-则 lastPlacedIndex = 3;
-d节点位置不变
-
-继续遍历剩余newChildren
-
-// 当前oldFiber：abc
-// 当前newChildren abc
-
-key === a 在 oldFiber中存在
-const oldIndex = a（之前）.index; // 之前节点为 abcd，所以a.index === 0
-此时 oldIndex === 0;
-比较 oldIndex 与 lastPlacedIndex;
-oldIndex 0 < lastPlacedIndex 3
-则 a节点需要向右移动
-
-继续遍历剩余newChildren
-
-// 当前oldFiber：bc
-// 当前newChildren bc
-
-key === b 在 oldFiber中存在
-const oldIndex = b（之前）.index; // 之前节点为 abcd，所以b.index === 1
-此时 oldIndex === 1;
-比较 oldIndex 与 lastPlacedIndex;
-oldIndex 1 < lastPlacedIndex 3
-则 b节点需要向右移动
-
-继续遍历剩余newChildren
-
-// 当前oldFiber：c
-// 当前newChildren c
-
-key === c 在 oldFiber中存在
-const oldIndex = c（之前）.index; // 之前节点为 abcd，所以c.index === 2
-此时 oldIndex === 2;
-比较 oldIndex 与 lastPlacedIndex;
-oldIndex 2 < lastPlacedIndex 3
-则 c节点需要向右移动
-
-===第二轮遍历结束===
-```
-
-## diff 和 index key
-
-经过上面的解释可以得知，diff 算法依赖显式的 key 判断哪些元素发生什么样的更改。
-如果 key 使用不规范（通常出现于用 index 代替 key），则会导致 diff 算法无法判断具体是哪个元素的变化，可能会导致需要重新渲染整个列表（完全不复用），甚至导致列表渲染错误。
-
-比如这样一组元素：
-
-```html
-<ul>
-  <li>a</li>
-  <!-- key==0 -->
-  <li>b</li>
-  <!-- key==1 -->
-  <li>c</li>
-  <!-- key==2 -->
-  <li>d</li>
-  <!-- key==3 -->
-  <li>e</li>
-  <!-- key==4 -->
-</ul>
-```
-
-如果使用 index 作为 key，当删除第一个元素时会变成这样：
-
-```html
-<ul>
-  <li>b</li>
-  <!-- key==0 -->
-  <li>c</li>
-  <!-- key==1 -->
-  <li>d</li>
-  <!-- key==2 -->
-  <li>e</li>
-  <!-- key==3 -->
-</ul>
-```
-
-这个时候，**每个 li 元素的 key 都改变了**，相当于 React 判断所有元素都不能复用，直接重新渲染。
-
-另外一种情况，如果因为某些 bug 导致每个 key 都一样，那么删除一个元素时会导致 React 不清楚是哪一个元素具体被删除，也可能导致完全重新渲染，或者删除错误的元素。
-
 # React 事件
 
 ## 独立的事件系统
@@ -1468,9 +994,11 @@ flushSync(() => setState(3));
 setState(4);
 ```
 
-由于 React 的事件都是自己合成的，所以 React 可以控制让每个真实 dom 事件的执行并非直接调用回调，而是经过一个函数的统一处理，再调用绑定的回调。
-不管在一次事件中触发了多少更新，这些更新都是在那个统一执行的函数的执行上下文内部被调用的。这样的情况下，就可以通过一个开关，证明当前更新是可控的，接下来在函数内部的全部更新，都可以被统一放入一个更新队列，依次执行更新。
-模拟一下实现就是这样：
+下面举个例子，讲解老版本批量更新是什么原理。React18 不再采用这种方式
+
+1. 我们用一个 wrapEvent 函数包裹事件回调 handleClick，这是可以看到当 handleClick 执行时，会先`设置batchEventUpdate = true`，然后执行自己原本的逻辑。
+2. 在原本的 handleClick 内部肯定是好几个 setState，这几个 setState 内部会判断当前是不是批量更新；如果是，就把更新放到队列中，如果不是就直接执行。这也就意味着同步条件下所有的更新都会被放到队列，而如果是异步执行 setState，批量更新肯定是关闭的，也就不可能放到数组中去。
+3. 然后当收集完更新后，在 flushSyncCallbackQueue 函数中一次执行所有的更新任务，就实现了一次批量更新。
 
 ```js
 let batchEventUpdate = false;
@@ -1764,848 +1292,6 @@ function mockOnclick() {
 mockOnclick();
 ```
 
-# 生命周期
-
-官方文档的周期描述：
-![](https://pic.imgdb.cn/item/6243fc8427f86abb2ab38f97.jpg)
-
-> 图链接：https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/
-
-老版生命周期：
-![](https://pic.imgdb.cn/item/62485ffd27f86abb2a69b3d7.jpg)
-
-## 生命周期的执行函数
-
-如果在一次调和（render，严格来说是 beginWork）的过程中，发现了一个 fiber tag 为类组件的情况，就会按照类组件的逻辑来处理。该处理的基本代码如下：
-
-这里两个关键的函数是`mountClassInstance`和`updateClassInstance`。前者是挂载类组件时的步骤，后者是更新时的。在两个函数内部，将会分别按照顺序执行类组件中定义的生命周期函数。
-
-```js
-function updateClassComponent() {
-  let shouldUpdate;
-  const instance = workInProgress.stateNode; // stateNode 是 fiber 指向 类组件实例的指针。
-  if (instance === null) {
-    // instance 为组件实例,如果组件实例不存在，证明该类组件没有被挂载过，那么会走初始化流程
-    constructClassInstance(workInProgress, Component, nextProps); // 组件实例将在这个方法中被new。
-    mountClassInstance(/*...*/); //初始化挂载组件流程
-    shouldUpdate = true; // shouldUpdate 标识用来证明 组件是否需要更新。
-  } else {
-    shouldUpdate = updateClassInstance(/*...*/); // 更新组件流程
-  }
-  if (shouldUpdate) {
-    nextChildren = instance.render(); /* 执行render函数 ，得到子节点 */
-    reconcileChildren(/*...*/); /* 继续调和子节点 */
-  }
-}
-```
-
-类组件实例和类组件 fiber 之间存在对应关系，具体来说是这样：
-![](https://pic.imgdb.cn/item/63a30459b1fccdcd362baef4.jpg)
-fiber.stateNode 属性在 fiber tag 为类组件时表示其对应的类组件实例
-
-### 生命周期的执行（源码）
-
-生命周期本质上就是挂载在组件实例或组件类本身上的函数；因此执行生命周期的过程，其实本质上也就是取出这些函数并执行。
-以 mountClassInstance 为例，代码简化如下：
-
-```js
-// 组件挂载过程才会执行的函数
-// 即getDerivedStateFromProps/componentWillMount/componentDidMount三个生命周期
-function mountClassInstance(
-  workInProgress: Fiber,
-  ctor: any,
-  newProps: any,
-  renderLanes: Lanes
-): void {
-  const instance = workInProgress.stateNode; // 获取类组件实例，从上面取到生命周期函数
-  instance.props = newProps; // 设置类组件的一些属性
-  // 由于更新state实际上是改变fiber上的memoizedState，因此还需要设置一下instance上的state，才能保证在类组件中this.state是最新的
-  instance.state = workInProgress.memoizedState;
-  instance.refs = {};
-
-  initializeUpdateQueue(workInProgress);
-
-  // getDerivedStateFromProps是static方法，要单独处理
-  const getDerivedStateFromProps = ctor.getDerivedStateFromProps;
-  if (typeof getDerivedStateFromProps === "function") {
-    // 这个函数就是执行getDerivedStateFromProps的
-    applyDerivedStateFromProps(
-      workInProgress,
-      ctor,
-      getDerivedStateFromProps,
-      newProps
-    );
-    instance.state = workInProgress.memoizedState;
-  }
-
-  // 没有getDerivedStateFromProps和getSnapshotBeforeUpdate时，才会执行componentWillMount生命周期
-  if (
-    typeof ctor.getDerivedStateFromProps !== "function" &&
-    typeof instance.getSnapshotBeforeUpdate !== "function" &&
-    (typeof instance.UNSAFE_componentWillMount === "function" ||
-      typeof instance.componentWillMount === "function")
-  ) {
-    callComponentWillMount(workInProgress, instance);
-    processUpdateQueue(workInProgress, newProps, instance, renderLanes);
-    instance.state = workInProgress.memoizedState;
-  }
-  // 设置componentDidMount，但还未执行
-  if (typeof instance.componentDidMount === "function") {
-    let fiberFlags: Flags = Update | LayoutStatic;
-    workInProgress.flags |= fiberFlags;
-  }
-}
-```
-
-componentDidMount 的执行时机是 commit 阶段，但现在是 render 阶段，暂时还未执行；一旦到达 commit 阶段，就会执行
-
-```js
-function commitLifeCycles(finishedRoot,current,finishedWork){
-    switch (finishedWork.tag){
-     case ClassComponent: {
-       const instance = finishedWork.stateNode
-       if(current === null){                          /* 类组件第一次调和渲染 */
-         instance.componentDidMount()
-       }else{                                         /* 类组件更新 */
-         instance.componentDidUpdate(prevProps,prevState，instance.__reactInternalSnapshotBeforeUpdate);
-       }
-     }
-    }
-}
-```
-
-全过程如下（挂载阶段）：
-![](https://pic.imgdb.cn/item/63a30df8b1fccdcd3640cfa2.jpg)
-这里的 constructor 和 render 并不是显式的生命周期。
-
-- constructor 实际上是在组件那章说过的执行类组件、绑定 props 和 updater 的`constructClassInstance`；
-- render 就是渲染过程，也就是上面`updateClassComponent`函数的`nextChildren = instance.render()`这个地方。显然这里是在执行完上面几个生命周期之后的。
-
----
-
-更新阶段的生命周期执行是在 updateClassInstance 里的。执行过程类似，不过有几个特殊的生命周期：
-
-- getSnapshotBeforeUpdate：执行也是在 commit 阶段，但具体来说是在 before Mutation(DOM 修改前)阶段，代码大概是这样：
-
-```js
-function commitBeforeMutationLifeCycles(current, finishedWork) {
-  switch (finishedWork.tag) {
-    case ClassComponent: {
-      const snapshot = instance.getSnapshotBeforeUpdate(
-        prevProps,
-        prevState
-      ); /* 执行生命周期 getSnapshotBeforeUpdate   */
-      instance.__reactInternalSnapshotBeforeUpdate =
-        snapshot; /* 返回值将作为 __reactInternalSnapshotBeforeUpdate 传递给 componentDidUpdate 生命周期  */
-    }
-  }
-}
-```
-
-## 生命周期概览
-
-挂载：
-
-1. constructor: 实例化组件，初始化 props 和 state
-2. getDerivedStateFromProps: 静态方法，获取上一次的 props，返回值和本次的 state 合并
-3. render: 通过 React.createElement 创建、解析元素，把元素变成 fiber 并进行以后的步骤
-4. componentDidMount: 组件已经挂载，dom 渲染完毕
-
-更新：
-
-1. getDerivedStateFromProps
-2. shouldComponentUpdate: 传入当前 props 和 state，返回值为 false 则跳过本次更新
-3. render
-4. getSnapshotBeforeUpdate: 获取更新前的最后一次快照，记录更新前的 state 和 props
-5. componentDidUpdate: 更新完毕
-
-卸载：
-
-1. componentWillUnmount: 即将卸载前调用
-
-### 初始化阶段
-
-#### constructor
-
-即`constructor` 的执行，实例化 React 组件。进行 state 、props 的初始化，在这个阶段修改 state，不会执行更新阶段的生命周期，可以直接对 state 赋值。
-
-在 React 组件挂载之前，会调用它的构造函数。**在为 `React.Component` 子类实现构造函数时，应在其他语句之前调用 `super(props)`**
-
-原因是绑定 `props` 是在父类 `Component` 构造函数中，执行 `super` 等于执行 `Component` 函数，此时 `props` 没有作为第一个参数传给 `super()` ，在 `Component` 中就会找不到 `props` 参数，从而变成 `undefined` ，在接下来 `constructor` 代码中打印 `props` 为 `undefined` 。
-
-`Component` 函数大概是这样：
-
-```js
-function Component(props, context, updater) {
-  this.props = props; //绑定props
-  this.context = context; //绑定context
-  this.refs = emptyObject; //绑定ref
-  this.updater = updater || ReactNoopUpdateQueue; // updater 对象
-}
-/* 绑定setState 方法 */
-Component.prototype.setState = function (partialState, callback) {
-  this.updater.enqueueSetState(this, partialState, callback, "setState");
-};
-/* 绑定forceupdate 方法 */
-Component.prototype.forceUpdate = function (callback) {
-  this.updater.enqueueForceUpdate(this, callback, "forceUpdate");
-};
-```
-
-> 通常，在 React 中，构造函数仅用于以下两种情况：
->
-> - 通过给 this.state 赋值对象来初始化内部 state。
-> - 为事件处理函数绑定 this
-
-### 挂载阶段
-
-#### 1. `getDerivedStateFromProps`
-
-是第二个执行的生命周期，每次渲染前都会触发，是类上的静态方法，不能访问到类实例；
-参数是当前 props 和上一次的 state，返回值将和之前的 state 合并，作为新的 state；如果返回 null 就不更新。
-
-作用：
-
-- 代替 `componentWillMount` 和 `componentWillReceiveProps`
-- 组件初始化或者更新时，将 props 映射到 state。
-- 返回值与 state 合并完，可以作为 `shouldComponentUpdate` 第二个参数 `newState` ，可以判断是否渲染组件。
-
-使用示例：
-
-```js
-static getDerivedStateFromProps(newProps){
-  /*接受 props 变化,返回值将作为新的 state,用于渲染或传递给shouldComponentUpdate */
-    const { type } = newProps
-    switch(type){
-        case 'fruit' :
-        return { list:['苹果','香蕉','葡萄' ] }
-        case 'vegetables':
-        return { list:['菠菜','西红柿','土豆']}
-    }
-}
-```
-
-#### 2. `render`
-
-render 函数是 jsx 的各个元素被 `React.createElement`创建成 React element 对象的形式。一次 render 的过程，就是创建 `React.element` 元素的过程。
-
-当 render 被调用时，它会检查 `this.props` 和 `this.state` 的变化并返回值，这个值大多数情况下是 jsx，当然也可以是其他允许的类型，比如单独返回一个字符串。
-
-`render()` 函数应该为纯函数，这意味着在不修改组件 state 的情况下，每次调用时都返回相同的结果，并且它不会直接与浏览器交互。因此不能在 render 中执行有副作用的操作，应该放在`componentDidMount`或其他中。
-因此可以在 render 里面做一些诸如`createElement`创建元素 , `cloneElement` 克隆元素 ，`React.children` 遍历 children 的操作等
-
-> `render`并不一定执行，如果`shouldComponentUpdate()` 返回 false 就不会执行。但是对于初次挂载来说，是唯一一个一定要执行、不可缺少的生命周期。
-
-#### 3. `componentDidMount`
-
-发生在 render 函数之后，已经挂载 DOM 之后立即调用。
-它的调用发生在`commit`阶段，即在 React 调和完所有的 fiber 节点之后，就会到 commit 阶段，调用 `componentDidMount` 生命周期。
-
-作用：
-
-- 因为此时已经挂载 dom 了，因此可以做一些关于 DOM 操作，比如基于 DOM 的事件监听器。
-- 对于初始化向服务器请求数据，渲染视图等
-
-### 更新阶段
-
-老版本 React 更新会分为 props 更新和 state 更新两种情况，执行的方法会有不同。
-
-props 更新：
-
-1. `componentWillReceiveProps(nextProps,nextState)`
-2. `shouldComponentUpdate(nextProps,nextState)`
-3. `componentWillUpdate(nextProps,nextState)`
-4. `render`
-5. `componentDidUpdate(prevProps, prevState)`
-
-state 更新：
-
-1. `shouldComponentUpdate(nextProps,nextState)`
-2. `componentWillUpdate(nextProps,nextState)`
-3. `render`
-4. `componentDidUpdate(prevProps, prevState)`
-
-后面去掉了`componentWillUpdate`等三个生命周期后，两者的执行流程已经没有区别，都是：
-
-1. `static getDerivedStateFromProps`
-2. `shouldComponentUpdate`
-3. `render`
-4. `getSnapshotBeforeUpdate`
-5. `componentDidUpdate`
-
-#### 1. `UNSAFE_componentWillReceiveProps`
-
-该生命周期的特点：
-
-1. 即使 props 没变，该生命周期也会执行。
-2. pureComponent 并不能在 props 不变的情况下阻止该生命周期执行。纯组件是在 componentWillReceiveProps 执行之后浅比较 props 是否发生变化
-3. 可以在内部通过异步的方式更改 state。具体来说就是相当于 componentDidUpdate 中异步请求并修改 state 的方式，但是会带来两次子组件的更新，这也是不建议使用的原因之一
-
-该生命周期执行驱动是因为父组件更新带来的 props 修改，但是只要父组件触发 render 函数，调用 React.createElement 方法，那么 props 就会被重新创建，生命周期 componentWillReceiveProps 就会执行了。
-
-这里会首先判断 `getDerivedStateFromProps` 生命周期是否存在，如果不存在就执行`componentWillReceiveProps`生命周期。传入该生命周期两个参数，分别是 `newProps` 和 `nextContext` 。
-
-#### 2. `getDerivedStateFromProps`
-
-和在挂载时的主要功能类似；
-一旦出现该函数，就会在两种更新情况下都最先执行并无视`componentWillReceiveProps`。
-
-#### 3. `shouldComponentUpdate`
-
-如果有`getDerivedStateFromProps`，就会在其后紧接执行。
-如果没有，则会在`componentWillReceiveProps`之后紧接执行；
-如果是 state 触发的更新，则会首先执行。
-
-作用：
-
-- 传入新的 props、state 和 context ，返回值决定是否继续执行 render 函数，调和子节点。
-- 一般用于性能优化，对比 state 或 props 决定是否重新渲染。但优化更好的方式是采用`PureComponent`或`React.memo`。
-
-使用示例：
-
-```js
-shouldComponentUpdate(newProps,newState){
-    if(newProps.a !== this.props.a ){ /* props中a属性发生变化 渲染组件 */
-        return true
-    }else if(newState.b !== this.props.b ){ /* state 中b属性发生变化 渲染组件 */
-        return true
-    }else{ /* 否则组件不渲染 */
-        return false
-    }
-}
-```
-
-#### 4. `UNSAFE_componentWillUpdate`
-
-详见下。
-这个方法会紧接着`shouldComponentUpdate`执行，但是如果前者返回 false 就不会执行
-
-#### 5. render
-
-接下来会执行 render 函数，得到最新的 React element 元素。然后继续调和子节点。
-
-#### 6. `getSnapshotBeforeUpdate`
-
-紧接着 render 之后，并在`componentDidUpdate`之前执行。
-执行的时间被称为一个`pre-commit`阶段，即此时仍未 commit，但是已经渲染完毕。
-
-> commit 阶段细分为 `before Mutation`( DOM 修改前)，`Mutation` ( DOM 修改)，`Layout`( DOM 修改后) 三个阶段；`getSnapshotBeforeUpdate` 发生在`before Mutation` 阶段
-
-作用：
-
-- 获取更新前 DOM 的状态，配合`componentDidUpdate` 一起使用，计算形成一个 `snapShot` 传递给 `componentDidUpdate`的第三个参数，用于保存一次更新前的信息。
-
-```js
-getSnapshotBeforeUpdate(prevProps,preState){
-    const style = getComputedStyle(this.node)
-    return { /* 传递更新前的元素位置 */
-        cx:style.cx,
-        cy:style.cy
-    }
-}
-componentDidUpdate(prevProps, prevState, snapshot){
-    /* 获取元素绘制之前的位置 */
-    console.log(snapshot)
-}
-```
-
-#### 7. `componentDidUpdate`
-
-在更新后会被立即调用，位于整个更新步骤的最后一步。首次渲染不会执行此方法。
-
-作用
-
-- 此时 DOM 已经更新，可以直接获取 DOM 最新状态。这个函数里面如果想要使用 setState ，一定要加以限制，否则会引起无限循环。
-- 用于类似`componentDidMount`一样执行副作用。
-- 接受 `getSnapshotBeforeUpdate` 保存的快照信息。
-
-使用示例：
-调用时三个参数：
-
-- `prevProps` 更新之前的 props ；
-- `prevState` 更新之前的 state ；
-- `snapshot` 为 `getSnapshotBeforeUpdate` 返回的快照，可以是更新前的 DOM 信息。
-
-```js
-componentDidUpdate(prevProps, prevState, snapshot){
-    const style = getComputedStyle(this.node)
-    const newPosition = { /* 获取元素最新位置信息 */
-        cx:style.cx,
-        cy:style.cy
-    }
-}
-```
-
-### 卸载阶段
-
-#### `componentWillUnmount`
-
-在组件卸载及销毁之前直接调用，是销毁阶段唯一的生命周期。
-
-作用：
-
-- 执行必要的清理操作，例如，清除 timer，取消网络请求或清除在 `componentDidMount` 中创建的订阅等。
-
-> `componentWillUnmount` 中不应调用 `setState`，因为该组件将永远不会重新渲染。组件实例卸载后，将永远不会再挂载它。
-
-```js
-componentWillUnmount(){
-    clearTimeout(this.timer)  /* 清除延时器 */
-    this.node.removeEventListener('click',this.handerClick) /* 卸载事件监听器 */
-}
-```
-
-### 三个被抛弃的生命周期
-
-#### 1. `UNSAFE_componentWillMount`
-
-> 如果存在 `getDerivedStateFromProps` 和 `getSnapshotBeforeUpdate` 就不会执行生命周期`componentWillMount`。
-
-发生在 render 函数之前，还没有挂载 DOM 的时候。
-
-这个周期被挂上了`UNSAFE_`的前缀，即 React 准备弃用这个生命周期。主要原因是：
-
-1. 功能不必要，即可以用其他声明周期代替。如果想在挂载之前进行一些操作，可以在`getDerivedStateFromProps`或`constructor`中进行，比如想提前网络请求、启动定时器等。
-2. 不稳定，由于发生在 render 之前，很可能因为高优先级任务的出现而打断现有任务导致它们会被执行多次（另外两个`UNSAFE_`被废弃也是有这个原因）
-3. 约束开发者，防止开发者滥用这几个生命周期，导致生命周期内的上下文多次被执行。
-
-比如说，React18的Concurrent模式下，render阶段可能会被反复执行，或者中断到之后才执行，那么这三个生命周期也就可能会被反复执行，而导致他们没有对应的componentDidUpdate这种应该匹配的函数。如果这些生命周期内有副作用，那就会导致更复杂的问题（副作用被反复调用是很恐怖的事情）。
-React18的Suspense也会导致这个问题，由于在新版的Suspense中，正在挂起的组件树将会被“丢弃”，然后等到挂起状态结束后才会再次渲染，因此也是会出现重复调用的问题。
-
-> 一起被挂上该标签的一共有三个：
->
-> - `UNSAFE_componentWillMount`
-> - `UNSAFE_componentWillReceiveProps`
-> - `UNSAFE_componentWillUpdate`
->   这三个都是在`render`之前进行，废弃原因都类似。
-
-#### 2. `UNSAFE_componentWillReceiveProps`
-
-该生命周期执行是在更新组件阶段，在`render`之前，父组件或 props 发生更新之后调用，并且是收到 props 更新时第一个调用的；挂载阶段不会调用。
-但是实际上只要父元素触发`render`，即有可能还是父元素自己状态更新，都会调用该函数。因此有可能即使 props 没变，该生命周期也会执行。
-
-作用：
-
-- 监听父元素的`render`
-- 关联 props 和 state：如果某个 state 和 props 关系紧密，则会在这里获取到最新的 props，然后进行`setState`操作。
-- 相对于`getDerivedStateFromProps`，这个方法可以访问组件实例，因此可以进行一些异步更新 state 的操作。
-
-> 作用其实也说明了该函数被废弃的原因：可以在没做优化前提下会带来两次子组件的更新，第一次 props 改变，第二次 props 改变再改变 state。两次改变可能会导致闪烁或者其他更多的问题。
-
-使用示例：
-
-```js
-UNSAFE_componentWillReceiveProps(nextProps){
-  const { type } = newProps
-  console.log('父组件render执行')
-  this.setState(...)
-}
-```
-
-#### 3. `UNSAFE_componentWillUpdate`
-
-发生在在`render`之前，`shouldComponentUpdate`确认要更新之后，此时的 DOM 还没有更新。挂载阶段不会调用。
-
-作用：
-
-- 做一些获取 DOM 的操作，如在一次更新中，保存 DOM 之前的信息
-
-```js
-UNSAFE_componentWillUpdate(){
-    const position = this.getPostion(this.node) /* 获取元素节点 node 位置 */
-}
-```
-
-> `getSnapshotBeforeUpdate`可以替代该生命周期。
-
-## 函数组件的生命周期
-
-### useEffect
-
-```js
-useEffect(() => {
-  return destory;
-}, dep);
-```
-
-- 第一个参数 `callback`, 返回的 `destory` ， `destory` 作为下一次`callback`执行之前调用，用于清除上一次 `callback` 产生的副作用。
-- 第二个参数作为依赖项，是一个数组，可以有多个依赖项，依赖项改变，执行上一次`callback` 返回的 `destory` ，和执行新的 `effect` 第一个参数 `callback` 。
-
-对于 useEffect 执行， React 处理逻辑是采用`异步调用` ，对于每一个 `effect` 的 `callback`， React 会像`setTimeout`回调函数一样，放入任务队列，等到主线程任务完成，DOM 更新，js 执行完成，视图绘制完毕，才执行。所以 `effect` 回调函数不会阻塞浏览器绘制视图。
-
-### useLayoutEffect
-
-`useLayoutEffect` 和 `useEffect` 不同的地方是采用了`同步执行`
-
-- `useLayoutEffect` 是在 DOM 绘制之前，这样可以方便修改 DOM ，这样浏览器只会绘制一次，如果修改 DOM 布局放在 `useEffect` ，那 `useEffect` 执行是在浏览器绘制视图之后，接下来又改 DOM ，就可能会导致浏览器再次回流和重绘。而且由于两次绘制，视图上可能会造成闪现突兀的效果。
-- `useLayoutEffect callback` 中代码执行会阻塞浏览器绘制。
-
-> 一句话概括如何选择 `useEffect` 和 `useLayoutEffect` ：修改 DOM ，改变布局就用 `useLayoutEffect` ，其他情况就用 `useEffect` 。
-
-## 特殊的需要注意的生命周期
-
-1. 在 constructor 中，不要把 props 直接赋给 state。这一点在函数组件中也适用
-
-```js
-constructor(props) {
- super(props);
- // 不要这样做
- this.state = { color: props.color };
-}
-
-// 函数组件
-const FC = (props)=> {
-  const [state,setState] = useState(props)
-}
-```
-
-props 本身就是一个“上层的 state”，当 props 更新时组件也会更新，因此最好直接用 props，而不是赋给 state
-
-2. `componentDidMount()` 里直接调用 `setState()`。它将触发额外渲染，但此渲染会发生在浏览器更新屏幕之前。如此保证了即使在 `render()` 两次调用的情况下，用户也不会看到中间状态。
-3. `componentDidUpdate()` 中调用 `setState()`要注意它必须被包裹在一个条件语句里，即给予一个停止条件或限制，否则会导致死循环。
-
-上面两点在`useEffect`中类似；如果没有指明依赖数组，在 useEffect 内部更新 state 就会导致死循环
-
-```js
-useEffect(()=>{
-  setState(...)
-})
-```
-
-`componentDidUpdate()`有三个参数，分别为：上一次的 props、上一次的 state 和`getSnapshotBeforeUpdate()`方法的返回值（不常用）
-
-```js
-componentDidUpdate(prevProps, prevState, snapshot);
-```
-
-因此可以在这个生命周期内部比较本次的 state 和上次的 state，props 也是同理。
-
-4. `componentWillUnmount()` 中不应调用 `setState()`，是无效的，因为组件会被卸载。理论上除非是路由的形式，否则大多数情况下组件一被卸载就不会再挂载。
-
-# React Ref
-
-## ref 执行时机和处理逻辑
-
-如果 ref 是一个函数，就可以看到 ref 的回调会在 ref 更新时执行两次。并且如果是第一次挂载，ref 指向的 dom 元素的值还会是空。
-具体来说，对函数组件来说其实是比较两次的 ref 回调是否相同。
-
-1. 如果 ref 函数跟上一次的 ref 函数不一致（引用比较），那么会在 Mutation 和 Layout 阶段分别调用`commitDetachRef` 和 `commitAttachRef`。观察下面的代码可知，这两个调用都会执行 refCallback，并且第一次参数是 null，第二次是 fiber.stateNode（即真实 dom）
-2. 如果 ref 函数跟上一次的 ref 函数一致，则更新时不会调用 ref 函数
-
-下面这个例子，两个 ref 一个是用 useRef 保存，一个是普通函数。由于普通函数会在更新时被重新声明，因此两次调用的函数都不同，结果就是 anonymous 这里会输出两次，h1Ref 这个函数会执行两次。useCallback 也可以；
-![](https://pic.imgdb.cn/item/639ed32eb1fccdcd365d3009.jpg)
-考虑到这种情况，refCallback 中一定要用判断是否是 null 的部分，始终记得 ref 可能是 null，只有不是 null 才能进行操作。
-
-```js
-export default function App() {
-  const [, forceUpdate] = useState({});
-  // 这个是保存的ref callback，不会改变
-  const { current: standaloneRefCallback } = useRef((f: HTMLHeadingElement) => {
-    console.log(`standalone`, f);
-  });
-  // 这个callback每次都会是新的
-  const h1Ref = (d: HTMLHeadingElement) => {
-    console.log(`anonymous`, d);
-  };
-  return (
-    <div className="App">
-      {visible && (
-        <>
-          <h1 ref={h1Ref}>Hello</h1>
-          <h1 ref={standaloneRefCallback}>World</h1>
-        </>
-      )}
-      <button type="button" onClick={() => forceUpdate({})}>
-        forceUpdate
-      </button>
-    </div>
-  );
-}
-```
-
-出现这种情况，主要是因为 ref 的处理会执行两次。整个 Ref 的处理，都是在 commit 阶段发生的；React 底层用两个方法处理：`commitDetachRef` 和 `commitAttachRef` ，这两次正正好好，一次在 DOM 更新之前（Before Mutation），一次在 DOM 更新之后（Layout）。
-
-```js
-function commitDetachRef(current: Fiber) {
-  const currentRef = current.ref;
-  if (currentRef !== null) {
-    if (typeof currentRef === "function") {
-      /* function 和 字符串获取方式。 */
-      currentRef(null);
-    } else {
-      /* Ref对象获取方式 */
-      currentRef.current = null;
-    }
-  }
-}
-
-function commitAttachRef(finishedWork: Fiber) {
-  const ref = finishedWork.ref;
-  if (ref !== null) {
-    const instance = finishedWork.stateNode;
-    let instanceToUse;
-    switch (finishedWork.tag) {
-      case HostComponent: //元素节点 获取元素
-        instanceToUse = getPublicInstance(instance);
-        break;
-      default: // 类组件直接使用实例
-        instanceToUse = instance;
-    }
-    if (typeof ref === "function") {
-      ref(instanceToUse); /* function 和 字符串获取方式。 */
-    } else {
-      ref.current = instanceToUse; /* ref对象方式 */
-    }
-  }
-}
-```
-
-可以看出，commitDetachRef 会清空 ref 的值，而 commitAttachRef 才会绑定具体的 dom 元素上去。
-
-## ref 什么时候才会被处理两次
-
-上面的例子只是说明了 ref 被处理两次的现象和表面原因（两次 ref 不一样），那么具体到源码，这种执行两次的操作主要是因为当前 fiber 被打上了 Ref 标签，在稍后的更新中就会既执行 commitDetachRef 又执行 commitAttachRef。
-
-标记 Ref 的方法是 markRef：
-
-```ts
-function markRef(current: Fiber | null, workInProgress: Fiber) {
-  const ref = workInProgress.ref;
-  if (
-    (current === null && ref !== null) ||
-    (current !== null && current.ref !== ref)
-  ) {
-    workInProgress.flags |= Ref;
-    workInProgress.flags |= RefStatic;
-  }
-}
-```
-
-可以看到，标记的条件是 mount 阶段，或 update 阶段且 ref 和 current.ref 不同，即 ref 发生变化。
-
-标记之后，在 Mutation 和 Layout 阶段会分别对此做处理。
-
-如果组件更新时 ref 改变，那么该 ref 一定会被处理两次，其中第一次的 ref 值是 null，第二次指向正常的值。
-
-![](https://pic.imgdb.cn/item/63a34527b1fccdcd36b08ce9.jpg)
-
----
-
-当元素被卸载时，则会调用 safelyDetachRef 清除 ref 的值。具体来说则是该元素的 fiber 被打上了 delection 的 tag，在 commit 阶段就会清除 ref 的值。
-
-```js
-function safelyDetachRef(current) {
-  const ref = current.ref;
-  if (ref !== null) {
-    if (typeof ref === "function") {
-      // 函数式 ｜ 字符串
-      ref(null);
-    } else {
-      ref.current = null; // ref 对象
-    }
-  }
-}
-```
-
-## ref 工作流程
-
-ref 可以根据 render 和 commit 分为两个阶段
-
-- render 阶段：执行 ref 的标记
-- commit：根据 ref 标记，在 Mutation 执行 commitDetachRef 清除 ref，在 Layout 阶段执行 commitAttachRef 绑定 ref。
-
-比如 Mutation 阶段：
-
-```ts
-function commitMutationEffectsOnFiber() {
-  /* 如果是 ref 更新，那么重置 ref */
-  if (flags & Ref) {
-    const current = finishedWork.alternate;
-    if (current !== null) {
-      commitDetachRef(current);
-    }
-  }
-}
-```
-
-commitDetachRef 代码上面已经说过。
-
-在 Layout 阶段，则会调用 commitAttachRef 重新给 ref 赋值
-
-```ts
-if (finishedWork.flags & Ref) {
-  /* 更新 ref 属性 */
-  commitAttachRef(finishedWork);
-}
-```
-
-# React.lazy 和 Suspense
-
-> 参考：https://segmentfault.com/a/1190000042711084
-
-Suspense 是 React 提出的一种同步的代码来实现异步操作的方案。Suspense 让组件‘等待’异步操作，异步请求结束后在进行组件的渲染，也就是所谓的异步渲染。
-理论上 Suspense 应该支持任何异步渲染的组件，但是目前只能支持由 React.lazy 创建的 LazyComponent。因此要说到 Suspense 的执行原理就离不开 lazy 的实现。
-
-lazy 函数简化如下：
-
-```js
-function lazy(ctor){
-  // payload，status表示当前状态，result初始化为动态导入的函数，后面then拿到具体值后就是具体模块对象
-  const payload = {
-    _status: Uninitialized,
-    _result: ctor,
-  };
-
-  return {
-    $$typeof: REACT_LAZY_TYPE,
-    _payload: payload,
-    _init(payload) {
-      if (payload._status === Uninitialized) {
-        const ctor = payload._result;
-        const thenable = ctor();
-        // 执行动态导入函数，取到返回值
-        thenable.then(
-          moduleObject => {
-            if (payload._status === Pending || payload._status === Uninitialized) {
-              // 一旦resolve，就将payload的属性修改，这样第二次调用就可以取到具体的模块
-              payload._status = Resolved;
-              payload._result = moduleObject;
-            }
-          },
-          error => {
-            if (payload._status === Pending || payload._status === Uninitialized) {
-              payload._status = Rejected;
-              payload._result = error;
-            }
-          },
-        );
-      }
-      if (payload._status === Resolved) {
-        const moduleObject = payload._result;
-        return moduleObject.default;
-      } else {
-        // 第一次调用status一定没有改，走这里抛出result，这时的result仍然是动态导入函数
-        throw payload._result;
-      },
-    }
-  }
-}
-```
-
-lazy 函数内部并没有立即返回动态导入的结果，而是先 throw 出一个 result。可以把 lazy 理解成一个返回实际模块值的 Promise，只是它通过一些骚操作（抛出错误、promise 绑定 Suspense 更新、两次遍历 Suspense）使得 Suspense 可以先渲染 fallback 再渲染 primary
-
-具体流程是（下文将被 lazy 处理的组件成为 primary 组件）：
-
-![](https://pic.imgdb.cn/item/63a4a44808b683016351afa1.jpg)
-（这个图很笼统，还是得看下面的文字
-
-1. 当 react 在 beginWork 的过程中遇到一个 Suspense 组件时，会首先将 primary 组件作为其子节点，根据 react 的遍历算法，下一个遍历的组件就是未加载完成的 primary 组件。
-2. 当遍历到 primary 组件时，primary 组件会抛出一个异常。该异常内容为组件 promise（就是动态导入的函数），react 捕获到异常后，发现其是一个 promise，**会将其 then 方法添加一个回调函数，该回调函数的作用是触发 Suspense 组件的更新**（这一步是触发 Suspense 两次执行的关键）。并且将下一个需要遍历的元素重新设置为 Suspense，因此在一次 beginWork 中，Suspense 会被访问两次。
-3. 又一次遍历到 Suspense，本次会将 primary 以及 fallback 都生成。primary 作为 Suspense 的直接子节点，但是 Suspense 会在 beginWork 阶段直接返回 fallback。使得直接跳过 primary 的遍历。因此此时 primary 必定没有加载完成，所以也没必要再遍历一次。本次渲染结束后，屏幕上会展示 fallback 的内容
-4. 当 primary 组件加载完成后，会触发步骤 2 中 then，使得在 Suspense 上调度一个更新，由于此时加载已经完成，Suspense 会直接渲染加载完成的 primary 组件，并删除 fallback 组件。
-
-注意这里 Suspense 的两次执行和两次遍历不一样
-
-- 在一个同步任务中（一次调和）内 Suspense 就会被访问两次，原因是 primary 组件抛出异常，react 会同步地再走一次 suspense，目的是更改返回的子组件为 fallback ，但把 primary 作为 Suspense fiber 的 child；这样既跳过了 primary，又保证下一次更新时 child 就是 primary。
-- 当 primary 加载完成后，此时是一个 Promise 微任务，这时会再触发一次 Suspense 内的更新，渲染 primary 并将 fallback 标记为删除
-
-## 处理 primary 组件
-
-lazy 会在 beginwork 执行到 primary 组件时被执行。beginwork 内的 mountLazyComponent 函数会负责执行，简化代码如下：
-
-```ts
-const props = workInProgress.pendingProps;
-const lazyComponent: LazyComponentType<any, any> = elementType;
-const payload = lazyComponent._payload;
-const init = lazyComponent._init;
-let Component = init(payload); // 如果未加载完成，则会抛出异常，否则会返回加载完成的组件
-```
-
-其实就是执行了上面的 init 函数，传入的是包含有动态导入函数的 payload 对象。
-
-## 异常捕获
-
-上面说过第一次同步执行完 init 之后会抛出一个异常。这个异常会被 react 统一处理，具体是这样：
-
-```js
-do {
-  try {
-    workLoopSync();
-    break;
-  } catch (thrownValue) {
-    handleError(root, thrownValue);
-  }
-} while (true);
-```
-
-在 handleError 中有这样一段相关代码:
-
-```ts
-throwException(
-  root,
-  erroredWork.return,
-  erroredWork,
-  thrownValue,
-  workInProgressRootRenderLanes
-);
-// 处理完错误后再次执行Suspense的地方
-completeUnitOfWork(erroredWork);
-```
-
-核心代码需要继续深入到 throwException:
-
-```ts
-// 首先判断是否是为 promise
-if (
-  value !== null &&
-  typeof value === "object" &&
-  typeof value.then === "function"
-) {
-  // 获取到 Suspens 父组件
-  const suspenseBoundary = getNearestSuspenseBoundaryToCapture(returnFiber);
-  if (suspenseBoundary !== null) {
-    suspenseBoundary.flags &= ~ForceClientRender;
-    // 给 Suspens 父组件 打上一些标记，让 Suspens 父组件知道已经有异常抛出，需要渲染 fallback
-    markSuspenseBoundaryShouldCapture(
-      suspenseBoundary,
-      returnFiber,
-      sourceFiber,
-      root,
-      rootRenderLanes
-    );
-    // 将抛出的 promise 放入Suspens 父组件的 updateQueue 中，后续会遍历这个 queue 进行回调绑定
-    attachRetryListener(suspenseBoundary, root, wakeable, rootRenderLanes);
-    return;
-  }
-}
-```
-
-可以看到 throwException 逻辑主要是判断抛出的异常是不是 promise，如果是的话，就给 Suspens 父组件打上 ShoulCapture 的 flags，并且把抛出的 promise 放入 Suspens 父组件的 updateQueue 中。
-
-throwException 完成后会执行一次 completeUnitOfWork，根据 ShoulCapture 打上 DidCapture 的 flags。 并将下一个需要遍历的节点设置为 Suspense，也就是下一次遍历的对象依然是 Suspense。这也是之前提到的 Suspense 在整个 beginWork 阶段会遍历两次。
-
-## 绑定二次更新
-
-上面说到如果 primary 组件加载完毕，就会更新一次 Suspense 组件。
-因此在 Suspense 的 commit 阶段时，会遍历 updateQueue，绑定 promise 回调；当 promise 回调执行，就会在触发一次 suspense 的更新。
-
-```js
-function attachSuspenseRetryListeners(finishedWork: Fiber) {
-  // 刚刚说抛出异常之后会向suspense组件的updateQueue中添加一个promise
-  // 这里取出updateQueue，遍历找到那个promise，添加一个会更新Suspense的回调。
-  const wakeables = finishedWork.updateQueue;
-  if (wakeables !== null) {
-    finishedWork.updateQueue = null;
-    wakeables.forEach((update) => {
-      // resolveRetryWakeable会在Suspense 的组件上调度一次更新
-      const retry = resolveRetryWakeable.bind(null, finishedWork, update);
-      // 将 retry 绑定 promise 的 then 回调
-      update.then(retry, retry);
-    });
-  }
-}
-```
-
 # React Fiber
 
 ## 引入 fiber 的原因
@@ -2786,15 +1472,23 @@ function performSyncWorkOnRoot(root) {
 ```
 
 render 阶段和 commit 阶段都是从 FiberRoot 开始的。也就是说在这两个阶段内部的源码中绝大部分的`root`都表示 FiberRoot。
-其他可能出现的变量含义：
 
-```
-render阶段：
-workInProgress：正在处理的fiber节点
-current：一般是当前fiber对应的current树中的节点，即workInProgress.alternate
+另外，React18中还会根据情况开启并发渲染或同步渲染，判断的依据有两个：
+- 本次调度的所有更新的最高优先级不等于SyncLane时才开启concurrent。也就是说，假如有一个SyncLane级别的更新，那么就一定不会选到Concurrent模式
+- shouldTimeSlice变量，如下。
 
-commit阶段：
+```js
+function performConcurrentWorkOnRoot(root, didTimeout) {
+  const shouldTimeSlice =
+    !includesBlockingLane(root, lanes) &&
+    !includesExpiredLane(root, lanes) &&
+    (disableSchedulerTimeoutInWorkLoop || !didTimeout);
+  let exitStatus = shouldTimeSlice
+    ? renderRootConcurrent(root, lanes)
+    : renderRootSync(root, lanes);
+}
 ```
+
 
 ## render 阶段
 
@@ -3282,6 +1976,9 @@ function placeChild(
 }
 ```
 
+
+在beginWork阶段，react并不会直接删除fiber元素，即使已经通过diff算法判断该fiber应该被删除，而只是打上flags。真正的fiber的删除工作会留到commit阶段。插入和移动操作也是同理、
+
 这里 flags，就是将在后面 completeUnitOfWork 中执行的任务，以及 commit 中进行对真实 dom 的操作。
 标记也被称作是“副作用”，注意不同于 useEffect 的那个副作用，而是指 fiber 的副作用。
 
@@ -3742,11 +2439,15 @@ function commitBeforeMutationEffectsOnFiber(finishedWork: Fiber) {
 }
 ```
 
-可以看出 Before Mutation 阶段的主要作用就是执行了 getSnapshotBeforeUpdate。
+可以看出 Before Mutation 阶段的主要作用：
+- 对于函数组件，调度useEffect。但并不是立即执行useEffect，而是启动一个异步任务去执行useEffect
+- 对于类组件，获取新旧props，执行 getSnapshotBeforeUpdate。
+- 清空HostRoot，即dom元素挂载的根节点的内容，方便mutation阶段渲染。
 
 ### Mutation
 
-Mutation 阶段切切实实地更新了 DOM 元素，这个阶段对于整个 commit 阶段起着举足轻重的作用
+Mutation 阶段切切实实地更新了 DOM 元素，这个阶段对于整个 commit 阶段起着举足轻重的作用。
+当然，不仅是修改实际dom结构，也会修改相应的fiber结构。比如，commitDeletions不仅会删除dom节点，还会删除对应的fiber节点。
 
 #### commitMutationEffects_begin
 
@@ -4045,6 +2746,477 @@ function commitHookEffectListMount(flags: HookFlags, finishedWork: Fiber) {
 }
 ```
 
+# React diff
+
+## diff 源码
+
+单节点 diff 函数为 reconcileSingleElement，代码如下：
+
+```ts
+function reconcileSingleElement(
+  returnFiber: Fiber,
+  currentFirstChild: Fiber | null,
+  element: ReactElement,
+  lanes: Lanes
+): Fiber {
+  const key = element.key;
+  let child = currentFirstChild;
+  while (child !== null) {
+    // 先比较key
+    if (child.key === key) {
+      const elementType = element.type;
+      // 然后比较type
+      if (
+        child.elementType === elementType ||
+        (typeof elementType === "object" &&
+          elementType !== null &&
+          elementType.$$typeof === REACT_LAZY_TYPE &&
+          resolveLazy(elementType) === child.type)
+      ) {
+        // 标记删除current fiber的兄弟节点
+        deleteRemainingChildren(returnFiber, child.sibling);
+        // 复用current fiber创建wip fiber
+        const existing = useFiber(child, element.props);
+        // 复用ref
+        existing.ref = coerceRef(returnFiber, child, element);
+        existing.return = returnFiber;
+        return existing;
+      }
+      // 剩余的current都不能复用，全删除
+      deleteRemainingChildren(returnFiber, child);
+      break;
+    } else {
+      // key不相同，一定不能复用，删除
+      deleteChild(returnFiber, child);
+    }
+    child = child.sibling;
+  }
+  const created = createFiberFromElement(element, returnFiber.mode, lanes);
+  created.ref = coerceRef(returnFiber, currentFirstChild, element);
+  created.return = returnFiber;
+  return created;
+}
+```
+
+diff 算法用于处理类型为数组的 children（多节点）部分的代码如下：
+
+```ts
+function reconcileChildrenArray(
+  returnFiber: Fiber,
+  currentFirstChild: Fiber | null,
+  newChildren: Array<any>,
+  lanes: Lanes
+): Fiber | null {
+  let resultingFirstChild: Fiber | null = null;
+  let previousNewFiber: Fiber | null = null;
+
+  let oldFiber = currentFirstChild;
+  let lastPlacedIndex = 0; // 最后一个可复用节点在 oldFiber 中的位置，也就是第一次遍历停下来后指针在oldFiber中的位置
+  let newIdx = 0; // 在newFiber中的指针
+  let nextOldFiber = null; // 指向下一个oldFiber
+
+  // 第一次遍历，终止条件是所有新节点遍历完或旧节点不存在
+  for (; oldFiber !== null && newIdx < newChildren.length; newIdx++) {
+    // 如果oldFiber的序号比当前newFiber还要多，说明oldFiber多了，将oldFiber设为null，下一次就跳出循环
+    if (oldFiber.index > newIdx) {
+      nextOldFiber = oldFiber;
+      oldFiber = null;
+    } else {
+      // 取下一个oldFiber
+      nextOldFiber = oldFiber.sibling;
+    }
+    // updateSlot 内部会判断当前的 tag 和 key 是否匹配，如果匹配复用老 fiber 形成新的 fiber
+    // 如果不匹配，返回 null ，此时 newFiber 等于 null 。
+    const newFiber = updateSlot(
+      returnFiber,
+      oldFiber,
+      newChildren[newIdx],
+      lanes
+    );
+    // 如果两个都走到空那就直接break
+    if (newFiber === null) {
+      if (oldFiber === null) {
+        oldFiber = nextOldFiber;
+      }
+      break;
+    }
+    // 如果是处于更新流程，找到与新节点对应的老 fiber
+    // 但是如果不能复用，即 alternate === null ，那么会删除老 fiber 。
+    if (shouldTrackSideEffects) {
+      if (oldFiber && newFiber.alternate === null) {
+        deleteChild(returnFiber, oldFiber);
+      }
+    }
+    // lastPlacedIndex表示为最后停下来的在oldFiber中的位置
+    lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+    // previousNewFiber表示newFiber中最后一个能复用的newFiber，也就是lastPlacedIndex的前一个
+    if (previousNewFiber === null) {
+      resultingFirstChild = newFiber;
+    } else {
+      previousNewFiber.sibling = newFiber;
+    }
+    previousNewFiber = newFiber;
+    oldFiber = nextOldFiber;
+  }
+
+  // 当第一次循环结束时有两种情况：
+  // 1. newFiber遍历完，但oldFiber !== null：oldFiber多余，删除多余的oldFiber（下面第一个if）
+  // 2. oldFiber === null，newFiber没遍历完：oldFiber不足，直接创建新的newFiber（下面第二个if）
+  // 3. newFiber遍历完，并且oldFiber也遍历完：这时不多不少，说明是发生了移动或者更复杂的情况，进入下一次循环（下面的for）
+
+  // 走到这里说明newFiber遍历完
+  // 如果进入下面的if说明所有newFiber都被遍历完，但oldFiber还有，那么剩下没有遍历 oldFiber 也就没有用了，
+  // 调用 deleteRemainingChildren 统一删除多余的 oldFiber 。
+  if (newIdx === newChildren.length) {
+    deleteRemainingChildren(returnFiber, oldFiber);
+    return resultingFirstChild;
+  }
+
+  // 当经历过第一步，oldFiber 为 null ， 证明 oldFiber 复用完毕
+  // 如果还有新的 children ，说明都是新的元素，只需要调用 createChild 创建新的 fiber 。
+  if (oldFiber === null) {
+    for (; newIdx < newChildren.length; newIdx++) {
+      const newFiber = createChild(returnFiber, newChildren[newIdx], lanes);
+      if (newFiber === null) {
+        continue;
+      }
+      lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+      if (previousNewFiber === null) {
+        resultingFirstChild = newFiber;
+      } else {
+        previousNewFiber.sibling = newFiber;
+      }
+      previousNewFiber = newFiber;
+    }
+    return resultingFirstChild;
+  }
+
+  // 如果走到这里，说明节点发生移动，或者是移动+删除+增加等多种复杂情况，而不只是单纯的增加或删除
+  // existingChildren里存放剩余的老的 fiber 和对应的 key (或 index )的映射关系。
+  const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
+
+  for (; newIdx < newChildren.length; newIdx++) {
+    // 判断 existingChildren 中有没有可以复用 oldFiber
+    // 如果有，那么复用，如果没有，新创建一个 newFiber 。
+    const newFiber = updateFromMap(
+      existingChildren,
+      returnFiber,
+      newIdx,
+      newChildren[newIdx],
+      lanes
+    );
+    if (newFiber !== null) {
+      if (shouldTrackSideEffects) {
+        if (newFiber.alternate !== null) {
+          // 复用的 oldFiber 会从 existingChildren 删掉
+          existingChildren.delete(
+            newFiber.key === null ? newIdx : newFiber.key
+          );
+        }
+      }
+      lastPlacedIndex = placeChild(newFiber, lastPlacedIndex, newIdx);
+      if (previousNewFiber === null) {
+        resultingFirstChild = newFiber;
+      } else {
+        previousNewFiber.sibling = newFiber;
+      }
+      previousNewFiber = newFiber;
+    }
+  }
+  // 删除剩余没有复用的oldFiber
+  if (shouldTrackSideEffects) {
+    existingChildren.forEach((child) => deleteChild(returnFiber, child));
+  }
+  // 这一步执行完成后，newFiber要么是在第一次遍历中就复用，要么是在第二次遍历中复用，或者在第二次遍历中被创建；总之newFiber一定是完成构建了的。
+  // oldFiber要么在第一次遍历被直接复用，要么在第二次遍历被从map中找出并删掉，要么在上面作为多余的被删掉；总之oldFiber一定没有多余的。
+
+  if (getIsHydrating()) {
+    const numberOfForks = newIdx;
+    pushTreeFork(returnFiber, numberOfForks);
+  }
+  return resultingFirstChild;
+}
+```
+
+基本流程已经写在注释里了。
+除此之外还有注意点：
+
+- 第一次遍历判断能不能复用的 updateSlot 函数，其实是比较新老 fiber 的 key。(就只是 key，没有其他别的属性)。因此 React 判断能不能复用的首要属性就是 key
+
+## 单节点 Diff
+
+单节点 diff 针对的是在更新后只有一个节点的 fiber，即并非是数组类型的。
+
+确定 dom 节点是否可以复用需要经过几个步骤：
+
+首先：比较 key
+
+- key 不同则直接将该 fiber 标记为删除
+
+这点很好理解。如果 key 不相同，那就完全不能复用，直接将 current fiber 标记为删除就可以了
+
+key 相同会比较 type，即节点类型（tag）
+
+- type 相同则可复用，同时也会删除被复用的 currentfiber 的所有兄弟节点
+
+之所以删除兄弟节点，其实出于这样的考虑：
+比如更新前的节点数量有三个，更新后只有一个：
+
+```ts
+<ul>
+  <li key='1'></li>
+  <li key='2'></li>
+  <li key='3'></li>
+</ul>
+
+<ul>
+  <li key='1'></li>
+</ul>
+```
+
+更新后由于只有一个节点，因此会进入单节点 diff。但显然此时只能复用一个，多余的就应该删除。
+
+- type 不同则将该 fiber 及其兄弟 fiber 标记为删除。因为 key 相同的那一个已经不能复用，它的兄弟自然也就没什么可以复用的必要了
+
+## 多节点 diff
+
+主要是针对列表渲染，比如
+
+```js
+function List() {
+  return (
+    <ul>
+      <li key="0">0</li>
+      <li key="1">1</li>
+      <li key="2">2</li>
+      <li key="3">3</li>
+    </ul>
+  );
+}
+```
+
+他的返回值 JSX 对象的 children 属性不是单一节点，而是包含四个对象的数组
+这时会对节点进行两轮遍历
+
+- 第一轮遍历：处理更新的节点，更新包括增删以及属性变化；
+- 第二轮遍历：处理剩下的不属于更新的节点，即移动节点。
+
+### 第一轮遍历
+
+1. 遍历`children[i]`，分别和 `oldFiber` 对应节点比较，比较方式等同单节点的比较；
+
+- 可复用，则 i++，继续下一个
+- 不可复用：
+  - key 不同导致不可复用，立即跳出整个遍历，第一轮遍历结束。
+  - key 相同 type 不同导致不可复用，会将 `oldFiber` 标记为 `DELETION`，并继续遍历
+
+2. 第一轮遍历的结果会有 4 种：
+
+- `newChildren` 与 `oldFiber` 同时遍历完：直接结束，只需要在第一轮更新即可
+
+```js
+//oldFiber
+<li key="0">0</li>
+<li key="1">1</li>
+<li key="2">2</li>
+<li key="3">3</li>
+//newChildren
+<li key="0">4</li>
+<li key="1">5</li>
+<li key="2">6</li>
+<li key="3">7</li>
+```
+
+- `newChildren` 没遍历完，`oldFiber` 遍历完：已有的 DOM 节点都复用了，这时还有新加入的节点，只需要遍历剩下的 `newChildren` 为生成的 `workInProgress fiber` 依次标记 `Placement`。
+
+```js
+//oldFiber
+<li key="0">0</li>
+<li key="1">1</li>
+<li key="2">2</li>
+<li key="3">3</li>
+//newChildren
+<li key="0">4</li>
+<li key="1">5</li>
+<li key="2">6</li>
+<li key="3">7</li>
+<li key="4">8</li>//新节点，创建新的fiber
+```
+
+- `newChildren` 遍历完，`oldFiber` 没遍历完：节点数量少，有节点被删除了。所以需要遍历剩下的 `oldFiber`，依次标记 `Deletion`
+
+```js
+//oldFiber
+<li key="0">0</li>
+<li key="1">1</li>
+<li key="2">2</li>
+<li key="3">3</li>
+//newChildren
+<li key="0">4</li>
+<li key="1">5</li>
+<li key="2">6</li>
+```
+
+- `newChildren` 与 `oldFiber` 都没遍历完
+
+```js
+//oldFiber
+<li key="0">0</li>
+<li key="1">1</li>
+<li key="2">2</li>
+<li key="3">3</li>
+//newChildren
+<li key="0">4</li>
+<li key="2">5</li>//这里发现和oldFiber的key不对应，不可复用，这时两者都没遍历完
+<li key="1">6</li>
+```
+
+对于第四种情况还有额外的处理：
+
+### 第二轮遍历
+
+> 关于第二轮的操作，我发现了一个不太一样的版本。
+>
+> 因为进入第二次遍历就一定是有移动的，可能只是移动，也可能是移动、更新、删除等多种情况的复合。但不管什么样，都是利用 map；
+>
+> 这时的操作就是用一个 map 记录 oldFiber 中的节点，然后用 newChild 里剩下的元素和 map 中的一一对应。
+>
+> - 如果 map 中有就复用（无所谓顺序），并删掉 map 中的这个元素
+> - 如果 map 中没有就新创建
+>
+> 最后就能正确生成新的 fiber 节点。
+
+第二轮遍历主要处理 key 不同的元素，即有可能产生移动的元素
+
+1. 以最后一个可复用节点在 `oldFiber` 中的位置为 `lastIndex`，在 `newChild` 中第一个不可复用的为 `lasindex+1`
+
+```
+<li key=0> --- <li key=0>
+<li key=1> --- <li key=1>//last index = 1
+<li key=2> --- <li key=3>//last index + 1 = 2
+<li key=3> --- <li key=2>
+```
+
+2. 选出 `newChildren` 在 `lastIndex+1` 的元素，即上次比较终止的下一个，在 `oldFiber` 中找，并取出序号和 `lastIndex` 比较。比如上面的例子，`key=3` 在 `oldFiber` 中找到，index 为 3，规定这个值为 `oldIndex`
+3. 比较 `oldIndex` 和 `lastIndex`
+
+- 如果 `oldIndex` >= `lastIndex` 代表该可复用节点不需要移动，并将 `lastIndex = oldIndex`;上面的例子 `oldindex === 3 > lastindex === 1`，因此 `oldIndex` 中 `key=3` 的元素位置不动（指相对于 old 不动，仍然在最后一个）
+- 如果 `oldIndex` < `lastIndex` 该可复用节点之前插入的位置索引小于这次更新需要插入的位置索引，代表该节点需要向右（后）移动。
+
+所以比较完成后，相当于只是把 `key=2` 的向后移动了一位，完成遍历
+
+这里还有一个更清晰的例子：
+
+```
+// 之前
+abcd
+
+// 之后
+dabc
+
+===第一轮遍历开始===
+d（之后）vs a（之前）
+key改变，不能复用，跳出遍历
+===第一轮遍历结束===
+
+===第二轮遍历开始===
+newChildren === dabc，没用完，不需要执行删除旧节点
+oldFiber === abcd，没用完，不需要执行插入新节点
+
+将剩余oldFiber（abcd）保存为map
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：abcd
+// 当前newChildren dabc
+
+key === d 在 oldFiber中存在
+const oldIndex = d（之前）.index;
+此时 oldIndex === 3; // 之前节点为 abcd，所以d.index === 3
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 3 > lastPlacedIndex 0
+则 lastPlacedIndex = 3;
+d节点位置不变
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：abc
+// 当前newChildren abc
+
+key === a 在 oldFiber中存在
+const oldIndex = a（之前）.index; // 之前节点为 abcd，所以a.index === 0
+此时 oldIndex === 0;
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 0 < lastPlacedIndex 3
+则 a节点需要向右移动
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：bc
+// 当前newChildren bc
+
+key === b 在 oldFiber中存在
+const oldIndex = b（之前）.index; // 之前节点为 abcd，所以b.index === 1
+此时 oldIndex === 1;
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 1 < lastPlacedIndex 3
+则 b节点需要向右移动
+
+继续遍历剩余newChildren
+
+// 当前oldFiber：c
+// 当前newChildren c
+
+key === c 在 oldFiber中存在
+const oldIndex = c（之前）.index; // 之前节点为 abcd，所以c.index === 2
+此时 oldIndex === 2;
+比较 oldIndex 与 lastPlacedIndex;
+oldIndex 2 < lastPlacedIndex 3
+则 c节点需要向右移动
+
+===第二轮遍历结束===
+```
+
+## diff 和 index key
+
+经过上面的解释可以得知，diff 算法依赖显式的 key 判断哪些元素发生什么样的更改。
+如果 key 使用不规范（通常出现于用 index 代替 key），则会导致 diff 算法无法判断具体是哪个元素的变化，可能会导致需要重新渲染整个列表（完全不复用），甚至导致列表渲染错误。
+
+比如这样一组元素：
+
+```html
+<ul>
+  <li>a</li>
+  <!-- key==0 -->
+  <li>b</li>
+  <!-- key==1 -->
+  <li>c</li>
+  <!-- key==2 -->
+  <li>d</li>
+  <!-- key==3 -->
+  <li>e</li>
+  <!-- key==4 -->
+</ul>
+```
+
+如果使用 index 作为 key，当删除第一个元素时会变成这样：
+
+```html
+<ul>
+  <li>b</li>
+  <!-- key==0 -->
+  <li>c</li>
+  <!-- key==1 -->
+  <li>d</li>
+  <!-- key==2 -->
+  <li>e</li>
+  <!-- key==3 -->
+</ul>
+```
+
+这个时候，**每个 li 元素的 key 都改变了**，相当于 React 判断所有元素都不能复用，直接重新渲染。
+
+另外一种情况，如果因为某些 bug 导致每个 key 都一样，那么删除一个元素时会导致 React 不清楚是哪一个元素具体被删除，也可能导致完全重新渲染，或者删除错误的元素。
 
 # React 调度
 
@@ -4091,6 +3263,11 @@ requestHostCallback = function (callback) {
   }
 };
 ```
+
+如果一个任务执行期间时间片完，那么react就会终止任务执行，转而去交还线程给浏览器渲染线程。这个过程体现在schduler阶段的shouldYield函数中断taskQueue循环执行（下面会讲到）；如果中断时taskQueue中还有任务，那就会再通过MessageChannel注册一个宏任务去执行剩下的taskQueue任务。
+从这个角度来说，就相当于是js代码和浏览器渲染相互协作，js代码被拆成多段，一旦时间片完就交出线程控制权，否则会持续执行。两者关系类似下图：
+![](https://pic.imgdb.cn/item/63ee7075f144a010074e492a.jpg)
+
 
 ## 异步调度
 
@@ -4227,7 +3404,6 @@ export function scheduleUpdateOnFiber(root, fiber, lane, eventTime) {
 
 1. unbatch 情况，即非批量更新，上面说过只有初次更新才会是这种情况，因此会直接进入 workLoop，即调和阶段，接下来就是 render/commit 等流程了
 2. batch 情况，即会触发批量更新的任务，基本上都是事件内部的 setState。这时会调用 ensureRootIsScheduled 进行调度，接下来进入调度流程。
-
 
 ## 调度流程
 
@@ -5590,6 +4766,694 @@ function updateCallback<T>(callback: T, deps: Array<mixed> | void | null): T {
 }
 ```
 
+# React Concurrent
+
+Concurrent 有几个方面：
+
+1. createRoot。在旧的 React 版本中没有专门的 RootFiber 这个概念，在 Concurrent 模式下，React 组件树需要先通过调用 createRoot 创建一个 root，再去调用 render 做实际的渲染。可以参考`https://bytedance.feishu.cn/wiki/wikcnl5V0pWZDtLC6ljFpDWlj93`，这里讲了 React 的运行流程
+
+2. 调度，ensureRootIsScheduled 里的机制
+
+- callback 和 cancelCallback 机制
+- markStarvedLanesAsExpired 和 didTimeout 饥饿问题
+- getNextLanes
+
+3. 调和
+
+- performConcurrentWorkOnRoot
+- workLoopConcurrent，可中断
+- shouldTimeSlice 的判断机制
+
+4. lane
+
+- getNextLanes 和 markStarvedLanesAsExpired
+- pendingLanes 机制和修改
+- lane 过期机制
+
+## 从调度角度看
+
+从调度角度看，其实是 ensureRootIsScheduled 函数内的情况。下面将会频繁引用该函数内的片段。
+
+### 理清调度逻辑
+
+调度这一块的逻辑非常复杂，为了方便理清逻辑，这里采用书上的一个模拟实现。
+我们设置两个主要函数，Schedule 函数用于代表 ensureRootIsScheduled，perform 函数用于代表 performSyncWorkOnRoot，scheduleCallback 就采用原版的函数，代码如下：
+
+接下来是一些设定：
+
+- 每个 work 对象有一个优先级，模拟更新任务的优先级机制；
+- Schedule 函数的主要流程是：
+  1. 获取当前正在调度的任务的 callback，这个下面讲 callback 机制会讲到
+  2. 通过对 workList 排序，取出最高优先级的任务
+  3. 比较取出的任务和之前的任务的优先级，如果相同就返回。
+  4. 如果不同执行 cancelCallback 中断之前的任务
+  5. 调用 scheduleCallback 调度当前优先级最高的任务。scheduleCallback 函数会返回创建的 task 对象，即以当前 work 为 callback 的 task，也就是一开始获取的那个
+- perform 函数：接受具体任务和一个 didTimeout
+  1. 先判断是否需要同步执行，满足 1.工作是同步优先级 2.当前调度的任务过期了，需要同步执行
+  2. 通过 while 循环执行任务，这里模拟的是调和里的 workLoopConcurrent 函数
+  3. 如果任务执行完，相当于调和过程完毕了，那就把任务剔除。如果没执行完就先保存任务，然后调用 schedule 函数在进行一次调度
+  4. 对比两次 callback，如果不同说明当前任务被替换了，然后在 workLoop 中就会执行下一个任务。
+- workLoop：这个是调度的，类比源码中的 workLoop 就行
+
+```ts
+btn.onclick = () => {
+  // 插入工作
+  workList.push({
+    priority,
+    count: 100,
+  });
+  schedule();
+};
+
+/**
+ * 调度的逻辑
+ */
+function schedule() {
+  // 当前可能存在正在调度的回调
+  // cbNode就是task对象
+  const cbNode = getFirstCallbackNode();
+  // 取出最高优先级的工作
+  const curWork = workList.sort((w1, w2) => {
+    return w1.priority - w2.priority;
+  })[0];
+
+  if (!curWork) {
+    // 没有工作需要执行，退出调度
+    curCallback = null;
+    cbNode && cancelCallback(cbNode);
+    return;
+  }
+
+  const { priority: curPriority } = curWork;
+
+  if (curPriority === prevPriority) {
+    // 有工作在进行，比较该工作与正在进行的工作的优先级
+    // 如果优先级相同，则不需要调度新的，退出调度
+    return;
+  }
+
+  // 准备调度当前最高优先级的工作
+  // 调度之前，如果有工作在进行，则中断他
+  cbNode && cancelCallback(cbNode);
+
+  // 调度当前最高优先级的工作
+  curCallback = scheduleCallback(curPriority, perform.bind(null, curWork));
+}
+
+// 执行具体的工作
+function perform(work: Work, didTimeout?: boolean): any {
+  // 是否需要同步执行，满足1.工作是同步优先级 2.当前调度的任务过期了，需要同步执行
+  const needSync = work.priority === ImmediatePriority || didTimeout;
+  while ((needSync || !shouldYield()) && work.count) {
+    work.count--;
+    // 执行具体的工作
+    insertItem(work.priority + "");
+  }
+  prevPriority = work.priority;
+
+  if (!work.count) {
+    // 完成的work，从workList中删除
+    const workIndex = workList.indexOf(work);
+    workList.splice(workIndex, 1);
+    // 重置优先级
+    prevPriority = IdlePriority;
+  }
+
+  const prevCallback = curCallback;
+  // 调度完后，如果callback变化，代表这是新的work
+  schedule();
+  const newCallback = curCallback;
+
+  if (newCallback && prevCallback === newCallback) {
+    // callback没变，代表是同一个work，只不过时间切片时间用尽（5ms）
+    // 返回的函数会被Scheduler继续调用
+    return perform.bind(null, work);
+  }
+}
+
+// workLoop简化，留下关键部分
+function workLoop(hasTimeRemaining: boolean, initialTime: number) {
+  currentTask = peek(taskQueue);
+  while (
+    currentTask !== null &&
+    !(enableSchedulerDebugging && isSchedulerPaused)
+  ) {
+    if (
+      currentTask.expirationTime > currentTime &&
+      (!hasTimeRemaining || shouldYieldToHost())
+    ) {
+      break;
+    }
+    const callback = currentTask.callback;
+    if (typeof callback === "function") {
+      currentTask.callback = null;
+      currentPriorityLevel = currentTask.priorityLevel;
+      const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
+
+      const continuationCallback = callback(didUserCallbackTimeout);
+      if (typeof continuationCallback === "function") {
+        currentTask.callback = continuationCallback;
+        return true;
+      } else {
+        if (currentTask === peek(taskQueue)) {
+          pop(taskQueue);
+        }
+      }
+    } else {
+      pop(taskQueue);
+    }
+    currentTask = peek(taskQueue);
+  }
+
+  if (currentTask !== null) {
+    return true;
+  } else {
+    const firstTimer = peek(timerQueue);
+    if (firstTimer !== null) {
+      requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
+    }
+    return false;
+  }
+}
+```
+
+### callback 和 cancelCallback 机制
+
+在前面的调度讲解中，说到过 scheduleCallback 会为传入的 Callback 创建一个 task，同时也会返回这个 task
+
+```ts
+var newTask: Task = {
+  id: taskIdCounter++,
+  callback,
+  priorityLevel,
+  startTime,
+  expirationTime,
+  sortIndex: -1,
+};
+```
+
+这个 task 是 taskQueue、timerQueue 中的值。callback 就是创建时传入的，通常是 performConcurrentWorkOnRoot 或 performSyncWorkOnRoot 这样的调和函数。
+这个 callback 有什么用呢？这里要综合上面的代码来看。
+
+#### callback
+
+先看 curCallback 这个全局变量。它被赋值是执行完 scheduleCallback 之后，即新创建的 task 对象。虽然 scheduleCallback 函数调度的任务是微任务，但是这个函数本身是同步的，也就是说只要执行这个函数就会更新 curcallback。
+那什么时候回执行 scheduleCallback 呢？有两种情况：
+
+- 第一次执行 schedule 函数，也就是第一个任务。此时 curCallback 就是这个任务创建的 task
+- 在已经有一个任务的基础上，来了一个优先级更高的任务。因为优先级相等或更低的任务会被拦截（这个机制参考调度阶段），只有优先级更高、并且不是 Synclane 的任务到来。这时会重新创建 task，然后更新 curCallback
+
+然后再看 perform 函数
+
+```ts
+const prevCallback = curCallback;
+// 调度完后，如果callback变化，代表这是新的work
+schedule();
+const newCallback = curCallback;
+
+if (newCallback && prevCallback === newCallback) {
+  // callback没变，代表是同一个work，只不过时间切片时间用尽（5ms）
+  // 返回的函数会被Scheduler继续调用
+  return perform.bind(null, work);
+}
+```
+
+1. 首先，我们通过一个事件调用 schedule 函数，经过 workList 等，最后调用 scheduleCallback。
+2. scheduleCallback 会返回一个由当前任务创建的 task，然后异步调用 workLoop 去执行 callback
+3. 接下来进入 callback 的流程内，即 perform 函数的上下文。
+4. 这时其他任务到来时，当前任务可能还在循环里，任务被暂时放到 workList，还没有执行 schedule。
+   因为这里循环模拟的是调和的 workLoop，因此退出条件有三个：
+
+- 任务执行完
+- 时间片到时，触发 shouldYield
+- didTimeout 为 true，这个后面再说
+  这里假设是第二种情况，那么显然还需要再调度一次，继续执行未完成的任务。
+  那么当离开循环，走到这里时，先通过 prevCallback 保存一下旧的 curCallback，然后执行 schedule；
+  接下来就会更新 workList、取出任务，这时有两种情况：
+- 新任务优先级小于等于当前任务
+- 新任务优先级高于当前任务
+
+先说第一种，接下来的流程是：
+
+1. 在 schedule 函数内部会被拦截，不会执行 scheduleCallback，因此不会更新 curCallback
+2. 回到 perform 函数，prevCallback 和 newCallback 相等，这时会返回一个 perform.bind(null, work);，就是本函数。
+3. 再回到 workLoop 函数，callback 的返回值赋给了 continuationCallback，然后在下面将 callback 设为这个值
+
+```ts
+if (typeof continuationCallback === "function") {
+  currentTask.callback = continuationCallback;
+  return true;
+}
+```
+
+这也就意味着，callback 不为 null，还会再执行 callback，也就是再执行 perform 函数 4. 回到第三步，直到 work 被执行完。当任务执行完后，会把当前任务清除出 workList，这样下次 schedule 函数就会调用其他 work 了。
+
+可以看到，这里形成了两个循环，一个是 schedule -> scheduleCallback -> workLoop -> perform 这个大循环，一个是 callback -> continuationCallback 这个小循环。
+由于后一种循环的机制，未被高优先级打断任务可以一直执行，直到执行完为止。
+
+#### cancelCallback
+
+还是刚才的流程，如果新来的任务优先级高于当前任务呢？
+
+这时因为优先级更高，不会返回，会继续向下执行，并执行这么一步：
+
+```ts
+cbNode && cancelCallback(cbNode);
+```
+
+cancelCallback 很简单，就是把 cbNode.callback 置空
+
+```ts
+function cancelCallback(task) {
+  task.callback = null;
+}
+```
+
+置空之后，还是进入 scheduleCallback，并更新 curCallback 的值。
+
+再次回到 perform 函数，会发现两次的 callback 不一致了。这时 callback 不会返回任何值，也就意味着在 workLoop 函数中的 continuationCallback 也为 null
+
+```ts
+while (currentTask !== null) {
+  const callback = currentTask.callback;
+  if (typeof callback === "function") {
+    // 再次循环时因为callback为空，也不会在走到这里
+    currentTask.callback = null;
+
+    const continuationCallback = callback(didUserCallbackTimeout);
+    if (typeof continuationCallback === "function") {
+      // 走不通
+      currentTask.callback = continuationCallback;
+      return true;
+    } else {
+      if (currentTask === peek(taskQueue)) {
+        pop(taskQueue);
+      }
+    }
+  } else {
+    // 最后会来到这里
+    pop(taskQueue);
+  }
+  currentTask = peek(taskQueue);
+}
+```
+
+又因为 callback 也被置空了，因此再一次循环不会走到执行 callback 的地方，而是会弹出当前任务。
+这时原本的 callback task 已经被弹出，接下来的 workLoop 将会执行新来的高优先级任务，和上一部分的情况一样。
+
+**因此，cancelCallback 函数，就是取消正在调度的任务的关键。**
+
+另外，callback 被置为 null 并不代表这个任务就完全消失了。commit 阶段的 markRootFinished 不会被调用，被取消任务的 Lanes 仍然存在于 pendingLanes 中，等待下一轮 getNextLanes 调用时安排新任务。
+
+#### 实际情况
+
+在实际代码中其实也是类似这样的，ensureRootIsScheduled：
+workLoop 中的代码就是实际代码。
+
+```ts
+function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
+  const existingCallbackNode = root.callbackNode;
+
+  if (existingCallbackNode != null) {
+    cancelCallback(existingCallbackNode);
+  }
+
+  let newCallbackNode;
+  newCallbackNode = scheduleCallback(
+    schedulerPriorityLevel,
+    performConcurrentWorkOnRoot.bind(null, root)
+  );
+
+  root.callbackNode = newCallbackNode;
+}
+```
+
+### 饥饿问题
+
+所谓饥饿问题是指某些任务由于优先级过低导致一直被阻塞，不能执行的情况。
+饥饿问题的解决有两个方面
+
+- didTimeout
+- 过期 lane
+
+#### didTimeout
+
+还是上面的示例代码，可以看到这里：
+
+```ts
+const needSync = work.priority === ImmediatePriority || didTimeout;
+while ((needSync || !shouldYield()) && work.count) {
+  work.count--;
+  // 执行具体的工作
+  insertItem(work.priority + "");
+}
+```
+
+如果传入的 didTimeout 为 true，就会无视 shouldYield 的阻塞而一直执行直到任务完毕。
+didTimeout 是 workLoop 执行 callback 时传入的，表示的是当前任务的过期与否
+
+```ts
+const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
+const continuationCallback = callback(didUserCallbackTimeout);
+```
+
+当一个任务长时间未执行完，最后 didUserCallbackTimeout 就会为 true，该任务的优先级会被提升为同步；这样在下一次的 callback 中就会同步执行这个过期的 work。
+
+实际上，didTimeout 仅用于传递给 performConcurrentWorkOnRoot，并且也仅用于 timeSlice 的生成，最终决定 render 阶段是否可以被中断。
+
+#### 过期 Lane
+
+这里主要是 markStarvedLanesAsExpired 函数。主要做的事情是：
+
+- 接受一个 fiberroot，取出 root.pendingLanes，对其上每一位都设置一个过期时间
+- 对已经过期的 lane，存在 root.expiredLanes 中
+
+具体的过期时间是一个数组，保存在 root.expirationTimes 上。
+给 lane 设置过期时间的主要意义是，让对应的更新任务也能确定过期时间。即持有某个 lane 的更新任务，过期时间就可以确定了。
+
+```ts
+export function markStarvedLanesAsExpired(
+  root: FiberRoot,
+  currentTime: number
+): void {
+  const pendingLanes = root.pendingLanes;
+  const suspendedLanes = root.suspendedLanes;
+  const pingedLanes = root.pingedLanes;
+  const expirationTimes = root.expirationTimes;
+
+  let lanes = pendingLanes & ~RetryLanes;
+  while (lanes > 0) {
+    // 从第一位有效位开始遍历lane
+    const index = pickArbitraryLaneIndex(lanes);
+    const lane = 1 << index;
+    // 取出这一位之前确定的过期时间
+    const expirationTime = expirationTimes[index];
+    if (expirationTime === NoTimestamp) {
+      // 如果没设置过过期时间
+      if (
+        (lane & suspendedLanes) === NoLanes ||
+        (lane & pingedLanes) !== NoLanes
+      ) {
+        // 计算并设置过期时间，值 = currentTime + timeout，算法和scheduler的一样
+        expirationTimes[index] = computeExpirationTime(lane, currentTime);
+      }
+    } else if (expirationTime <= currentTime) {
+      // 对已经过期的lane，存在root.expiredLanes中
+      root.expiredLanes |= lane;
+    }
+
+    lanes &= ~lane;
+  }
+}
+```
+
+### getNextLanes
+
+这个函数虽然在前面位运算里讲过，但是在 ensureRootIsScheduled 函数内其实是比较的 root.expiredLanes 和 workInProgressRootRenderLanes
+
+```ts
+const nextLanes = getNextLanes(
+  root,
+  root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes
+);
+```
+
+root.expiredLanes 刚刚说过，实际上是所有过期 lanes 的合并。因此 nextLane 相当于是在当前 renderLanes 和过期 Lanes 中选一个优先级高的，作为本次调度任务的优先级。
+通常情况下由于过期 Lanes 优先级会升高，因此会使得优先级选为过期 Lanes，这样这些过期任务就有执行的机会。
+
+### timeSlice
+
+timeSlice 主要是用于控制选择哪种渲染模式的
+
+```ts
+const shouldTimeSlice =
+  !includesBlockingLane(root, lanes) &&
+  !includesExpiredLane(root, lanes) &&
+  (disableSchedulerTimeoutInWorkLoop || !didTimeout);
+let exitStatus = shouldTimeSlice
+  ? renderRootConcurrent(root, lanes)
+  : renderRootSync(root, lanes);
+```
+
+shouldTimeSlice 的判断来源有三个：
+
+- 不包含阻塞的 lane。常见的阻塞的 lane 就是 DefaultLane 和 InputContinuousLane，即第 2、3Lane
+- 不包含过期的 lane。即不能存在于 root.expriedLane
+- didTimeout 不能为 true，即任务不能超时但未执行
+
+```ts
+export function includesBlockingLane(root: FiberRoot, lanes: Lanes): boolean {
+  if (
+    allowConcurrentByDefault &&
+    (root.current.mode & ConcurrentUpdatesByDefaultMode) !== NoMode
+  ) {
+    return false;
+  }
+  const SyncDefaultLanes =
+    InputContinuousHydrationLane |
+    InputContinuousLane |
+    DefaultHydrationLane |
+    DefaultLane;
+  return (lanes & SyncDefaultLanes) !== NoLanes;
+}
+
+export function includesExpiredLane(root: FiberRoot, lanes: Lanes): boolean {
+  // This is a separate check from includesBlockingLane because a lane can
+  // expire after a render has already started.
+  return (lanes & root.expiredLanes) !== NoLanes;
+}
+```
+
+## 从调和角度看
+
+调和方面相对调度来说比较少，主要是那几种 Concurrent 更新。
+
+### render 的中断
+
+在 Concurrent 模式下，render 可以中断，这种机制主要来自于调和的 workLoopConcurrent 函数
+
+具体来说，是这样的关系：
+
+```ts
+newCallbackNode = scheduleCallback(
+  schedulerPriorityLevel,
+  performConcurrentWorkOnRoot.bind(null, root)
+);
+
+function performConcurrentWorkOnRoot(root, didTimeout) {
+  const shouldTimeSlice =
+    !includesBlockingLane(root, lanes) &&
+    !includesExpiredLane(root, lanes) &&
+    (disableSchedulerTimeoutInWorkLoop || !didTimeout);
+  let exitStatus = shouldTimeSlice
+    ? renderRootConcurrent(root, lanes)
+    : renderRootSync(root, lanes);
+}
+
+function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
+  workLoopConcurrent();
+}
+
+function workLoopConcurrent() {
+  while (workInProgress !== null && !shouldYield()) {
+    performUnitOfWork(workInProgress);
+  }
+}
+```
+
+可以看到，关键就在于 workLoopConcurrent 的!shouldYield()判断。这个函数来自于 scheduler，会根据 cpu 占用等情况分析当前任务能不能被继续执行。
+
+Concurrent 模式的选择其实来自于两次选择：
+
+1. performConcurrentWorkOnRoot 的选择，在 ensureRootIsScheduled 函数内部，只有当 nextLanes 的最高优先级不等于 SyncLane 时，才会选择 Concurrent。这也就是说，假如有一个 SyncLane 级别的更新，那么就一定不会选到 Concurrent 模式
+2. renderRootConcurrent 的选择，取决于 shouldTimeSlice 变量。这个机制在上面 timeSlice 讲过。
+
+# React FiberRoot
+
+React 的入口在 React18 被修改
+
+```ts
+ReactDOM.createRoot(...).render(...)
+```
+
+## createRoot
+
+createRoot 函数：
+
+```ts
+export function createRoot(
+  container: Element | DocumentFragment,
+  options?: CreateRootOptions
+): RootType {
+  // ...
+  const root = createContainer(
+    container,
+    ConcurrentRoot,
+    null,
+    isStrictMode,
+    concurrentUpdatesByDefaultOverride,
+    identifierPrefix,
+    onRecoverableError,
+    transitionCallbacks
+  );
+  // ...
+  return new ReactDOMRoot(root);
+}
+```
+
+主要做了两件事
+
+- 调用 createContainer 初始化 FiberTree
+- 返回一个 ReactDomRoot 对象
+
+createContainer 实际调用的是 createFiberRoot
+初始化 FiberTree 的工作包括构建 root 节点和 host root 节点
+
+```ts
+// react-reconciler/src/ReactFiberRoot.js
+export function createFiberRoot(
+    // ...
+): FiberRoot {
+  // 创建root
+  const root: FiberRoot = (new FiberRootNode(
+    containerInfo,
+    tag,
+    hydrate,
+    identifierPrefix,
+    onRecoverableError,
+  ): any);
+  // ...
+  // 创建hostRootFiber
+  const uninitializedFiber = createHostRootFiber(
+    tag,
+    isStrictMode,
+    concurrentUpdatesByDefaultOverride,
+  );
+
+  // 这里将root和host root互相关联
+  root.current = uninitializedFiber;
+  uninitializedFiber.stateNode = root;
+
+  // ...
+  return root;
+}
+```
+
+ReacDOMRoot 会再在外面套一个壳子，然后在 ReactDOMRoot 的 prototype 上安插 render、unmount 等方法
+最后，createRoot 函数返回的就是套壳之后的 ReactDOMRoot
+
+```ts
+function ReactDOMRoot(internalRoot: FiberRoot) {
+  this._internalRoot = internalRoot; // 保存root
+}
+
+ReactDOMHydrationRoot.prototype.render = ReactDOMRoot.prototype.render =
+  function (children: ReactNodeList): void {
+    // 省略
+  };
+
+// unmount的实现
+ReactDOMHydrationRoot.prototype.unmount = ReactDOMRoot.prototype.unmount =
+  function (): void {
+    // 省略
+  };
+```
+
+## render
+
+render 的核心逻辑在其调用的 updateContainer 方法中，做的事情可以大致分为三个部分，每个部分对应一个方法，从语意上来理解，这三个步骤是一次连贯的行为， 创建 update 对象->把 update 对象加入循环链表->根据 update 对象来更新 Fiber
+
+```ts
+ReactDOMRoot.prototype.render = function (children: ReactNodeList): void {
+  const root = this._internalRoot;
+  const container = root.containerInfo;
+  if (
+    !enableFloat &&
+    !enableHostSingletons &&
+    container.nodeType !== COMMENT_NODE
+  ) {
+    const hostInstance = findHostInstanceWithNoPortals(root.current);
+  }
+
+  updateContainer(children, root, null, null);
+};
+```
+
+updateContainer 主要调用了 createUpdate 和 enqueueUpdate 创建并插入更新；然后在 FiberRoot 上通过 scheduleUpdateOnFiber 调度一次更新。
+所以实际上，整个 React 组件树的第一次挂载也是一次更新，只是这时的 current 为 null
+
+![](https://pic.imgdb.cn/item/63aba26308b6830163e39d06.jpg)
+
+```ts
+export function updateContainer(
+  element: ReactNodeList,
+  container: OpaqueRoot,
+  parentComponent: ?React$Component<any, any>,
+  callback: ?Function
+): Lane {
+  const current = container.current;
+  const eventTime = requestEventTime();
+  const lane = requestUpdateLane(current);
+
+  const update = createUpdate(eventTime, lane);
+  update.payload = { element };
+
+  callback = callback === undefined ? null : callback;
+  if (callback !== null) {
+    update.callback = callback;
+  }
+
+  const root = enqueueUpdate(current, update, lane);
+  if (root !== null) {
+    scheduleUpdateOnFiber(root, current, lane, eventTime);
+    entangleTransitions(root, current, lane);
+  }
+
+  return lane;
+}
+```
+
+createUpdate 创建了一个 update 对象
+
+```ts
+export function createUpdate(eventTime: number, lane: Lane): Update<*> {
+  const update: Update<*> = {
+    eventTime,
+    lane,
+
+    tag: UpdateState,
+    payload: null,
+    callback: null,
+
+    next: null,
+  };
+  return update;
+}
+```
+
+enqueueUpdate 将 update 对象加入到当前 Fiber 节点的更新链表中，即加入到 updateQueue 中。
+这里的和调用 dispatch 加入 update 对象的方法一致
+
+```ts
+export function enqueueUpdate<State>(
+  fiber: Fiber,
+  update: Update<State>,
+  lane: Lane
+) {
+  const updateQueue = fiber.updateQueue;
+  //...
+  const pending = sharedQueue.pending;
+  if (pending === null) {
+    update.next = update;
+  } else {
+    update.next = pending.next;
+    pending.next = update;
+  }
+  sharedQueue.pending = update;
+  // ...
+}
+```
+
 # React18 Transition
 
 > 在大屏幕视图更新的时，startTransition 能够保持页面有响应，这个 api 能够把 React 更新标记成一个特殊的更新类型 transitions ，在这种特殊的更新下，React 能够保持视觉反馈和浏览器的正常响应。
@@ -6518,698 +6382,844 @@ newCallbackNode = scheduleCallback(
 
 ### 解决饥饿问题 - markStarvedLanesAsExpired
 
-# React Concurrent
+# 生命周期
 
-Concurrent 有几个方面： 
+官方文档的周期描述：
+![](https://pic.imgdb.cn/item/6243fc8427f86abb2ab38f97.jpg)
 
-1. createRoot。在旧的React版本中没有专门的RootFiber这个概念，在Concurrent模式下，React组件树需要先通过调用createRoot创建一个root，再去调用render做实际的渲染。可以参考`https://bytedance.feishu.cn/wiki/wikcnl5V0pWZDtLC6ljFpDWlj93`，这里讲了React的运行流程
+> 图链接：https://projects.wojtekmaj.pl/react-lifecycle-methods-diagram/
 
-2. 调度，ensureRootIsScheduled 里的机制
+老版生命周期：
+![](https://pic.imgdb.cn/item/62485ffd27f86abb2a69b3d7.jpg)
 
-- callback 和 cancelCallback 机制
-- markStarvedLanesAsExpired 和 didTimeout 饥饿问题
-- getNextLanes
+## 生命周期的执行函数
 
-3. 调和
+如果在一次调和（render，严格来说是 beginWork）的过程中，发现了一个 fiber tag 为类组件的情况，就会按照类组件的逻辑来处理。该处理的基本代码如下：
 
-- performConcurrentWorkOnRoot
-- workLoopConcurrent，可中断
-- shouldTimeSlice 的判断机制
+这里两个关键的函数是`mountClassInstance`和`updateClassInstance`。前者是挂载类组件时的步骤，后者是更新时的。在两个函数内部，将会分别按照顺序执行类组件中定义的生命周期函数。
 
-4. lane
+```js
+function updateClassComponent() {
+  let shouldUpdate;
+  const instance = workInProgress.stateNode; // stateNode 是 fiber 指向 类组件实例的指针。
+  if (instance === null) {
+    // instance 为组件实例,如果组件实例不存在，证明该类组件没有被挂载过，那么会走初始化流程
+    constructClassInstance(workInProgress, Component, nextProps); // 组件实例将在这个方法中被new。
+    mountClassInstance(/*...*/); //初始化挂载组件流程
+    shouldUpdate = true; // shouldUpdate 标识用来证明 组件是否需要更新。
+  } else {
+    shouldUpdate = updateClassInstance(/*...*/); // 更新组件流程
+  }
+  if (shouldUpdate) {
+    nextChildren = instance.render(); /* 执行render函数 ，得到子节点 */
+    reconcileChildren(/*...*/); /* 继续调和子节点 */
+  }
+}
+```
 
-- getNextLanes 和 markStarvedLanesAsExpired
-- pendingLanes 机制和修改
-- lane 过期机制
+类组件实例和类组件 fiber 之间存在对应关系，具体来说是这样：
+![](https://pic.imgdb.cn/item/63a30459b1fccdcd362baef4.jpg)
+fiber.stateNode 属性在 fiber tag 为类组件时表示其对应的类组件实例
 
-## 从调度角度看
+### 生命周期的执行（源码）
 
-从调度角度看，其实是 ensureRootIsScheduled 函数内的情况。下面将会频繁引用该函数内的片段。
+生命周期本质上就是挂载在组件实例或组件类本身上的函数；因此执行生命周期的过程，其实本质上也就是取出这些函数并执行。
+以 mountClassInstance 为例，代码简化如下：
 
-### 理清调度逻辑
+```js
+// 组件挂载过程才会执行的函数
+// 即getDerivedStateFromProps/componentWillMount/componentDidMount三个生命周期
+function mountClassInstance(
+  workInProgress: Fiber,
+  ctor: any,
+  newProps: any,
+  renderLanes: Lanes
+): void {
+  const instance = workInProgress.stateNode; // 获取类组件实例，从上面取到生命周期函数
+  instance.props = newProps; // 设置类组件的一些属性
+  // 由于更新state实际上是改变fiber上的memoizedState，因此还需要设置一下instance上的state，才能保证在类组件中this.state是最新的
+  instance.state = workInProgress.memoizedState;
+  instance.refs = {};
 
-调度这一块的逻辑非常复杂，为了方便理清逻辑，这里采用书上的一个模拟实现。
-我们设置两个主要函数，Schedule 函数用于代表 ensureRootIsScheduled，perform 函数用于代表 performSyncWorkOnRoot，scheduleCallback 就采用原版的函数，代码如下：
+  initializeUpdateQueue(workInProgress);
 
-接下来是一些设定：
+  // getDerivedStateFromProps是static方法，要单独处理
+  const getDerivedStateFromProps = ctor.getDerivedStateFromProps;
+  if (typeof getDerivedStateFromProps === "function") {
+    // 这个函数就是执行getDerivedStateFromProps的
+    applyDerivedStateFromProps(
+      workInProgress,
+      ctor,
+      getDerivedStateFromProps,
+      newProps
+    );
+    instance.state = workInProgress.memoizedState;
+  }
 
-- 每个 work 对象有一个优先级，模拟更新任务的优先级机制；
-- Schedule 函数的主要流程是：
-  1. 获取当前正在调度的任务的 callback，这个下面讲 callback 机制会讲到
-  2. 通过对 workList 排序，取出最高优先级的任务
-  3. 比较取出的任务和之前的任务的优先级，如果相同就返回。
-  4. 如果不同执行 cancelCallback 中断之前的任务
-  5. 调用 scheduleCallback 调度当前优先级最高的任务。scheduleCallback 函数会返回创建的 task 对象，即以当前 work 为 callback 的 task，也就是一开始获取的那个
-- perform 函数：接受具体任务和一个 didTimeout
-  1. 先判断是否需要同步执行，满足 1.工作是同步优先级 2.当前调度的任务过期了，需要同步执行
-  2. 通过 while 循环执行任务，这里模拟的是调和里的 workLoopConcurrent 函数
-  3. 如果任务执行完，相当于调和过程完毕了，那就把任务剔除。如果没执行完就先保存任务，然后调用 schedule 函数在进行一次调度
-  4. 对比两次 callback，如果不同说明当前任务被替换了，然后在 workLoop 中就会执行下一个任务。
-- workLoop：这个是调度的，类比源码中的 workLoop 就行
+  // 没有getDerivedStateFromProps和getSnapshotBeforeUpdate时，才会执行componentWillMount生命周期
+  if (
+    typeof ctor.getDerivedStateFromProps !== "function" &&
+    typeof instance.getSnapshotBeforeUpdate !== "function" &&
+    (typeof instance.UNSAFE_componentWillMount === "function" ||
+      typeof instance.componentWillMount === "function")
+  ) {
+    callComponentWillMount(workInProgress, instance);
+    processUpdateQueue(workInProgress, newProps, instance, renderLanes);
+    instance.state = workInProgress.memoizedState;
+  }
+  // 设置componentDidMount，但还未执行
+  if (typeof instance.componentDidMount === "function") {
+    let fiberFlags: Flags = Update | LayoutStatic;
+    workInProgress.flags |= fiberFlags;
+  }
+}
+```
 
-```ts
-btn.onclick = () => {
-  // 插入工作
-  workList.push({
-    priority,
-    count: 100,
+componentDidMount 的执行时机是 commit 阶段，但现在是 render 阶段，暂时还未执行；一旦到达 commit 阶段，就会执行
+
+```js
+function commitLifeCycles(finishedRoot,current,finishedWork){
+    switch (finishedWork.tag){
+     case ClassComponent: {
+       const instance = finishedWork.stateNode
+       if(current === null){                          /* 类组件第一次调和渲染 */
+         instance.componentDidMount()
+       }else{                                         /* 类组件更新 */
+         instance.componentDidUpdate(prevProps,prevState，instance.__reactInternalSnapshotBeforeUpdate);
+       }
+     }
+    }
+}
+```
+
+全过程如下（挂载阶段）：
+![](https://pic.imgdb.cn/item/63a30df8b1fccdcd3640cfa2.jpg)
+这里的 constructor 和 render 并不是显式的生命周期。
+
+- constructor 实际上是在组件那章说过的执行类组件、绑定 props 和 updater 的`constructClassInstance`；
+- render 就是渲染过程，也就是上面`updateClassComponent`函数的`nextChildren = instance.render()`这个地方。显然这里是在执行完上面几个生命周期之后的。
+
+---
+
+更新阶段的生命周期执行是在 updateClassInstance 里的。执行过程类似，不过有几个特殊的生命周期：
+
+- getSnapshotBeforeUpdate：执行也是在 commit 阶段，但具体来说是在 before Mutation(DOM 修改前)阶段，代码大概是这样：
+
+```js
+function commitBeforeMutationLifeCycles(current, finishedWork) {
+  switch (finishedWork.tag) {
+    case ClassComponent: {
+      const snapshot = instance.getSnapshotBeforeUpdate(
+        prevProps,
+        prevState
+      ); /* 执行生命周期 getSnapshotBeforeUpdate   */
+      instance.__reactInternalSnapshotBeforeUpdate =
+        snapshot; /* 返回值将作为 __reactInternalSnapshotBeforeUpdate 传递给 componentDidUpdate 生命周期  */
+    }
+  }
+}
+```
+
+## 生命周期概览
+
+挂载：
+
+1. constructor: 实例化组件，初始化 props 和 state
+2. getDerivedStateFromProps: 静态方法，获取上一次的 props，返回值和本次的 state 合并
+3. render: 通过 React.createElement 创建、解析元素，把元素变成 fiber 并进行以后的步骤
+4. componentDidMount: 组件已经挂载，dom 渲染完毕
+
+更新：
+
+1. getDerivedStateFromProps
+2. shouldComponentUpdate: 传入当前 props 和 state，返回值为 false 则跳过本次更新
+3. render
+4. getSnapshotBeforeUpdate: 获取更新前的最后一次快照，记录更新前的 state 和 props
+5. componentDidUpdate: 更新完毕
+
+卸载：
+
+1. componentWillUnmount: 即将卸载前调用
+
+### 初始化阶段
+
+#### constructor
+
+即`constructor` 的执行，实例化 React 组件。进行 state 、props 的初始化，在这个阶段修改 state，不会执行更新阶段的生命周期，可以直接对 state 赋值。
+
+在 React 组件挂载之前，会调用它的构造函数。**在为 `React.Component` 子类实现构造函数时，应在其他语句之前调用 `super(props)`**
+
+原因是绑定 `props` 是在父类 `Component` 构造函数中，执行 `super` 等于执行 `Component` 函数，此时 `props` 没有作为第一个参数传给 `super()` ，在 `Component` 中就会找不到 `props` 参数，从而变成 `undefined` ，在接下来 `constructor` 代码中打印 `props` 为 `undefined` 。
+
+`Component` 函数大概是这样：
+
+```js
+function Component(props, context, updater) {
+  this.props = props; //绑定props
+  this.context = context; //绑定context
+  this.refs = emptyObject; //绑定ref
+  this.updater = updater || ReactNoopUpdateQueue; // updater 对象
+}
+/* 绑定setState 方法 */
+Component.prototype.setState = function (partialState, callback) {
+  this.updater.enqueueSetState(this, partialState, callback, "setState");
+};
+/* 绑定forceupdate 方法 */
+Component.prototype.forceUpdate = function (callback) {
+  this.updater.enqueueForceUpdate(this, callback, "forceUpdate");
+};
+```
+
+> 通常，在 React 中，构造函数仅用于以下两种情况：
+>
+> - 通过给 this.state 赋值对象来初始化内部 state。
+> - 为事件处理函数绑定 this
+
+### 挂载阶段
+
+#### 1. `getDerivedStateFromProps`
+
+是第二个执行的生命周期，每次渲染前都会触发，是类上的静态方法，不能访问到类实例；
+参数是当前 props 和上一次的 state，返回值将和之前的 state 合并，作为新的 state；如果返回 null 就不更新。
+
+作用：
+
+- 代替 `componentWillMount` 和 `componentWillReceiveProps`
+- 组件初始化或者更新时，将 props 映射到 state。
+- 返回值与 state 合并完，可以作为 `shouldComponentUpdate` 第二个参数 `newState` ，可以判断是否渲染组件。
+
+使用示例：
+
+```js
+static getDerivedStateFromProps(newProps){
+  /*接受 props 变化,返回值将作为新的 state,用于渲染或传递给shouldComponentUpdate */
+    const { type } = newProps
+    switch(type){
+        case 'fruit' :
+        return { list:['苹果','香蕉','葡萄' ] }
+        case 'vegetables':
+        return { list:['菠菜','西红柿','土豆']}
+    }
+}
+```
+
+#### 2. `render`
+
+render 函数是 jsx 的各个元素被 `React.createElement`创建成 React element 对象的形式。一次 render 的过程，就是创建 `React.element` 元素的过程。
+
+当 render 被调用时，它会检查 `this.props` 和 `this.state` 的变化并返回值，这个值大多数情况下是 jsx，当然也可以是其他允许的类型，比如单独返回一个字符串。
+
+`render()` 函数应该为纯函数，这意味着在不修改组件 state 的情况下，每次调用时都返回相同的结果，并且它不会直接与浏览器交互。因此不能在 render 中执行有副作用的操作，应该放在`componentDidMount`或其他中。
+因此可以在 render 里面做一些诸如`createElement`创建元素 , `cloneElement` 克隆元素 ，`React.children` 遍历 children 的操作等
+
+> `render`并不一定执行，如果`shouldComponentUpdate()` 返回 false 就不会执行。但是对于初次挂载来说，是唯一一个一定要执行、不可缺少的生命周期。
+
+#### 3. `componentDidMount`
+
+发生在 render 函数之后，已经挂载 DOM 之后立即调用。
+它的调用发生在`commit`阶段，即在 React 调和完所有的 fiber 节点之后，就会到 commit 阶段，调用 `componentDidMount` 生命周期。
+
+作用：
+
+- 因为此时已经挂载 dom 了，因此可以做一些关于 DOM 操作，比如基于 DOM 的事件监听器。
+- 对于初始化向服务器请求数据，渲染视图等
+
+### 更新阶段
+
+老版本 React 更新会分为 props 更新和 state 更新两种情况，执行的方法会有不同。
+
+props 更新：
+
+1. `componentWillReceiveProps(nextProps,nextState)`
+2. `shouldComponentUpdate(nextProps,nextState)`
+3. `componentWillUpdate(nextProps,nextState)`
+4. `render`
+5. `componentDidUpdate(prevProps, prevState)`
+
+state 更新：
+
+1. `shouldComponentUpdate(nextProps,nextState)`
+2. `componentWillUpdate(nextProps,nextState)`
+3. `render`
+4. `componentDidUpdate(prevProps, prevState)`
+
+后面去掉了`componentWillUpdate`等三个生命周期后，两者的执行流程已经没有区别，都是：
+
+1. `static getDerivedStateFromProps`
+2. `shouldComponentUpdate`
+3. `render`
+4. `getSnapshotBeforeUpdate`
+5. `componentDidUpdate`
+
+#### 1. `UNSAFE_componentWillReceiveProps`
+
+该生命周期的特点：
+
+1. 即使 props 没变，该生命周期也会执行。
+2. pureComponent 并不能在 props 不变的情况下阻止该生命周期执行。纯组件是在 componentWillReceiveProps 执行之后浅比较 props 是否发生变化
+3. 可以在内部通过异步的方式更改 state。具体来说就是相当于 componentDidUpdate 中异步请求并修改 state 的方式，但是会带来两次子组件的更新，这也是不建议使用的原因之一
+
+该生命周期执行驱动是因为父组件更新带来的 props 修改，但是只要父组件触发 render 函数，调用 React.createElement 方法，那么 props 就会被重新创建，生命周期 componentWillReceiveProps 就会执行了。
+
+这里会首先判断 `getDerivedStateFromProps` 生命周期是否存在，如果不存在就执行`componentWillReceiveProps`生命周期。传入该生命周期两个参数，分别是 `newProps` 和 `nextContext` 。
+
+#### 2. `getDerivedStateFromProps`
+
+和在挂载时的主要功能类似；
+一旦出现该函数，就会在两种更新情况下都最先执行并无视`componentWillReceiveProps`。
+
+#### 3. `shouldComponentUpdate`
+
+如果有`getDerivedStateFromProps`，就会在其后紧接执行。
+如果没有，则会在`componentWillReceiveProps`之后紧接执行；
+如果是 state 触发的更新，则会首先执行。
+
+作用：
+
+- 传入新的 props、state 和 context ，返回值决定是否继续执行 render 函数，调和子节点。
+- 一般用于性能优化，对比 state 或 props 决定是否重新渲染。但优化更好的方式是采用`PureComponent`或`React.memo`。
+
+使用示例：
+
+```js
+shouldComponentUpdate(newProps,newState){
+    if(newProps.a !== this.props.a ){ /* props中a属性发生变化 渲染组件 */
+        return true
+    }else if(newState.b !== this.props.b ){ /* state 中b属性发生变化 渲染组件 */
+        return true
+    }else{ /* 否则组件不渲染 */
+        return false
+    }
+}
+```
+
+#### 4. `UNSAFE_componentWillUpdate`
+
+详见下。
+这个方法会紧接着`shouldComponentUpdate`执行，但是如果前者返回 false 就不会执行
+
+#### 5. render
+
+接下来会执行 render 函数，得到最新的 React element 元素。然后继续调和子节点。
+
+#### 6. `getSnapshotBeforeUpdate`
+
+紧接着 render 之后，并在`componentDidUpdate`之前执行。
+执行的时间被称为一个`pre-commit`阶段，即此时仍未 commit，但是已经渲染完毕。
+
+> commit 阶段细分为 `before Mutation`( DOM 修改前)，`Mutation` ( DOM 修改)，`Layout`( DOM 修改后) 三个阶段；`getSnapshotBeforeUpdate` 发生在`before Mutation` 阶段
+
+作用：
+
+- 获取更新前 DOM 的状态，配合`componentDidUpdate` 一起使用，计算形成一个 `snapShot` 传递给 `componentDidUpdate`的第三个参数，用于保存一次更新前的信息。
+
+```js
+getSnapshotBeforeUpdate(prevProps,preState){
+    const style = getComputedStyle(this.node)
+    return { /* 传递更新前的元素位置 */
+        cx:style.cx,
+        cy:style.cy
+    }
+}
+componentDidUpdate(prevProps, prevState, snapshot){
+    /* 获取元素绘制之前的位置 */
+    console.log(snapshot)
+}
+```
+
+#### 7. `componentDidUpdate`
+
+在更新后会被立即调用，位于整个更新步骤的最后一步。首次渲染不会执行此方法。
+
+作用
+
+- 此时 DOM 已经更新，可以直接获取 DOM 最新状态。这个函数里面如果想要使用 setState ，一定要加以限制，否则会引起无限循环。
+- 用于类似`componentDidMount`一样执行副作用。
+- 接受 `getSnapshotBeforeUpdate` 保存的快照信息。
+
+使用示例：
+调用时三个参数：
+
+- `prevProps` 更新之前的 props ；
+- `prevState` 更新之前的 state ；
+- `snapshot` 为 `getSnapshotBeforeUpdate` 返回的快照，可以是更新前的 DOM 信息。
+
+```js
+componentDidUpdate(prevProps, prevState, snapshot){
+    const style = getComputedStyle(this.node)
+    const newPosition = { /* 获取元素最新位置信息 */
+        cx:style.cx,
+        cy:style.cy
+    }
+}
+```
+
+### 卸载阶段
+
+#### `componentWillUnmount`
+
+在组件卸载及销毁之前直接调用，是销毁阶段唯一的生命周期。
+
+作用：
+
+- 执行必要的清理操作，例如，清除 timer，取消网络请求或清除在 `componentDidMount` 中创建的订阅等。
+
+> `componentWillUnmount` 中不应调用 `setState`，因为该组件将永远不会重新渲染。组件实例卸载后，将永远不会再挂载它。
+
+```js
+componentWillUnmount(){
+    clearTimeout(this.timer)  /* 清除延时器 */
+    this.node.removeEventListener('click',this.handerClick) /* 卸载事件监听器 */
+}
+```
+
+### 三个被抛弃的生命周期
+
+#### 1. `UNSAFE_componentWillMount`
+
+> 如果存在 `getDerivedStateFromProps` 和 `getSnapshotBeforeUpdate` 就不会执行生命周期`componentWillMount`。
+
+发生在 render 函数之前，还没有挂载 DOM 的时候。
+
+这个周期被挂上了`UNSAFE_`的前缀，即 React 准备弃用这个生命周期。主要原因是：
+
+1. 功能不必要，即可以用其他声明周期代替。如果想在挂载之前进行一些操作，可以在`getDerivedStateFromProps`或`constructor`中进行，比如想提前网络请求、启动定时器等。
+2. 不稳定，由于发生在 render 之前，很可能因为高优先级任务的出现而打断现有任务导致它们会被执行多次（另外两个`UNSAFE_`被废弃也是有这个原因）
+3. 约束开发者，防止开发者滥用这几个生命周期，导致生命周期内的上下文多次被执行。
+
+比如说，React18 的 Concurrent 模式下，render 阶段可能会被反复执行，或者中断到之后才执行，那么这三个生命周期也就可能会被反复执行，而导致他们没有对应的 componentDidUpdate 这种应该匹配的函数。如果这些生命周期内有副作用，那就会导致更复杂的问题（副作用被反复调用是很恐怖的事情）。
+React18 的 Suspense 也会导致这个问题，由于在新版的 Suspense 中，正在挂起的组件树将会被“丢弃”，然后等到挂起状态结束后才会再次渲染，因此也是会出现重复调用的问题。
+
+> 一起被挂上该标签的一共有三个：
+>
+> - `UNSAFE_componentWillMount`
+> - `UNSAFE_componentWillReceiveProps`
+> - `UNSAFE_componentWillUpdate`
+>   这三个都是在`render`之前进行，废弃原因都类似。
+
+#### 2. `UNSAFE_componentWillReceiveProps`
+
+该生命周期执行是在更新组件阶段，在`render`之前，父组件或 props 发生更新之后调用，并且是收到 props 更新时第一个调用的；挂载阶段不会调用。
+但是实际上只要父元素触发`render`，即有可能还是父元素自己状态更新，都会调用该函数。因此有可能即使 props 没变，该生命周期也会执行。
+
+作用：
+
+- 监听父元素的`render`
+- 关联 props 和 state：如果某个 state 和 props 关系紧密，则会在这里获取到最新的 props，然后进行`setState`操作。
+- 相对于`getDerivedStateFromProps`，这个方法可以访问组件实例，因此可以进行一些异步更新 state 的操作。
+
+> 作用其实也说明了该函数被废弃的原因：可以在没做优化前提下会带来两次子组件的更新，第一次 props 改变，第二次 props 改变再改变 state。两次改变可能会导致闪烁或者其他更多的问题。
+
+使用示例：
+
+```js
+UNSAFE_componentWillReceiveProps(nextProps){
+  const { type } = newProps
+  console.log('父组件render执行')
+  this.setState(...)
+}
+```
+
+#### 3. `UNSAFE_componentWillUpdate`
+
+发生在在`render`之前，`shouldComponentUpdate`确认要更新之后，此时的 DOM 还没有更新。挂载阶段不会调用。
+
+作用：
+
+- 做一些获取 DOM 的操作，如在一次更新中，保存 DOM 之前的信息
+
+```js
+UNSAFE_componentWillUpdate(){
+    const position = this.getPostion(this.node) /* 获取元素节点 node 位置 */
+}
+```
+
+> `getSnapshotBeforeUpdate`可以替代该生命周期。
+
+## 函数组件的生命周期
+
+### useEffect
+
+```js
+useEffect(() => {
+  return destory;
+}, dep);
+```
+
+- 第一个参数 `callback`, 返回的 `destory` ， `destory` 作为下一次`callback`执行之前调用，用于清除上一次 `callback` 产生的副作用。
+- 第二个参数作为依赖项，是一个数组，可以有多个依赖项，依赖项改变，执行上一次`callback` 返回的 `destory` ，和执行新的 `effect` 第一个参数 `callback` 。
+
+对于 useEffect 执行， React 处理逻辑是采用`异步调用` ，对于每一个 `effect` 的 `callback`， React 会像`setTimeout`回调函数一样，放入任务队列，等到主线程任务完成，DOM 更新，js 执行完成，视图绘制完毕，才执行。所以 `effect` 回调函数不会阻塞浏览器绘制视图。
+
+### useLayoutEffect
+
+`useLayoutEffect` 和 `useEffect` 不同的地方是采用了`同步执行`
+
+- `useLayoutEffect` 是在 DOM 绘制之前，这样可以方便修改 DOM ，这样浏览器只会绘制一次，如果修改 DOM 布局放在 `useEffect` ，那 `useEffect` 执行是在浏览器绘制视图之后，接下来又改 DOM ，就可能会导致浏览器再次回流和重绘。而且由于两次绘制，视图上可能会造成闪现突兀的效果。
+- `useLayoutEffect callback` 中代码执行会阻塞浏览器绘制。
+
+> 一句话概括如何选择 `useEffect` 和 `useLayoutEffect` ：修改 DOM ，改变布局就用 `useLayoutEffect` ，其他情况就用 `useEffect` 。
+
+## 特殊的需要注意的生命周期
+
+1. 在 constructor 中，不要把 props 直接赋给 state。这一点在函数组件中也适用
+
+```js
+constructor(props) {
+ super(props);
+ // 不要这样做
+ this.state = { color: props.color };
+}
+
+// 函数组件
+const FC = (props)=> {
+  const [state,setState] = useState(props)
+}
+```
+
+props 本身就是一个“上层的 state”，当 props 更新时组件也会更新，因此最好直接用 props，而不是赋给 state
+
+2. `componentDidMount()` 里直接调用 `setState()`。它将触发额外渲染，但此渲染会发生在浏览器更新屏幕之前。如此保证了即使在 `render()` 两次调用的情况下，用户也不会看到中间状态。
+3. `componentDidUpdate()` 中调用 `setState()`要注意它必须被包裹在一个条件语句里，即给予一个停止条件或限制，否则会导致死循环。
+
+上面两点在`useEffect`中类似；如果没有指明依赖数组，在 useEffect 内部更新 state 就会导致死循环
+
+```js
+useEffect(()=>{
+  setState(...)
+})
+```
+
+`componentDidUpdate()`有三个参数，分别为：上一次的 props、上一次的 state 和`getSnapshotBeforeUpdate()`方法的返回值（不常用）
+
+```js
+componentDidUpdate(prevProps, prevState, snapshot);
+```
+
+因此可以在这个生命周期内部比较本次的 state 和上次的 state，props 也是同理。
+
+4. `componentWillUnmount()` 中不应调用 `setState()`，是无效的，因为组件会被卸载。理论上除非是路由的形式，否则大多数情况下组件一被卸载就不会再挂载。
+
+# React Ref
+
+## ref 执行时机和处理逻辑
+
+如果 ref 是一个函数，就可以看到 ref 的回调会在 ref 更新时执行两次。并且如果是第一次挂载，ref 指向的 dom 元素的值还会是空。
+具体来说，对函数组件来说其实是比较两次的 ref 回调是否相同。
+
+1. 如果 ref 函数跟上一次的 ref 函数不一致（引用比较），那么会在 Mutation 和 Layout 阶段分别调用`commitDetachRef` 和 `commitAttachRef`。观察下面的代码可知，这两个调用都会执行 refCallback，并且第一次参数是 null，第二次是 fiber.stateNode（即真实 dom）
+2. 如果 ref 函数跟上一次的 ref 函数一致，则更新时不会调用 ref 函数
+
+下面这个例子，两个 ref 一个是用 useRef 保存，一个是普通函数。由于普通函数会在更新时被重新声明，因此两次调用的函数都不同，结果就是 anonymous 这里会输出两次，h1Ref 这个函数会执行两次。useCallback 也可以；
+![](https://pic.imgdb.cn/item/639ed32eb1fccdcd365d3009.jpg)
+考虑到这种情况，refCallback 中一定要用判断是否是 null 的部分，始终记得 ref 可能是 null，只有不是 null 才能进行操作。
+
+```js
+export default function App() {
+  const [, forceUpdate] = useState({});
+  // 这个是保存的ref callback，不会改变
+  const { current: standaloneRefCallback } = useRef((f: HTMLHeadingElement) => {
+    console.log(`standalone`, f);
   });
-  schedule();
-};
-
-/**
- * 调度的逻辑
- */
-function schedule() {
-  // 当前可能存在正在调度的回调
-  // cbNode就是task对象
-  const cbNode = getFirstCallbackNode();
-  // 取出最高优先级的工作
-  const curWork = workList.sort((w1, w2) => {
-    return w1.priority - w2.priority;
-  })[0];
-
-  if (!curWork) {
-    // 没有工作需要执行，退出调度
-    curCallback = null;
-    cbNode && cancelCallback(cbNode);
-    return;
-  }
-
-  const { priority: curPriority } = curWork;
-
-  if (curPriority === prevPriority) {
-    // 有工作在进行，比较该工作与正在进行的工作的优先级
-    // 如果优先级相同，则不需要调度新的，退出调度
-    return;
-  }
-
-  // 准备调度当前最高优先级的工作
-  // 调度之前，如果有工作在进行，则中断他
-  cbNode && cancelCallback(cbNode);
-
-  // 调度当前最高优先级的工作
-  curCallback = scheduleCallback(curPriority, perform.bind(null, curWork));
-}
-
-// 执行具体的工作
-function perform(work: Work, didTimeout?: boolean): any {
-  // 是否需要同步执行，满足1.工作是同步优先级 2.当前调度的任务过期了，需要同步执行
-  const needSync = work.priority === ImmediatePriority || didTimeout;
-  while ((needSync || !shouldYield()) && work.count) {
-    work.count--;
-    // 执行具体的工作
-    insertItem(work.priority + "");
-  }
-  prevPriority = work.priority;
-
-  if (!work.count) {
-    // 完成的work，从workList中删除
-    const workIndex = workList.indexOf(work);
-    workList.splice(workIndex, 1);
-    // 重置优先级
-    prevPriority = IdlePriority;
-  }
-
-  const prevCallback = curCallback;
-  // 调度完后，如果callback变化，代表这是新的work
-  schedule();
-  const newCallback = curCallback;
-
-  if (newCallback && prevCallback === newCallback) {
-    // callback没变，代表是同一个work，只不过时间切片时间用尽（5ms）
-    // 返回的函数会被Scheduler继续调用
-    return perform.bind(null, work);
-  }
-}
-
-// workLoop简化，留下关键部分
-function workLoop(hasTimeRemaining: boolean, initialTime: number) {
-  currentTask = peek(taskQueue);
-  while (
-    currentTask !== null &&
-    !(enableSchedulerDebugging && isSchedulerPaused)
-  ) {
-    if (
-      currentTask.expirationTime > currentTime &&
-      (!hasTimeRemaining || shouldYieldToHost())
-    ) {
-      break;
-    }
-    const callback = currentTask.callback;
-    if (typeof callback === "function") {
-      currentTask.callback = null;
-      currentPriorityLevel = currentTask.priorityLevel;
-      const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
-
-      const continuationCallback = callback(didUserCallbackTimeout);
-      if (typeof continuationCallback === "function") {
-        currentTask.callback = continuationCallback;
-        return true;
-      } else {
-        if (currentTask === peek(taskQueue)) {
-          pop(taskQueue);
-        }
-      }
-    } else {
-      pop(taskQueue);
-    }
-    currentTask = peek(taskQueue);
-  }
-
-  if (currentTask !== null) {
-    return true;
-  } else {
-    const firstTimer = peek(timerQueue);
-    if (firstTimer !== null) {
-      requestHostTimeout(handleTimeout, firstTimer.startTime - currentTime);
-    }
-    return false;
-  }
-}
-```
-
-### callback 和 cancelCallback 机制
-
-在前面的调度讲解中，说到过 scheduleCallback 会为传入的 Callback 创建一个 task，同时也会返回这个 task
-
-```ts
-var newTask: Task = {
-  id: taskIdCounter++,
-  callback,
-  priorityLevel,
-  startTime,
-  expirationTime,
-  sortIndex: -1,
-};
-```
-
-这个 task 是 taskQueue、timerQueue 中的值。callback 就是创建时传入的，通常是 performConcurrentWorkOnRoot 或 performSyncWorkOnRoot 这样的调和函数。
-这个 callback 有什么用呢？这里要综合上面的代码来看。
-
-#### callback
-
-先看 curCallback 这个全局变量。它被赋值是执行完 scheduleCallback 之后，即新创建的 task 对象。虽然 scheduleCallback 函数调度的任务是微任务，但是这个函数本身是同步的，也就是说只要执行这个函数就会更新 curcallback。
-那什么时候回执行 scheduleCallback 呢？有两种情况：
-
-- 第一次执行 schedule 函数，也就是第一个任务。此时 curCallback 就是这个任务创建的 task
-- 在已经有一个任务的基础上，来了一个优先级更高的任务。因为优先级相等或更低的任务会被拦截（这个机制参考调度阶段），只有优先级更高、并且不是 Synclane 的任务到来。这时会重新创建 task，然后更新 curCallback
-
-然后再看 perform 函数
-
-```ts
-const prevCallback = curCallback;
-// 调度完后，如果callback变化，代表这是新的work
-schedule();
-const newCallback = curCallback;
-
-if (newCallback && prevCallback === newCallback) {
-  // callback没变，代表是同一个work，只不过时间切片时间用尽（5ms）
-  // 返回的函数会被Scheduler继续调用
-  return perform.bind(null, work);
-}
-```
-
-1. 首先，我们通过一个事件调用 schedule 函数，经过 workList 等，最后调用 scheduleCallback。
-2. scheduleCallback 会返回一个由当前任务创建的 task，然后异步调用 workLoop 去执行 callback
-3. 接下来进入 callback 的流程内，即 perform 函数的上下文。
-4. 这时其他任务到来时，当前任务可能还在循环里，任务被暂时放到 workList，还没有执行 schedule。
-   因为这里循环模拟的是调和的 workLoop，因此退出条件有三个：
-
-- 任务执行完
-- 时间片到时，触发 shouldYield
-- didTimeout 为 true，这个后面再说
-  这里假设是第二种情况，那么显然还需要再调度一次，继续执行未完成的任务。
-  那么当离开循环，走到这里时，先通过 prevCallback 保存一下旧的 curCallback，然后执行 schedule；
-  接下来就会更新 workList、取出任务，这时有两种情况：
-- 新任务优先级小于等于当前任务
-- 新任务优先级高于当前任务
-
-先说第一种，接下来的流程是：
-
-1. 在 schedule 函数内部会被拦截，不会执行 scheduleCallback，因此不会更新 curCallback
-2. 回到 perform 函数，prevCallback 和 newCallback 相等，这时会返回一个 perform.bind(null, work);，就是本函数。
-3. 再回到 workLoop 函数，callback 的返回值赋给了 continuationCallback，然后在下面将 callback 设为这个值
-
-```ts
-if (typeof continuationCallback === "function") {
-  currentTask.callback = continuationCallback;
-  return true;
-}
-```
-
-这也就意味着，callback 不为 null，还会再执行 callback，也就是再执行 perform 函数 4. 回到第三步，直到 work 被执行完。当任务执行完后，会把当前任务清除出 workList，这样下次 schedule 函数就会调用其他 work 了。
-
-可以看到，这里形成了两个循环，一个是 schedule -> scheduleCallback -> workLoop -> perform 这个大循环，一个是 callback -> continuationCallback 这个小循环。
-由于后一种循环的机制，未被高优先级打断任务可以一直执行，直到执行完为止。
-
-#### cancelCallback
-
-还是刚才的流程，如果新来的任务优先级高于当前任务呢？
-
-这时因为优先级更高，不会返回，会继续向下执行，并执行这么一步：
-
-```ts
-cbNode && cancelCallback(cbNode);
-```
-
-cancelCallback 很简单，就是把 cbNode.callback 置空
-
-```ts
-function cancelCallback(task) {
-  task.callback = null;
-}
-```
-
-置空之后，还是进入 scheduleCallback，并更新 curCallback 的值。
-
-再次回到 perform 函数，会发现两次的 callback 不一致了。这时 callback 不会返回任何值，也就意味着在 workLoop 函数中的 continuationCallback 也为 null
-
-```ts
-while (currentTask !== null) {
-  const callback = currentTask.callback;
-  if (typeof callback === "function") {
-    // 再次循环时因为callback为空，也不会在走到这里
-    currentTask.callback = null;
-
-    const continuationCallback = callback(didUserCallbackTimeout);
-    if (typeof continuationCallback === "function") {
-      // 走不通
-      currentTask.callback = continuationCallback;
-      return true;
-    } else {
-      if (currentTask === peek(taskQueue)) {
-        pop(taskQueue);
-      }
-    }
-  } else {
-    // 最后会来到这里
-    pop(taskQueue);
-  }
-  currentTask = peek(taskQueue);
-}
-```
-
-又因为 callback 也被置空了，因此再一次循环不会走到执行 callback 的地方，而是会弹出当前任务。
-这时原本的 callback task 已经被弹出，接下来的 workLoop 将会执行新来的高优先级任务，和上一部分的情况一样。
-
-**因此，cancelCallback 函数，就是取消正在调度的任务的关键。**
-
-另外，callback被置为null并不代表这个任务就完全消失了。commit 阶段的markRootFinished 不会被调用，被取消任务的 Lanes 仍然存在于 pendingLanes中，等待下一轮 getNextLanes 调用时安排新任务。
-
-
-#### 实际情况
-
-在实际代码中其实也是类似这样的，ensureRootIsScheduled：
-workLoop 中的代码就是实际代码。
-
-```ts
-function ensureRootIsScheduled(root: FiberRoot, currentTime: number) {
-  const existingCallbackNode = root.callbackNode;
-
-  if (existingCallbackNode != null) {
-    cancelCallback(existingCallbackNode);
-  }
-
-  let newCallbackNode;
-  newCallbackNode = scheduleCallback(
-    schedulerPriorityLevel,
-    performConcurrentWorkOnRoot.bind(null, root)
-  );
-
-  root.callbackNode = newCallbackNode;
-}
-```
-
-### 饥饿问题
-
-所谓饥饿问题是指某些任务由于优先级过低导致一直被阻塞，不能执行的情况。
-饥饿问题的解决有两个方面
-
-- didTimeout
-- 过期 lane
-
-#### didTimeout
-
-还是上面的示例代码，可以看到这里：
-
-```ts
-const needSync = work.priority === ImmediatePriority || didTimeout;
-while ((needSync || !shouldYield()) && work.count) {
-  work.count--;
-  // 执行具体的工作
-  insertItem(work.priority + "");
-}
-```
-
-如果传入的 didTimeout 为 true，就会无视 shouldYield 的阻塞而一直执行直到任务完毕。
-didTimeout 是 workLoop 执行 callback 时传入的，表示的是当前任务的过期与否
-
-```ts
-const didUserCallbackTimeout = currentTask.expirationTime <= currentTime;
-const continuationCallback = callback(didUserCallbackTimeout);
-```
-
-当一个任务长时间未执行完，最后 didUserCallbackTimeout 就会为 true，该任务的优先级会被提升为同步；这样在下一次的 callback 中就会同步执行这个过期的 work。
-
-实际上，didTimeout仅用于传递给performConcurrentWorkOnRoot，并且也仅用于timeSlice的生成，最终决定render阶段是否可以被中断。
-
-#### 过期 Lane
-
-这里主要是 markStarvedLanesAsExpired 函数。主要做的事情是：
-
-- 接受一个fiberroot，取出root.pendingLanes，对其上每一位都设置一个过期时间
-- 对已经过期的lane，存在root.expiredLanes中
-
-具体的过期时间是一个数组，保存在root.expirationTimes上。
-给lane设置过期时间的主要意义是，让对应的更新任务也能确定过期时间。即持有某个lane的更新任务，过期时间就可以确定了。
-
-```ts
-export function markStarvedLanesAsExpired(
-  root: FiberRoot,
-  currentTime: number
-): void {
-  const pendingLanes = root.pendingLanes;
-  const suspendedLanes = root.suspendedLanes;
-  const pingedLanes = root.pingedLanes;
-  const expirationTimes = root.expirationTimes;
-
-  let lanes = pendingLanes & ~RetryLanes;
-  while (lanes > 0) {
-    // 从第一位有效位开始遍历lane
-    const index = pickArbitraryLaneIndex(lanes);
-    const lane = 1 << index;
-    // 取出这一位之前确定的过期时间
-    const expirationTime = expirationTimes[index];
-    if (expirationTime === NoTimestamp) {
-      // 如果没设置过过期时间
-      if (
-        (lane & suspendedLanes) === NoLanes ||
-        (lane & pingedLanes) !== NoLanes
-      ) {
-        // 计算并设置过期时间，值 = currentTime + timeout，算法和scheduler的一样
-        expirationTimes[index] = computeExpirationTime(lane, currentTime);
-      }
-    } else if (expirationTime <= currentTime) {
-      // 对已经过期的lane，存在root.expiredLanes中
-      root.expiredLanes |= lane;
-    }
-
-    lanes &= ~lane;
-  }
-}
-```
-
-### getNextLanes
-
-这个函数虽然在前面位运算里讲过，但是在ensureRootIsScheduled 函数内其实是比较的root.expiredLanes 和 workInProgressRootRenderLanes 
-```ts
-const nextLanes = getNextLanes(
-  root,
-  root === workInProgressRoot ? workInProgressRootRenderLanes : NoLanes,
-);
-```
-root.expiredLanes刚刚说过，实际上是所有过期lanes的合并。因此nextLane相当于是在当前renderLanes和过期Lanes中选一个优先级高的，作为本次调度任务的优先级。
-通常情况下由于过期Lanes优先级会升高，因此会使得优先级选为过期Lanes，这样这些过期任务就有执行的机会。
-
-
-### timeSlice
-
-timeSlice主要是用于控制选择哪种渲染模式的
-```ts
-const shouldTimeSlice =
-    !includesBlockingLane(root, lanes) &&
-    !includesExpiredLane(root, lanes) &&
-    (disableSchedulerTimeoutInWorkLoop || !didTimeout);
-  let exitStatus = shouldTimeSlice
-    ? renderRootConcurrent(root, lanes)
-    : renderRootSync(root, lanes);
-```
-
-shouldTimeSlice的判断来源有三个：
-- 不包含阻塞的lane。常见的阻塞的lane就是DefaultLane和InputContinuousLane，即第2、3Lane
-- 不包含过期的lane。即不能存在于root.expriedLane
-- didTimeout不能为true，即任务不能超时但未执行
-
-```ts
-export function includesBlockingLane(root: FiberRoot, lanes: Lanes): boolean {
-  if (
-    allowConcurrentByDefault &&
-    (root.current.mode & ConcurrentUpdatesByDefaultMode) !== NoMode
-  ) {
-    return false;
-  }
-  const SyncDefaultLanes =
-    InputContinuousHydrationLane |
-    InputContinuousLane |
-    DefaultHydrationLane |
-    DefaultLane;
-  return (lanes & SyncDefaultLanes) !== NoLanes;
-}
-
-export function includesExpiredLane(root: FiberRoot, lanes: Lanes): boolean {
-  // This is a separate check from includesBlockingLane because a lane can
-  // expire after a render has already started.
-  return (lanes & root.expiredLanes) !== NoLanes;
-}
-```
-
-
-## 从调和角度看
-
-调和方面相对调度来说比较少，主要是那几种Concurrent更新。
-
-### render的中断
-
-在Concurrent模式下，render可以中断，这种机制主要来自于调和的workLoopConcurrent函数
-
-具体来说，是这样的关系：
-```ts
-newCallbackNode = scheduleCallback(
-  schedulerPriorityLevel,
-  performConcurrentWorkOnRoot.bind(null, root),
-);
-
-function performConcurrentWorkOnRoot(root, didTimeout) {
-  const shouldTimeSlice =
-    !includesBlockingLane(root, lanes) &&
-    !includesExpiredLane(root, lanes) &&
-    (disableSchedulerTimeoutInWorkLoop || !didTimeout);
-  let exitStatus = shouldTimeSlice
-    ? renderRootConcurrent(root, lanes)
-    : renderRootSync(root, lanes);
-}
-
-function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
-      workLoopConcurrent();
-}
-
-function workLoopConcurrent() {
-  while (workInProgress !== null && !shouldYield()) {
-    performUnitOfWork(workInProgress);
-  }
-}
-```
-
-可以看到，关键就在于workLoopConcurrent的!shouldYield()判断。这个函数来自于scheduler，会根据cpu占用等情况分析当前任务能不能被继续执行。
-
-Concurrent模式的选择其实来自于两次选择：
-1. performConcurrentWorkOnRoot的选择，在ensureRootIsScheduled函数内部，只有当nextLanes的最高优先级不等于SyncLane时，才会选择Concurrent。这也就是说，假如有一个SyncLane级别的更新，那么就一定不会选到Concurrent模式
-2. renderRootConcurrent的选择，取决于shouldTimeSlice变量。这个机制在上面timeSlice讲过。
-
-
-# React FiberRoot
-
-
-React的入口在React18被修改
-```ts
-ReactDOM.createRoot(...).render(...)
-```
-
-## createRoot
-
-createRoot函数：
-
-```ts
-export function createRoot(
-  container: Element | DocumentFragment,
-  options?: CreateRootOptions,
-): RootType {
-  // ...
-  const root = createContainer(
-    container,
-    ConcurrentRoot,
-    null,
-    isStrictMode,
-    concurrentUpdatesByDefaultOverride,
-    identifierPrefix,
-    onRecoverableError,
-    transitionCallbacks,
-  );
-  // ... 
-  return new ReactDOMRoot(root);
-}
-```
-
-主要做了两件事
-- 调用createContainer初始化 FiberTree
-- 返回一个ReactDomRoot对象
-
-
-createContainer实际调用的是createFiberRoot
-初始化FiberTree的工作包括构建root节点和host root节点
-```ts
-// react-reconciler/src/ReactFiberRoot.js
-export function createFiberRoot(
-    // ...
-): FiberRoot {
-  // 创建root
-  const root: FiberRoot = (new FiberRootNode(
-    containerInfo,
-    tag,
-    hydrate,
-    identifierPrefix,
-    onRecoverableError,
-  ): any);
-  // ...
-  // 创建hostRootFiber
-  const uninitializedFiber = createHostRootFiber(
-    tag,
-    isStrictMode,
-    concurrentUpdatesByDefaultOverride,
-  );
-  
-  // 这里将root和host root互相关联
-  root.current = uninitializedFiber;
-  uninitializedFiber.stateNode = root;
-
-  // ...
-  return root;
-}
-```
-ReacDOMRoot会再在外面套一个壳子，然后在ReactDOMRoot的prototype上安插render、unmount等方法
-最后，createRoot函数返回的就是套壳之后的ReactDOMRoot
-
-```ts
-function ReactDOMRoot(internalRoot: FiberRoot) {
-  this._internalRoot = internalRoot; // 保存root
-}
-
-ReactDOMHydrationRoot.prototype.render 
-    = ReactDOMRoot.prototype.render = function (
-  children: ReactNodeList,
-): void {
-    // 省略
-};
-
-// unmount的实现
-ReactDOMHydrationRoot.prototype.unmount
-    = ReactDOMRoot.prototype.unmount = function (): void {
-  // 省略
-};
-```
-
-
-## render
-
-render的核心逻辑在其调用的updateContainer方法中，做的事情可以大致分为三个部分，每个部分对应一个方法，从语意上来理解，这三个步骤是一次连贯的行为， 创建update对象->把update对象加入循环链表->根据update对象来更新 Fiber
-
-```ts
-ReactDOMRoot.prototype.render = function(
-  children: ReactNodeList,
-): void {
-  const root = this._internalRoot;
-  const container = root.containerInfo;
-  if (
-    !enableFloat &&
-    !enableHostSingletons &&
-    container.nodeType !== COMMENT_NODE
-  ) {
-    const hostInstance = findHostInstanceWithNoPortals(root.current);
-    
-  }
-  
-  updateContainer(children, root, null, null);
-};
-```
-updateContainer主要调用了createUpdate和enqueueUpdate创建并插入更新；然后在FiberRoot上通过scheduleUpdateOnFiber调度一次更新。
-所以实际上，整个React组件树的第一次挂载也是一次更新，只是这时的current为null
-
-![](https://pic.imgdb.cn/item/63aba26308b6830163e39d06.jpg)
-
-```ts
-export function updateContainer(
-  element: ReactNodeList,
-  container: OpaqueRoot,
-  parentComponent: ?React$Component<any, any>,
-  callback: ?Function,
-): Lane {
-  const current = container.current;
-  const eventTime = requestEventTime();
-  const lane = requestUpdateLane(current);
-
-  const update = createUpdate(eventTime, lane);
-  update.payload = {element};
-
-  callback = callback === undefined ? null : callback;
-  if (callback !== null) {
-    update.callback = callback;
-  }
-
-  const root = enqueueUpdate(current, update, lane);
-  if (root !== null) {
-    scheduleUpdateOnFiber(root, current, lane, eventTime);
-    entangleTransitions(root, current, lane);
-  }
-
-  return lane;
-}
-```
-
-
-
-createUpdate 创建了一个 update 对象
-
-```ts
-export function createUpdate(
-    eventTime: number,
-    lane: Lane
-): Update<*> {
-  const update: Update<*> = {
-    eventTime,
-    lane,
-
-    tag: UpdateState,
-    payload: null,
-    callback: null,
-
-    next: null,
+  // 这个callback每次都会是新的
+  const h1Ref = (d: HTMLHeadingElement) => {
+    console.log(`anonymous`, d);
   };
-  return update;
+  return (
+    <div className="App">
+      {visible && (
+        <>
+          <h1 ref={h1Ref}>Hello</h1>
+          <h1 ref={standaloneRefCallback}>World</h1>
+        </>
+      )}
+      <button type="button" onClick={() => forceUpdate({})}>
+        forceUpdate
+      </button>
+    </div>
+  );
 }
 ```
-enqueueUpdate 将 update 对象加入到当前 Fiber 节点的更新链表中，即加入到updateQueue中。
-这里的和调用dispatch加入update对象的方法一致
+
+出现这种情况，主要是因为 ref 的处理会执行两次。整个 Ref 的处理，都是在 commit 阶段发生的；React 底层用两个方法处理：`commitDetachRef` 和 `commitAttachRef` ，这两次正正好好，一次在 DOM 更新之前（Before Mutation），一次在 DOM 更新之后（Layout）。
+
+```js
+function commitDetachRef(current: Fiber) {
+  const currentRef = current.ref;
+  if (currentRef !== null) {
+    if (typeof currentRef === "function") {
+      /* function 和 字符串获取方式。 */
+      currentRef(null);
+    } else {
+      /* Ref对象获取方式 */
+      currentRef.current = null;
+    }
+  }
+}
+
+function commitAttachRef(finishedWork: Fiber) {
+  const ref = finishedWork.ref;
+  if (ref !== null) {
+    const instance = finishedWork.stateNode;
+    let instanceToUse;
+    switch (finishedWork.tag) {
+      case HostComponent: //元素节点 获取元素
+        instanceToUse = getPublicInstance(instance);
+        break;
+      default: // 类组件直接使用实例
+        instanceToUse = instance;
+    }
+    if (typeof ref === "function") {
+      ref(instanceToUse); /* function 和 字符串获取方式。 */
+    } else {
+      ref.current = instanceToUse; /* ref对象方式 */
+    }
+  }
+}
+```
+
+可以看出，commitDetachRef 会清空 ref 的值，而 commitAttachRef 才会绑定具体的 dom 元素上去。
+
+## ref 什么时候才会被处理两次
+
+上面的例子只是说明了 ref 被处理两次的现象和表面原因（两次 ref 不一样），那么具体到源码，这种执行两次的操作主要是因为当前 fiber 被打上了 Ref 标签，在稍后的更新中就会既执行 commitDetachRef 又执行 commitAttachRef。
+
+标记 Ref 的方法是 markRef：
 
 ```ts
-export function enqueueUpdate<State>(
-  fiber: Fiber,
-  update: Update<State>,
-  lane: Lane,
-) {
-  const updateQueue = fiber.updateQueue; 
-  //...
-    const pending = sharedQueue.pending;
-    if (pending === null) {
-      update.next = update;
-    } else {
-      update.next = pending.next;
-      pending.next = update;
-    }
-    sharedQueue.pending = update;
-  // ...
+function markRef(current: Fiber | null, workInProgress: Fiber) {
+  const ref = workInProgress.ref;
+  if (
+    (current === null && ref !== null) ||
+    (current !== null && current.ref !== ref)
+  ) {
+    workInProgress.flags |= Ref;
+    workInProgress.flags |= RefStatic;
+  }
 }
 ```
 
+可以看到，标记的条件是 mount 阶段，或 update 阶段且 ref 和 current.ref 不同，即 ref 发生变化。
 
+标记之后，在 Mutation 和 Layout 阶段会分别对此做处理。
 
+如果组件更新时 ref 改变，那么该 ref 一定会被处理两次，其中第一次的 ref 值是 null，第二次指向正常的值。
+
+![](https://pic.imgdb.cn/item/63a34527b1fccdcd36b08ce9.jpg)
+
+---
+
+当元素被卸载时，则会调用 safelyDetachRef 清除 ref 的值。具体来说则是该元素的 fiber 被打上了 delection 的 tag，在 commit 阶段就会清除 ref 的值。
+
+```js
+function safelyDetachRef(current) {
+  const ref = current.ref;
+  if (ref !== null) {
+    if (typeof ref === "function") {
+      // 函数式 ｜ 字符串
+      ref(null);
+    } else {
+      ref.current = null; // ref 对象
+    }
+  }
+}
+```
+
+## ref 工作流程
+
+ref 可以根据 render 和 commit 分为两个阶段
+
+- render 阶段：执行 ref 的标记
+- commit：根据 ref 标记，在 Mutation 执行 commitDetachRef 清除 ref，在 Layout 阶段执行 commitAttachRef 绑定 ref。
+
+比如 Mutation 阶段：
+
+```ts
+function commitMutationEffectsOnFiber() {
+  /* 如果是 ref 更新，那么重置 ref */
+  if (flags & Ref) {
+    const current = finishedWork.alternate;
+    if (current !== null) {
+      commitDetachRef(current);
+    }
+  }
+}
+```
+
+commitDetachRef 代码上面已经说过。
+
+在 Layout 阶段，则会调用 commitAttachRef 重新给 ref 赋值
+
+```ts
+if (finishedWork.flags & Ref) {
+  /* 更新 ref 属性 */
+  commitAttachRef(finishedWork);
+}
+```
+
+# React.lazy 和 Suspense
+
+> 参考：https://segmentfault.com/a/1190000042711084
+
+Suspense 是 React 提出的一种同步的代码来实现异步操作的方案。Suspense 让组件‘等待’异步操作，异步请求结束后在进行组件的渲染，也就是所谓的异步渲染。
+理论上 Suspense 应该支持任何异步渲染的组件，但是目前只能支持由 React.lazy 创建的 LazyComponent。因此要说到 Suspense 的执行原理就离不开 lazy 的实现。
+
+lazy 函数简化如下：
+
+```js
+function lazy(ctor){
+  // payload，status表示当前状态，result初始化为动态导入的函数，后面then拿到具体值后就是具体模块对象
+  const payload = {
+    _status: Uninitialized,
+    _result: ctor,
+  };
+
+  return {
+    $$typeof: REACT_LAZY_TYPE,
+    _payload: payload,
+    _init(payload) {
+      if (payload._status === Uninitialized) {
+        const ctor = payload._result;
+        const thenable = ctor();
+        // 执行动态导入函数，取到返回值
+        thenable.then(
+          moduleObject => {
+            if (payload._status === Pending || payload._status === Uninitialized) {
+              // 一旦resolve，就将payload的属性修改，这样第二次调用就可以取到具体的模块
+              payload._status = Resolved;
+              payload._result = moduleObject;
+            }
+          },
+          error => {
+            if (payload._status === Pending || payload._status === Uninitialized) {
+              payload._status = Rejected;
+              payload._result = error;
+            }
+          },
+        );
+      }
+      if (payload._status === Resolved) {
+        const moduleObject = payload._result;
+        return moduleObject.default;
+      } else {
+        // 第一次调用status一定没有改，走这里抛出result，这时的result仍然是动态导入函数
+        throw payload._result;
+      },
+    }
+  }
+}
+```
+
+lazy 函数内部并没有立即返回动态导入的结果，而是先 throw 出一个 result。可以把 lazy 理解成一个返回实际模块值的 Promise，只是它通过一些骚操作（抛出错误、promise 绑定 Suspense 更新、两次遍历 Suspense）使得 Suspense 可以先渲染 fallback 再渲染 primary
+
+具体流程是（下文将被 lazy 处理的组件成为 primary 组件）：
+
+![](https://pic.imgdb.cn/item/63a4a44808b683016351afa1.jpg)
+（这个图很笼统，还是得看下面的文字
+
+1. 当 react 在 beginWork 的过程中遇到一个 Suspense 组件时，会首先将 primary 组件作为其子节点，根据 react 的遍历算法，下一个遍历的组件就是未加载完成的 primary 组件。
+2. 当遍历到 primary 组件时，primary 组件会抛出一个异常。该异常内容为组件 promise（就是动态导入的函数），react 捕获到异常后，发现其是一个 promise，**会将其 then 方法添加一个回调函数，该回调函数的作用是触发 Suspense 组件的更新**（这一步是触发 Suspense 两次执行的关键）。并且将下一个需要遍历的元素重新设置为 Suspense，因此在一次 beginWork 中，Suspense 会被访问两次。
+3. 又一次遍历到 Suspense，本次会将 primary 以及 fallback 都生成。primary 作为 Suspense 的直接子节点，但是 Suspense 会在 beginWork 阶段直接返回 fallback。使得直接跳过 primary 的遍历。因此此时 primary 必定没有加载完成，所以也没必要再遍历一次。本次渲染结束后，屏幕上会展示 fallback 的内容
+4. 当 primary 组件加载完成后，会触发步骤 2 中 then，使得在 Suspense 上调度一个更新，由于此时加载已经完成，Suspense 会直接渲染加载完成的 primary 组件，并删除 fallback 组件。
+
+注意这里 Suspense 的两次执行和两次遍历不一样
+
+- 在一个同步任务中（一次调和）内 Suspense 就会被访问两次，原因是 primary 组件抛出异常，react 会同步地再走一次 suspense，目的是更改返回的子组件为 fallback ，但把 primary 作为 Suspense fiber 的 child；这样既跳过了 primary，又保证下一次更新时 child 就是 primary。
+- 当 primary 加载完成后，此时是一个 Promise 微任务，这时会再触发一次 Suspense 内的更新，渲染 primary 并将 fallback 标记为删除
+
+## 处理 primary 组件
+
+lazy 会在 beginwork 执行到 primary 组件时被执行。beginwork 内的 mountLazyComponent 函数会负责执行，简化代码如下：
+
+```ts
+const props = workInProgress.pendingProps;
+const lazyComponent: LazyComponentType<any, any> = elementType;
+const payload = lazyComponent._payload;
+const init = lazyComponent._init;
+let Component = init(payload); // 如果未加载完成，则会抛出异常，否则会返回加载完成的组件
+```
+
+其实就是执行了上面的 init 函数，传入的是包含有动态导入函数的 payload 对象。
+
+## 异常捕获
+
+上面说过第一次同步执行完 init 之后会抛出一个异常。这个异常会被 react 统一处理，具体是这样：
+
+```js
+do {
+  try {
+    workLoopSync();
+    break;
+  } catch (thrownValue) {
+    handleError(root, thrownValue);
+  }
+} while (true);
+```
+
+在 handleError 中有这样一段相关代码:
+
+```ts
+throwException(
+  root,
+  erroredWork.return,
+  erroredWork,
+  thrownValue,
+  workInProgressRootRenderLanes
+);
+// 处理完错误后再次执行Suspense的地方
+completeUnitOfWork(erroredWork);
+```
+
+核心代码需要继续深入到 throwException:
+
+```ts
+// 首先判断是否是为 promise
+if (
+  value !== null &&
+  typeof value === "object" &&
+  typeof value.then === "function"
+) {
+  // 获取到 Suspens 父组件
+  const suspenseBoundary = getNearestSuspenseBoundaryToCapture(returnFiber);
+  if (suspenseBoundary !== null) {
+    suspenseBoundary.flags &= ~ForceClientRender;
+    // 给 Suspens 父组件 打上一些标记，让 Suspens 父组件知道已经有异常抛出，需要渲染 fallback
+    markSuspenseBoundaryShouldCapture(
+      suspenseBoundary,
+      returnFiber,
+      sourceFiber,
+      root,
+      rootRenderLanes
+    );
+    // 将抛出的 promise 放入Suspens 父组件的 updateQueue 中，后续会遍历这个 queue 进行回调绑定
+    attachRetryListener(suspenseBoundary, root, wakeable, rootRenderLanes);
+    return;
+  }
+}
+```
+
+可以看到 throwException 逻辑主要是判断抛出的异常是不是 promise，如果是的话，就给 Suspens 父组件打上 ShoulCapture 的 flags，并且把抛出的 promise 放入 Suspens 父组件的 updateQueue 中。
+
+throwException 完成后会执行一次 completeUnitOfWork，根据 ShoulCapture 打上 DidCapture 的 flags。 并将下一个需要遍历的节点设置为 Suspense，也就是下一次遍历的对象依然是 Suspense。这也是之前提到的 Suspense 在整个 beginWork 阶段会遍历两次。
+
+## 绑定二次更新
+
+上面说到如果 primary 组件加载完毕，就会更新一次 Suspense 组件。
+因此在 Suspense 的 commit 阶段时，会遍历 updateQueue，绑定 promise 回调；当 promise 回调执行，就会在触发一次 suspense 的更新。
+
+```js
+function attachSuspenseRetryListeners(finishedWork: Fiber) {
+  // 刚刚说抛出异常之后会向suspense组件的updateQueue中添加一个promise
+  // 这里取出updateQueue，遍历找到那个promise，添加一个会更新Suspense的回调。
+  const wakeables = finishedWork.updateQueue;
+  if (wakeables !== null) {
+    finishedWork.updateQueue = null;
+    wakeables.forEach((update) => {
+      // resolveRetryWakeable会在Suspense 的组件上调度一次更新
+      const retry = resolveRetryWakeable.bind(null, finishedWork, update);
+      // 将 retry 绑定 promise 的 then 回调
+      update.then(retry, retry);
+    });
+  }
+}
+```

@@ -1929,8 +1929,6 @@ bar.printName();
 
 ---
 
-
-
 - 闭包就是能够读取其他函数内部变量的函数
 - **闭包是指有权访问另一个函数作用域中变量的函数**，创建闭包的最常见的方式就是在一个函数内创建另一个函数，通过另一个函数访问这个函数的局部变量,利用闭包可以突破作用链域
 
@@ -1955,6 +1953,17 @@ foo();
 ```
 
 2. 定时器；当一个节点被删除或者被销毁时，其上挂载的定时器没有被清除，可能会导致定时器仍在运作
+
+比如：
+```js
+const element = document.getElementById('element')
+
+setInterval(()=>{
+  console.log(element)
+},1000)
+```
+这里的定时器内部的回调函数就会一直引用这个变量，从而导致了内存泄漏的问题。解决方法就是清除定时器，或者把element的声明移到定时器内部。
+
 3. 引用但已经被销毁的 dom 元素；即引用一个 dom，但这个 dom 被从 dom 树中移除了：
 
 ```js
@@ -2012,37 +2021,71 @@ MyObject.prototype.getMessage = function () {
 };
 ```
 
+
+#### 解决内存泄漏问题
+
+对应上述的内存泄漏场景，可以对症下药解决内存泄漏问题：
+1. 不要设置全局变量，设置了也应该及时清除
+2. 定时器引用的变量最好定义在内部，及时销毁定时器
+3. 闭包产生的泄露问题：
+  1. 减少使用闭包
+  2. 如果是嵌套函数闭包：
+    - 在闭包内部，当闭包执行完成后将引用的变量置空
+    - 当闭包被使用完毕时，应该清除闭包的引用。比如：
+    ```js
+    const cacheFn = (fn) => {
+      const cache = new Map()
+      return function (...args){
+        console.log(cache)
+        //...
+      }
+    }
+    let cachedAdd = cacheFn(add)
+    // ...调用cachedAdd
+    cacheAdd = null // 清除闭包
+    ```
+  3. 如果是回调函数闭包，比如addEventListener，就要及时清除监听器。如果是自己编写的回调函数，则可以通过置空的方式。
+
+
+
 ### 闭包的出现场景
 
 1. 嵌套函数
    最基本的出现场景，不再赘述
+
 2. 回调函数；在定时器、事件监听、Ajax 请求、跨窗口通信、Web Workers 或者任何异步中，只要使用了回调函数，实际上就是在使用闭包。
-   作为回调的函数闭包保存了 window 对象，以及其可能引用的其他值。
 
+比如下面这个例子中，callback函数就是一个闭包，因为他引用了getUserInput函数内部的input变量
 ```js
-// 定时器
-setTimeout(function timeHandler(){
-  console.log('111');
-}，100)
+function getUserInput(callback){
+  const input = document.getElementById('input').value
+  callback(input)
+}
 
-// 事件监听
-$('#app').click(function(){
-  console.log('DOM Listener');
+getUserInput((value)=>{
+  console.log(value)
 })
 ```
 
-3. IIFE。严格来说当 IIFE 返回一个值时才算闭包：
+其他类型的回调函数也是同理，比如addEventListener的回调函数：
 
 ```js
-var myFunc = (function makeFunc() {
+domElement.addEventListener('click',(e) => {
+  //...
+})
+```
+
+3. IIFE立即执行函数
+
+```js
+(function () {
   var name = "Mozilla";
   function displayName() {
     alert(name);
   }
-  return displayName;
 })();
-myFunc();
 ```
+
 
 ### 闭包的使用场景
 

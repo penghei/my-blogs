@@ -193,7 +193,7 @@ function concatArray(arr1, arr2) {
 
 ## 三数求和
 
-> 3. 给你一个包含 n 个整数的数组 nums，判断 nums 中是否存在三个元素 a，b，c ，使得 a + b + c = 0 ？请你找出所有满足条件且不重复的三元组。
+> 给你一个包含 n 个整数的数组 nums，判断 nums 中是否存在三个元素 a，b，c ，使得 a + b + c = 0 ？请你找出所有满足条件且不重复的三元组。
 
 思路：
 
@@ -209,30 +209,29 @@ function concatArray(arr1, arr2) {
 ```js
 function triNumberSum(nums) {
   nums = nums.sort((a, b) => a - b);
-
-    const cache = []; // 存储防止重复
-    const newArr = [];
-    for (let k = 0; k < nums.length - 2; k++) {
-        let i = k + 1;
-        let j = nums.length - 1;
-        if (cache.includes(nums[k])) {
-            continue;
-        }
-        while (i < j) {
-            const sum = nums[i] + nums[j] + nums[k];
-            if (sum === 0) {
-                newArr.push([nums[i], nums[j], nums[k]]);
-                cache.push(nums[k]);
-                while (i < j && nums[j] === nums[j - 1]) j--;
-                while (i < j && nums[i] === nums[i + 1]) i++;
-                i++;
-                j--;
-            } 
-            else if (sum > 0) j--
-            else i++;
-        }
-    }
-    return newArr;
+  const cache = []; // 存储防止重复
+  const newArr = [];
+  for (let k = 0; k < nums.length - 2; k++) {
+      let i = k + 1;
+      let j = nums.length - 1;
+      if (cache.includes(nums[k])) {
+          continue;
+      }
+      while (i < j) {
+          const sum = nums[i] + nums[j] + nums[k];
+          if (sum === 0) {
+              newArr.push([nums[i], nums[j], nums[k]]);
+              cache.push(nums[k]);
+              while (i < j && nums[j] === nums[j - 1]) j--;
+              while (i < j && nums[i] === nums[i + 1]) i++;
+              i++;
+              j--;
+          } 
+          else if (sum > 0) j--
+          else i++;
+      }
+  }
+  return newArr;
 }
 ```
 
@@ -617,8 +616,6 @@ for(let i = 1;i < nums.length;i++){
 
 ```
 
-
-
 ### 连续数组（前缀和）
 
 https://leetcode.cn/problems/contiguous-array/
@@ -855,7 +852,8 @@ fast同理，即`fast = nums[nums[fast]]`，相当于两次映射
 
 ![](https://pic1.imgdb.cn/item/6346aaff16f2c2beb1c04f5c.jpg)
 
-有了这个关系之后，后面的代码就和环形链表基本一致了：
+有了这个关系之后，后面的代码就和
+链表基本一致了：
 
 ```js
 var findDuplicate = function (nums) {
@@ -3191,7 +3189,7 @@ var minArray = function (numbers) {
 
 第二题的解法上只是多了判断`numbers[mid] === numbers[right]`的情况。因为存在重复数字，因此当相等时不能判断最小值到底在 mid 的左边还是右边：
 ![](https://pic1.imgdb.cn/item/633690df16f2c2beb15ce878.jpg)
-但是因为 mid 和 right 相等，也就是说至少有一个 right 左边、并且和 right 值相等的位置，因此给 right--，这样 nums[right]的值没有改变但是还是缩小了范围。
+但是因为 mid 和 right 相等，也就是说至少有一个 right 左边、并且和 right 值相等的位置，因此给 right--，这样 `nums[right]`的值没有改变但是还是缩小了范围。
 
 ```js
 var minArray = function (numbers) {
@@ -4538,7 +4536,7 @@ var findMode = function (root) {
 
 ## 九种基本回溯
 
-参考https://labuladong.github.io/algo/1/9/
+参考https://labuladong.github.io/algo/di-san-zha-24031/bao-li-sou-96f79/hui-su-sua-56e11/
 
 
 
@@ -5560,7 +5558,7 @@ var maxAreaOfIsland = function (grid) {
 > 请返回 封闭岛屿 的数目。
 
 这道题其实就是岛屿数量的改动。封闭岛屿的数量 = 岛屿数量 - 靠边的岛屿数量，因此只要减去靠边岛屿，得到的剩下岛屿数量就是总岛屿数量。
-实际上计算岛屿数量就是在“淹没”一个独立的岛屿，一次 dfs 执行完成之后，一块岛屿就被完全淹没了。因此可以选择把所有靠边的岛屿（grid[0][j]、grid[i][0]等）都淹没掉，再计算剩下的即可。
+实际上计算岛屿数量就是在“淹没”一个独立的岛屿，一次 dfs 执行完成之后，一块岛屿就被完全淹没了。因此可以选择把所有靠边的岛屿（`grid[0][j]`、`grid[i][0]`等）都淹没掉，再计算剩下的即可。
 
 ```js
 /**
@@ -5791,6 +5789,7 @@ gap初始化为length/2，即每个数和它相隔gap的那个数分为一组。
 ![](https://pic1.imgdb.cn/item/635e111c16f2c2beb1389b20.jpg)
 
 代码如下：
+
 ```js
 function shellSort(nums) {
   for (
@@ -7753,7 +7752,6 @@ var rob = function (root) {
 
 ```
 f(i)=max{f(i−1)+nums[i],nums[i]}
-
 ```
 
 也就是以第 i 个数结尾的最大和，有可能是加上第 i 个数的结果，也有可能是只有第 i 个数的结果。因为`f(i)`代表以第 i 个数结尾的,因此必须要包含当前数(即`nums[i]`)；
@@ -7947,13 +7945,13 @@ var findLengthOfLCIS = function (nums) {
 这里`dp[i][j]`表示：以下标`i - 1`为结尾的 A，和以下标`j - 1`为结尾的 B，最长重复子数组长度为`dp[i][j]`。
 
 - 当`A[i - 1] === B[j - 1]`相等的时候，`dp[i][j] = dp[i - 1][j - 1] + 1`
-- 其他情况下（i和j不相等），dp[i][j]为0。归零的目的主要是相当于“从头开始”
+- 其他情况下（i和j不相等），`dp[i][j]`为0。归零的目的主要是相当于“从头开始”
 
 > 比如说序列[3,5,4,2,1]和[3,2,1,4,5]，在i-1 = 1和j-1 = 1时发现对应的数字不相等，这时如果不设dp为0，那么后面的就可能会继续在1的基础上计算；但是很显然3 5 4 2和3 2这两个序列的子数组长度不能算作是2，因为不连续；所以就必须在对应的值不相同的时候直接把dp归为0，类似于最长递增子数组的那种“重新开始数”的方式
 
 > 这里取`i-1`和`j-1`主要是为了方便计算，直接取 i、j 也可以，但是要提前初始化`dp[i][0]`和 dp`[0][j]`
 
-dp 数组的结构如下，状态的更新是斜向的，即 dp[i][j]总是由左上方的 dp[i - 1][j - 1]更新而来
+dp 数组的结构如下，状态的更新是斜向的，即 `dp[i][j]`总是由左上方的 `dp[i - 1][j - 1]`更新而来
 
 ![](https://img-blog.csdnimg.cn/2021011215282060.jpg)
 
@@ -8045,7 +8043,7 @@ var longestCommonSubsequence = function (text1, text2) {
 
 这道题用双指针就能很快解决，但是用动态规划也可以，并且可以引出下一道题的类似思路。
 
-用动态规划的话思路和*最长公共子数组*这道题类似，同样取二维数组 dp[i][j]，表示以下标`i - 1`结尾的字符串 s 和下标`j - 1`结尾的字符串 t 之间的子序列长度。
+用动态规划的话思路和*最长公共子数组*这道题类似，同样取二维数组 `dp[i][j]`，表示以下标`i - 1`结尾的字符串 s 和下标`j - 1`结尾的字符串 t 之间的子序列长度。
 
 那么就会有两种情况：
 
@@ -8098,7 +8096,7 @@ const isSubsequence = (s, t) => {
 这个题和上面的题思路大致不变，因为都是在找公共子序列；
 但是这个题是让你找到 s 有几种方法删除元素可以得到 t
 
-同样设 dp[i][j]为 对于 i-1 结尾的 s 和 j-1 结尾的 t，t 在 s 中出现的个数。
+同样设 `dp[i][j]`为 对于 i-1 结尾的 s 和 j-1 结尾的 t，t 在 s 中出现的个数。
 
 那么会有同样的两种情况：
 
@@ -8149,7 +8147,7 @@ var numDistinct = function (s, t) {
 };
 ```
 
-## 回文子串数量
+## 回文子串数量 
 
 > 给定一个字符串，你的任务是计算这个字符串中有多少个回文子串。
 > 具有不同开始位置或结束位置的子串，即使是由相同的字符组成，也会被视作不同的子串。

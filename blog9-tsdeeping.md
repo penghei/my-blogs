@@ -107,12 +107,11 @@ let strLength: number = (<string>someValue).length;
 ```ts
 interface MyNums {
   [index: number]: number; // 这里的index可以是string或number
-  length:number;
+  length: number;
 }
 
 const nums: MyNums = [1, 2, 3];
 ```
-
 
 ### 方法和函数
 
@@ -644,9 +643,9 @@ ts 类型兼容是指，两个变量相互赋值、或者在函数参数中传�
 
 比如 java 或 c 语言中，类型是明确指明的，不同类型不能赋值；但是 ts 是依据结构的，尤其是对于对象、数组这类非简单变量，只要结构有兼容性（比如属性互相包含）就有可能被互相赋值。
 
-### 变体
+## 变体
 
-#### 类型系统的父子关系
+### 类型系统的父子关系
 
 了解变体之前应该首先了解类型系统的父子关系。
 子类型可以通过继承后继续添加新的属性，因此子类型的属性比父类型更多，更具体；在类型定义中**属性更多的类型是子类型**。
@@ -656,7 +655,9 @@ ts 类型兼容是指，两个变量相互赋值、或者在函数参数中传�
 
 **子类型比父类型更加具体**，这点很关键。注意是**具体**，而不一定是多的。
 
-#### 赋值
+### 赋值
+
+赋值指的是两个不同类型的变量相互赋值的兼容性。
 
 先看一个例子：
 
@@ -675,15 +676,15 @@ type Dog = {
 let animal: Animal;
 let dog: Dog;
 
-animal = dog; // ✅ok
-dog = animal; // ❌error!
+animal = dog; // ✅ok dog包含所有animal需要的属性
+dog = animal; // ❌error! animal缺少dog需要的weight属性
 ```
 
 animal 是一个「更宽泛」的类型，它的属性比较少，所以更「具体」的子类型是可以赋值给它的，dog 上拥有 animal 所拥有的一切类型，赋值给 animal 是不会出现类型安全问题的。
 
 也就是说，多的属性类型可以赋值给少的，但是少的不能赋值给多的；从可赋值性角度来说，子类型是可以赋值给父类型的，也就是 `父类型变量 = 子类型变量` 是安全的，因为子类型上涵盖了父类型所拥有的的一切属性。
 
-这个特点叫做**协变**，即多可以赋给少，但是反过来不行。
+这个特点叫做**协变**，即多可以赋给少（子类型赋给父类型），但是反过来不行。
 
 > 一种常见的泛型写法`<T extends {}>`也就是这个意思，这个约束了传入的参数一定是`{}`的子类型，也就是比`{}`要多任意属性的类型，比空多一个属性都算，即任何类型都可以。
 
@@ -696,77 +697,96 @@ type Son = "a" | "b";
 let parent: Parent;
 let son: Son;
 
-parent = son; // ✅ok
-son = parent; // ❌error! parent 有可能是 'c'
+parent = son; // ✅ok 因为son的取值是a或b，并没有超出parent的范围
+son = parent; // ❌error! parent 有可能是 'c'，可能会超出son的范围
 ```
 
 当 parent 取 c 时，son 的类型 Son 并没有包含"c"，因此不能赋值。
 
 这种情况和上面恰恰相反，少的能赋值给多的，但是反过来不行。这种情况叫做**逆变**
 
-#### 变体
+### 变体的四种形式
 
 变体有四种形式：
 
-- 协变（Covariant）：子类型比父类型更具体、属性更多，子类型可以赋值给父类型，父类型可以转换为子类型（扩展）。ts 中对象、数组的相互赋值都是协变的。
-- 逆变（Contravariant）：和协变相反，子类型变为父类型（收缩）。
+- 协变（Covariant）：对象变得更具体，即对象的属性增多。或者说是一个类型变成其子类型
+- 逆变（Contravariant）：和协变相反，即对象属性变少，变得更抽象。
 - 双向协变（Bivariant）：父子类型相互转化，ts 函数的参数就是双向协变的。
 - 不变（Invariant）：父子类型不能转化
 
-这里先规定一种表示方法：
+变体本质上是一种类型的转化，通常出现在不同类型的比较、赋值之间。在 ts 中，**变体的出现一定和函数相关，普通变量类型之间的兼容关系，只用满足结构兼容就可以了**。
+具体来说，与函数有关的变体，存在且仅存在于函数之间相互比较或函数之间相互赋值。
 
-> A ≼ B 意味着 A 是 B 的子类型。
-> A → B 指的是以 A 为参数类型，以 B 为返回值类型的函数类型。
-> x : A 意味着 x 的类型为 A
-
-- ts 的对象和数组是协变的，因为一个包含另一个对象的对象可以赋给该对象
-- ts 的函数**返回值类型是协变的，而参数类型是逆变的**。注意这里的逆变协变并**不是发生在函数调用**，而是发生在函数间的比较和类型兼容时。
-
-  - 返回值类型是协变的，意思是 `A ≼ B` 就意味着 `(T → A) ≼ (T → B) `，也就是返回值类型可以扩大；如果规定返回值为一个类型，但是传入一个更大的类型，是可以的。
-  - 参数类型是逆变的，意思是 `A ≼ B `就意味着 `(B → T) ≼ (A → T)` 。
-    参考这个例子：
-
-  ```ts
-  let func1 = (a: number) => a;
-  let func2 = (a: number, b: boolean) => a;
-
-  func1 = func2; //error
-  func2 = func1;
-  ```
-
-### 比较对象
-
-如果 x 要兼容 y，那么 y 至少具有与 x 相同的属性；也就是多可以赋给少，但是少不能赋给多。
+比如直接复制或比较：
 
 ```ts
-interface AName {
-  name: string;
+interface Point2D {
+  x: number;
+  y: number;
 }
-interface BName {
+interface Point3D {
+  x: number;
+  y: number;
+  z: number;
+}
+
+let iMakePoint2D = (): Point2D => ({ x: 0, y: 0 });
+let iMakePoint3D = (): Point3D => ({ x: 0, y: 0, z: 0 });
+
+iMakePoint2D = iMakePoint3D;
+iMakePoint3D = iMakePoint2D; // ERROR: Point2D 不能赋值给 Point3D
+```
+
+或者借用另一个函数，让两个函数类型，一个作为预设的类型，一个通过参数的形式传入：
+这种情况下，其实就是 func 传入的函数的类型和定义时的类型（`(err: Error, data: any) => void`）比较。本质上，还是函数整体的赋值和比较
+
+```ts
+const func = (fn: (err: Error, data: any) => void) => {};
+
+func(() => null); // ok
+func((err) => null); // ok
+func((err, data) => null); // ok
+
+// Error: 参数类型 `(err: any, data: any, more: any) => null` 不能赋值给参数类型 `(err: Error, data: any) => void`
+func((err, data, more) => null);
+```
+
+注意常规类型的相互赋值并不用考虑变体，比如两个对象：
+
+```ts
+interface Person {
   name: string;
   age: number;
 }
 
-let aname: AName;
-let bname: BName;
-aname = bname;
-bname = aname; //error，因为bname中的age属性aname没有
+interface Employee {
+  name: string;
+  age: number;
+  jobTitle: string;
+}
+
+employee = person; // OK
+person = employee; // OK
 ```
 
-aname 中的全部属性在 bname 中都有并且不冲突，因此可以把 bname 赋值给 aname。
+这是不存在变体的，只要属性不冲突就可以相互赋值。
 
-从类型角度来说，BName 是 AName 的子类型，子类型可以转化为父类型，这就是协变。
-
-对于函数参数也是这样的，参数如果被指明类型 A，B 类型是 A 类型的扩充，那么传入 B 类型并不会报错。当然这里指的是传参，并不是函数之间参数的比较；
+同理，向函数参数中传递一个普通对象，或者把函数参数返回的对象赋给另一个对象，这和上面的是一样的，同样不存在变体问题。
 
 ```ts
-function greet(n: IName) {
-  //...
+function getUserInfo(user:Person){
+
 }
-greet(bname); // OK
+
+const emp:Empolyee = {..}
+getUserInfo(emp) // 这里并不意味着emp发生了协变。这里只是Empolyee和Person类型兼容
 ```
 
+始终记住：**变体仅存在于函数之间的比较和相互赋值**。
+
 ### 比较函数
+
+**当比较或相互赋值两个函数时，参数是逆变的，返回值是协变的**
 
 函数的依据是参数列表，被赋值的 func2 必须有 func1 的所有参数且不冲突, 反过来就不行；
 
@@ -774,7 +794,7 @@ greet(bname); // OK
 
 从类型角度来说，func2 的参数是 func1 的子类，func2 可以变成 func1，即子类变成父类，是逆变；
 
-注意这里对比的只是类型，和参数名无关。下面这个例子a和b名字不同，但是都是number类型。
+注意这里对比的只是类型，和参数名无关。下面这个例子 a 和 b 名字不同，但是都是 number 类型。
 
 ```ts
 let func1 = (a: number) => a;
@@ -783,16 +803,16 @@ let func2 = (b: number, c: boolean) => b;
 func1 = func2; //error
 func2 = func1; // func2的参数是func1的子类型，相当于func2可以“接住”func1的所有可能参数类型
 ```
+
 如果有返回值那就还要考虑返回值，即参数和返回值都要满足才能赋值。返回值的依据是源函数（右边的）的返回值类型必须是目标函数（左边的）返回值类型的子类型（即右边的返回值应该是左边的子类型，属性多的）。
 
 ```js
-let x = () => ({name: 'Alice'});
-let y = () => ({name: 'Alice', location: 'NewYork'});
+let x = () => ({ name: "Alice" });
+let y = () => ({ name: "Alice", location: "NewYork" });
 
 x = y; // y返回值是x返回值的的子类型
 y = x; // error
 ```
-
 
 可以参考这个例子：
 
@@ -819,7 +839,7 @@ visitAnimal(animal); // ❌
 
 # 高级类型
 
-### 交叉类型`&` 和 联合类型`|`
+## 交叉类型`&` 和 联合类型`|`
 
 交叉类型是将多个类型合并为一个类型，包含了所需的所有类型的特性。
 表示两个类型都具有, 对于对象型类型表示所有属性都拥有
@@ -904,7 +924,7 @@ clg({ name: "miaomiao", canCatch: true });
 
 除了自定义类型保护，也可以用 typeof 或 instanceof 来判断类型，后者主要用于类类型的判断。
 
-### 可选参数
+## 可选参数
 
 使用了 --strictNullChecks，可选参数会被自动地加上 | undefined:
 
@@ -916,7 +936,7 @@ function getValue(username: string, userId?: string) {
 
 添加`!`后缀可以去除了 null 和 undefined，或者用 || 或 if 判断也可以
 
-### 类型别名
+## 类型别名
 
 类型别名会给一个类型起个新名字。 类型别名有时和接口很像，但是可以作用于原始值，联合类型，元组以及其它任何需要手写的类型。
 
@@ -976,9 +996,78 @@ type Point = PartialPointX & { y: number };
 - 接口可以定义多次，并将被视为单个接口，类型别名不可以
 - type 能使用 in 关键字生成映射类型（比如 forin 循环，或者`[key in Keys]`遍历），但 interface 不行。
 
-### 索引类型
+## 类型守卫
 
-#### 索引签名
+假设有这么一个字段，它可能字符串也可能是数字：
+
+```ts
+numOrStrProp: number | string;
+```
+
+现在在使用时，你想将这个字段的联合类型缩小范围，比如精确到 string，你可能会这么写：
+
+```ts
+export const isString = (arg: unknown): boolean => typeof arg === "string";
+```
+
+看看这么写的效果：
+
+```ts
+function useIt(numOrStr: number | string) {
+  if (isString(numOrStr)) {
+    console.log(numOrStr.length); // 这里还是会报错number上不存在属性length
+  }
+}
+```
+
+也就是说 isString 函数的返回值这里只是通过代码显式返回了布尔值，但是并不意味着是一个判断的结果。
+因此需要改变 isString 函数的返回值，让 ts 能将其识别为区别类型的函数，而不是只是返回一个布尔值的函数。
+这里需要一个`is`表达式，相当于告诉 ts，这个函数的返回值是在判断参数 arg 是（is）string 类型的正确与否。
+
+```ts
+export const isString = (arg: unknown): arg is string =>
+  typeof arg === "string";
+```
+
+因此，类型守卫最多的是一个判断类型的函数。在区分联合类型时，这种类型守卫使用很多。
+
+```ts
+type Falsy = false | "" | 0 | null | undefined;
+export function isFalsy(val: any): val is Falsy {
+  return !val;
+}
+```
+
+类型守卫本质上就是针对联合或类型的重合采取的一种区分类型的方式，使得类型守卫执行过后的代码中的类型变得唯一且不会出错。
+is 关键字只是一种方式。实际上，只要能区分两种类型的方法都可以实现类型守卫。比如：
+
+- `in`
+- `instanceOf`
+- `is`
+
+还有一种方式用于判断字段在 interface、class 或 type 指代的对象中是否存在。用的是`in`关键字。它和 js 中是类似的含义，但是 ts 中 in 作用的对象可以是 interface 或 type
+
+```ts
+interface ILogInUserProps {
+  isLogin: boolean;
+  name: string;
+}
+
+interface IUnLoginUserProps {
+  isLogin: boolean;
+  from: string;
+}
+
+type UserProps = ILogInUserProps | IUnLoginUserProps;
+
+function getUserInfo(user: ILogInUserProps | IUnLoginUserProps): string {
+  return "name" in user ? user.name : user.from;
+}
+```
+
+## 索引类型
+
+### 索引签名
 
 首先要理解索引签名是什么
 
@@ -1006,7 +1095,7 @@ const foo: {
 
 最后一种可以是自定义的索引签名类型，也就是规定每一个值都应当是`{message:xxx}`形式的。
 
-##### 有限的索引
+#### 有限的索引
 
 使用`in`可以从一组联合或者对象类型别名中取得有限个索引类型
 
@@ -1039,14 +1128,14 @@ type IndexFormGenerics<T> = {
 };
 ```
 
-#### 索引操作符
+### 索引操作符
 
 ts 中直接访问对象属性可能会报没有属性的错误，因此可以借助 keyof 取得对象索引
 比如这样一个 js 函数
 
 ```js
-function pluck(o, names) {
-  return names.map((n) => o[n]);
+function pluck(obj, names) {
+  return names.map((name) => obj[name]);
 }
 ```
 
@@ -1098,7 +1187,7 @@ for (key in myTestObj) {
 
 - 索引访问操作符，即`T[K]`，表示 T 中的 K 属性的类型；比如这个例子中，当 K 取 name 时，`T[k]`就是 string，后面的[]表示数组类型（注意不是二维数组）
 
-### 映射类型
+## 映射类型
 
 > TypeScript 提供了从旧类型中创建新类型的一种方式 — 映射类型。 在映射类型里，新类型以相同的形式去转换旧类型里每个属性。
 
@@ -1314,7 +1403,7 @@ let fruits: Food.Fruits;
 tsc --outFile sample.js Test.ts
 ```
 
-编译器会根据源码里的引用标签自动地对输出进行排序 
+编译器会根据源码里的引用标签自动地对输出进行排序
 
 2. 编译多个 ts 文件，然后用多个 script 标签引入（好单纯的方法）。
 
@@ -1380,7 +1469,8 @@ interface Cloner {
 广义上说，声明文件就是我们在使用一些 js 库时的`@types/`文件，其中包含了 js 库的类型定义，使得其在 ts 文件中也可以使用。现在主流的 js 库都有发布到 npm 的@types 文件，但有些仍需要使用时去手动编写，或者自己开发的 js 模块也需要声明文件兼容 ts。
 文件中只包含与类型相关的代码，不包含逻辑代码，它们的作用旨在为开发者提供类型信息，所以它们只在开发阶段起作用。
 
-举个例子，现在在一个ts-react项目中，绝大多数模块都是ts类型的，但是这时创建了一个js的文件：
+举个例子，现在在一个 ts-react 项目中，绝大多数模块都是 ts 类型的，但是这时创建了一个 js 的文件：
+
 ```js
 // someInfo.js
 export const userInfo = {
@@ -1389,9 +1479,11 @@ export const userInfo = {
   ...
 }
 ```
-如果我希望引入someInfo.js文件到ts文件中，就会提示找不到someInfo.js的声明文件，因为他是一个js模块，ts不能得知它的类型。
-为了让ts得知它的类型，我们不需要把他改编成ts文件，而是创建一个声明文件，把其中**导出的变量、函数等**声明一个类型，让ts能识别它。
-我们在同目录下创建一个someInfo.d.ts文件：
+
+如果我希望引入 someInfo.js 文件到 ts 文件中，就会提示找不到 someInfo.js 的声明文件，因为他是一个 js 模块，ts 不能得知它的类型。
+为了让 ts 得知它的类型，我们不需要把他改编成 ts 文件，而是创建一个声明文件，把其中**导出的变量、函数等**声明一个类型，让 ts 能识别它。
+我们在同目录下创建一个 someInfo.d.ts 文件：
+
 ```ts
 export const userInfo: {
   username:string;
@@ -1399,10 +1491,12 @@ export const userInfo: {
   ...
 }
 ```
-这样我们在ts文件中导入userInfo时，ts会自动解析someInfo.d.ts文件，并把其中的类型作为导入的类型。
 
-对于js编写的库，也是类似的操作。但是不同的库的模块化方式有所不同，因此为库创建类型文件时有所不同。
-比如jQuery在全局声明了一个`$`变量，因此我们就需要创建一个全局的global.d.ts文件，给`$`变量扩充类型
+这样我们在 ts 文件中导入 userInfo 时，ts 会自动解析 someInfo.d.ts 文件，并把其中的类型作为导入的类型。
+
+对于 js 编写的库，也是类似的操作。但是不同的库的模块化方式有所不同，因此为库创建类型文件时有所不同。
+比如 jQuery 在全局声明了一个`$`变量，因此我们就需要创建一个全局的 global.d.ts 文件，给`$`变量扩充类型
+
 ```ts
 declare var $ : {
   ...
@@ -1727,7 +1821,7 @@ type union = "a" | "b" | "c";
 type getIn<T> = {
   [P in T]: P;
 };
-getIn<union>
+getIn<union>;
 /*
 type getIn = {
     a: "a";
@@ -1735,7 +1829,7 @@ type getIn = {
     c: "c";
 }
 */
-getKey<IUser>
+getKey<IUser>;
 type getKey<T> = {
   [P in keyof T]: P;
 };
@@ -1759,7 +1853,7 @@ type getKey<T> = {
   [P in keyof T]: T[P];
 };
 
-getKey<IUser>
+getKey<IUser>;
 /*
 type getKey = {
     name: string;
@@ -2035,3 +2129,17 @@ Set<T = any>(values?: readonly T[] | null | undefined): Set<T>
 1. 尽可能少地使用 `any` 或 `as any`，注意这里并不是说不能用，而是你判断出目前情况下使用 `any` 是最优解。
 1. 如果确定要使用 `any` 作为类型，优先考虑一下是否可以使用 `unknown` 类型替代，毕竟 `any` 会破坏类型的流动。
 1. 尽可能少地使用 `as xxx`，如果大量使用这种方式纠正类型，那么大概率你对 `类型流动 `理解的还不够透彻。
+
+
+有这样一个js文件，名为index.js：
+```js
+export const userInfo = {
+  username:'foo',
+  age:19
+}
+export const MAX_AGE = 20
+export function add(a,b){
+  return a + b
+}
+```
+如果要在ts项目中导入这个js文件中的对象，请编写对应的类型声明文件index.d.ts

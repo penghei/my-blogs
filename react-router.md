@@ -190,6 +190,8 @@ devServer: {
 }
 ```
 
+在react-router v6以及nextjs等框架中，还提供了一种ssr的方式。即对每个可能的路径都生成ssr的结果--html，这样浏览器请求每个路径都是存在对应的html的，从根本上解决了路径丢失的问题。
+
 #### HashHistory (HashRouter)
 
 > 本质上是利用`window.location`对象，这是一个包含浏览器 URL 相关的信息和操作方法的对象，参考 https://wangdoc.com/javascript/bom/location.html

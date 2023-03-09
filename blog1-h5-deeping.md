@@ -194,10 +194,15 @@ script 标签还有一些特殊的属性：
 </script>
 ```
 
+> type="module"也可以保证script代码的异步执行：
+> ![](https://pic.imgdb.cn/item/6400ca41f144a01007503551.jpg)
+
 - crossorigin：如果采用这个属性，就会采用跨域的方式加载外部脚本，即 HTTP 请求的头信息会加上 origin 字段。
 - integrity：给出外部脚本的哈希值，防止脚本被篡改。只有哈希值相符的外部脚本，才会执行。
 - nonce：一个密码随机数，由服务器在 HTTP 头信息里面给出，每次加载脚本都不一样。它相当于给出了内嵌脚本的白名单，只有在白名单内的脚本才能执行。
 - referrerpolicy：HTTP 请求的 Referer 字段的处理方法。
+
+
 
 # 常见事件
 

@@ -22,7 +22,6 @@ js 只有 8 种基本数据类型
 - symbol
 - object
 
-
 其中 Symbol 和 BigInt 是 ES6 中新增的数据类型：
 
 - Symbol 代表创建后独一无二且不可变的数据类型，它主要是为了解决可能出现的全局变量冲突的问题。
@@ -36,18 +35,18 @@ const bigInt = 1234567890123456790123456789012345690n;
 > bigint 只能和自己运算，结果也是自己，并且只可能是正整数
 > bigint 可以通过`Number()`和 number 互相转化，但是不支持`+bigint`这样转换。
 
-## js中的数组
+## js 中的数组
 
-js中没有专门的数组类型，数组会被当作是一个特殊的对象。
+js 中没有专门的数组类型，数组会被当作是一个特殊的对象。
 
-在其他大多数语言中，数组都是被连续划分的一大块空间，这样方便存储和读写；但是js中的数组有点特殊。根据**分配内存方式**和**访问速度**的区别，可以把js的数组分为两种：
+在其他大多数语言中，数组都是被连续划分的一大块空间，这样方便存储和读写；但是 js 中的数组有点特殊。根据**分配内存方式**和**访问速度**的区别，可以把 js 的数组分为两种：
+
 - 快数组：连续内存空间，在创建一个连续块并且数组中类型相同时产生。特点是访问读写快，但是不能随意删除和改变索引。
-通过`new Array(LENGTH)`创建的数组都是快数组，当数组中元素相同时，并且对该数组的操作都是数组原生操作（push、pop这类），就是一一个快数组。
-- 慢数组：哈希表形式的存储，表现为一个键、值、描述符key、value、descriptor）三元组。
-当对length属性更改、访问元素的上面三个属性、直接修改索引等操作都会引起数组转化为慢数组。如果数组的值类型不同（如果是对象数组或者二维数组就一定是慢数组），也会变成慢数组。
+  通过`new Array(LENGTH)`创建的数组都是快数组，当数组中元素相同时，并且对该数组的操作都是数组原生操作（push、pop 这类），就是一一个快数组。
+- 慢数组：哈希表形式的存储，表现为一个键、值、描述符 key、value、descriptor）三元组。
+  当对 length 属性更改、访问元素的上面三个属性、直接修改索引等操作都会引起数组转化为慢数组。如果数组的值类型不同（如果是对象数组或者二维数组就一定是慢数组），也会变成慢数组。
 
 参考：https://zhuanlan.zhihu.com/p/371236424
-
 
 ## `0.1 + 0.2 !== 0.3`
 
@@ -595,8 +594,9 @@ let obj1 = {
 ```js
 let obj2 = Object.assign({}, obj1);
 ```
+
 `Object.assign`实际上是把一个对象所有的可枚举属性和自有属性(hasOwnProperty)复制到另一个对象中去，并返回复制的新对象。
-如果通过difineProperty设置了属性不可枚举（不可遍历），则不能复制。
+如果通过 difineProperty 设置了属性不可枚举（不可遍历），则不能复制。
 同时只会复制对象自己身上的属性，不会复制原型链上的属性。
 
 ### 展开运算符
@@ -617,12 +617,12 @@ let obj2 = { ...obj1 };
 /* JSON先转字符串再转回来的方法可以实现 */
 let obj2 = JSON.parse(JSON.stringify(obj1));
 ```
-这个方法有很大的问题。比如如果某个值是一个函数，json就会忽略掉，这样再转回来的时候就会缺少属性
+
+这个方法有很大的问题。比如如果某个值是一个函数，json 就会忽略掉，这样再转回来的时候就会缺少属性
 
 ### 递归
 
 详见下方手写深拷贝
-
 
 ### lodash 库函数 cloneDeep
 
@@ -793,7 +793,6 @@ for (let i of range) {
 console.log([...range]);
 ```
 
-
 比如封装一个 range 函数:
 
 ```js
@@ -830,7 +829,7 @@ for (let i of createRange(1, 10)) {
 - 有 length 属性
 - 本身没有数组相关方法, 比如 push pop
 
-> 对于Array.from()的参数来说，只有一个要求，就是必须有length属性即可。
+> 对于 Array.from()的参数来说，只有一个要求，就是必须有 length 属性即可。
 
 举个栗子:
 
@@ -926,19 +925,17 @@ for (let entry of mapByArr.entries()) {
 }
 ```
 
-Map和Set本身也是可以被直接用forof迭代的。迭代的值和对其调用foreach的参数相同，map为一个[key,value]数组，set为具体值
+Map 和 Set 本身也是可以被直接用 forof 迭代的。迭代的值和对其调用 foreach 的参数相同，map 为一个[key,value]数组，set 为具体值
 
 ```js
 const map = new Map([
-    ['name','aaa'],
-    ['age',18]
-])
-for(const arr of map){
-    console.log(arr) // ['name','aaa'] ['age',18]
+  ["name", "aaa"],
+  ["age", 18],
+]);
+for (const arr of map) {
+  console.log(arr); // ['name','aaa'] ['age',18]
 }
 ```
-
-
 
 ### Map 和对象相互转化
 
@@ -1079,7 +1076,7 @@ weakMap.set("test", "Whoops"); // Error，因为 "test" 不是一个对象
 - `value`: 本身的值
 - `writable`:默认 true, false 为只读
 - `enumerable`: 是否可枚举,false 即不会出现在 forin/object.keys 这种遍历中,直接打印也不会出现
-- `configurable`: 是否可配置。只有该属性的configurable为true时，writable和enumerable才可以改变
+- `configurable`: 是否可配置。只有该属性的 configurable 为 true 时，writable 和 enumerable 才可以改变
 
 设置或更改属性的属性值使用 `Object.defineProperty` 方法
 
@@ -1095,8 +1092,10 @@ Object.defineProperty(user, "name", {
   configurable: false, //不可配置,即不可删除/覆盖,也不能修改只读属性等,但是可以改属性值
 });
 ```
-当属性是对象定义时就拥有，则后面三个配置项都是true；
-如果属性是通过defineProperty创建（对象定义时没有），则后面的配置项默认是false
+
+当属性是对象定义时就拥有，则后面三个配置项都是 true；
+如果属性是通过 defineProperty 创建（对象定义时没有），则后面的配置项默认是 false
+
 ```js
 const user = {
   name: "xiaoming",
@@ -1105,9 +1104,8 @@ const user = {
 Object.defineProperty(user, "age", {
   value: 18,
 });
-Object.getOwnPropertyDescriptor(user,"age") //{value: 18, writable: false, enumerable: false, configurable: false}
+Object.getOwnPropertyDescriptor(user, "age"); //{value: 18, writable: false, enumerable: false, configurable: false}
 ```
-
 
 获取属性可以用 getOwnPropertyDescriptor 方法
 
@@ -1122,8 +1120,6 @@ const descriptor = Object.getOwnPropertyDescriptor(user, "name");
 }
 */
 ```
-
-
 
 ## getter 和 setter
 
@@ -1744,11 +1740,11 @@ https://juejin.cn/post/6844903797135769614
 >
 > ```js
 > for (var i = 0; i < 3; i++) {
->   	setTimeout(() => console.log(i), 1000);
+>   setTimeout(() => console.log(i), 1000);
 > }
 >
 > for (let i = 0; i < 3; i++) {
->   	setTimeout(() => console.log(i), 1000);
+>   setTimeout(() => console.log(i), 1000);
 > }
 > ```
 >
@@ -1955,14 +1951,16 @@ foo();
 2. 定时器；当一个节点被删除或者被销毁时，其上挂载的定时器没有被清除，可能会导致定时器仍在运作
 
 比如：
-```js
-const element = document.getElementById('element')
 
-setInterval(()=>{
-  console.log(element)
-},1000)
+```js
+const element = document.getElementById("element");
+
+setInterval(() => {
+  console.log(element);
+}, 1000);
 ```
-这里的定时器内部的回调函数就会一直引用这个变量，从而导致了内存泄漏的问题。解决方法就是清除定时器，或者把element的声明移到定时器内部。
+
+这里的定时器内部的回调函数就会一直引用这个变量，从而导致了内存泄漏的问题。解决方法就是清除定时器，或者把 element 的声明移到定时器内部。
 
 3. 引用但已经被销毁的 dom 元素；即引用一个 dom，但这个 dom 被从 dom 树中移除了：
 
@@ -2021,15 +2019,17 @@ MyObject.prototype.getMessage = function () {
 };
 ```
 
-
 #### 解决内存泄漏问题
 
 对应上述的内存泄漏场景，可以对症下药解决内存泄漏问题：
+
 1. 不要设置全局变量，设置了也应该及时清除
 2. 定时器引用的变量最好定义在内部，及时销毁定时器
 3. 闭包产生的泄露问题：
-  1. 减少使用闭包
-  2. 如果是嵌套函数闭包：
+4. 减少使用闭包
+5. 如果是嵌套函数闭包：
+
+
     - 在闭包内部，当闭包执行完成后将引用的变量置空
     - 当闭包被使用完毕时，应该清除闭包的引用。比如：
     ```js
@@ -2044,9 +2044,8 @@ MyObject.prototype.getMessage = function () {
     // ...调用cachedAdd
     cacheAdd = null // 清除闭包
     ```
-  3. 如果是回调函数闭包，比如addEventListener，就要及时清除监听器。如果是自己编写的回调函数，则可以通过置空的方式。
 
-
+3. 如果是回调函数闭包，比如 addEventListener，就要及时清除监听器。如果是自己编写的回调函数，则可以通过置空的方式。
 
 ### 闭包的出现场景
 
@@ -2055,27 +2054,28 @@ MyObject.prototype.getMessage = function () {
 
 2. 回调函数；在定时器、事件监听、Ajax 请求、跨窗口通信、Web Workers 或者任何异步中，只要使用了回调函数，实际上就是在使用闭包。
 
-比如下面这个例子中，callback函数就是一个闭包，因为他引用了getUserInput函数内部的input变量
+比如下面这个例子中，callback 函数就是一个闭包，因为他引用了 getUserInput 函数内部的 input 变量
+
 ```js
-function getUserInput(callback){
-  const input = document.getElementById('input').value
-  callback(input)
+function getUserInput(callback) {
+  const input = document.getElementById("input").value;
+  callback(input);
 }
 
-getUserInput((value)=>{
-  console.log(value)
-})
+getUserInput((value) => {
+  console.log(value);
+});
 ```
 
-其他类型的回调函数也是同理，比如addEventListener的回调函数：
+其他类型的回调函数也是同理，比如 addEventListener 的回调函数：
 
 ```js
-domElement.addEventListener('click',(e) => {
+domElement.addEventListener("click", (e) => {
   //...
-})
+});
 ```
 
-3. IIFE立即执行函数
+3. IIFE 立即执行函数
 
 ```js
 (function () {
@@ -2085,7 +2085,6 @@ domElement.addEventListener('click',(e) => {
   }
 })();
 ```
-
 
 ### 闭包的使用场景
 
@@ -2306,7 +2305,6 @@ Object.prototype.__proto__ === null;
 ## 对象原型
 
 ### 原型和继承
-
 
 一个对象内部可以设置其`__proto__`,或者在外部访问来设置这个对象的原型
 
@@ -3253,8 +3251,8 @@ Promise.race([
 
 上面这段代码第一个 Promise 会首先`settled `，因此只返回第一个的结果，剩余不再返回。
 
-如果有一个promise在其他promise resolve之前就reject，则会只返回这个reject结果。
-为了避免这种情况，有一个`Promise.any()` api，不会因为某个 Promise 变成rejected状态而结束，必须等到所有参数 Promise 变成rejected状态才会结束。
+如果有一个 promise 在其他 promise resolve 之前就 reject，则会只返回这个 reject 结果。
+为了避免这种情况，有一个`Promise.any()` api，不会因为某个 Promise 变成 rejected 状态而结束，必须等到所有参数 Promise 变成 rejected 状态才会结束。
 
 ### `Promise.allSettled`
 
@@ -3446,7 +3444,7 @@ new Promise((resolve, reject) => {
 - 如果下面还有一个 await,就看做再下一个 then
 
 > await 会导致函数暂停执行，直到被 await 等待的 Promise 状态变为 settled 才会继续。但是由于 await 执行在微任务队列，因此并不会阻塞主线程，但会阻塞后续微任务的执行。await 暂停的原理就是 Generator 函数中的 yield
-> await内部实现了 generator。参考generator可以得知generator可以保留函数内部的上下文而让函数外部继续执行（通过yield使函数保存在某个状态下），await差不多也是这个效果。当await后面的是异步代码（Promise）时，它会立刻返回一个pending状态的promise，然后让外部的同步代码继续执行。等到异步代码执行完，才会恢复函数后面部分的执行。
+> await 内部实现了 generator。参考 generator 可以得知 generator 可以保留函数内部的上下文而让函数外部继续执行（通过 yield 使函数保存在某个状态下），await 差不多也是这个效果。当 await 后面的是异步代码（Promise）时，它会立刻返回一个 pending 状态的 promise，然后让外部的同步代码继续执行。等到异步代码执行完，才会恢复函数后面部分的执行。
 
 它还可以链式调用:
 
@@ -3514,28 +3512,28 @@ try{
 ## 模块的发展历程
 
 1. 全局函数调用形式
-将不同的功能封装成不同的全局函数
-问题: 污染全局命名空间, 容易引起命名冲突或数据不安全，而且模块成员之间看不出直接关系
+   将不同的功能封装成不同的全局函数
+   问题: 污染全局命名空间, 容易引起命名冲突或数据不安全，而且模块成员之间看不出直接关系
 
 2. namespace：将一组变量和函数封装在一个对象。
-外部可以直接修改模块内部的数据，不安全
+   外部可以直接修改模块内部的数据，不安全
 
-3. 立即调用函数IIFE：数据是私有的, 外部只能通过暴露的方法操作
-但是如果当前这个模块依赖另一个模块就没办法处理
-多个模块需要引入多个script，增大加载时间
+3. 立即调用函数 IIFE：数据是私有的, 外部只能通过暴露的方法操作
+   但是如果当前这个模块依赖另一个模块就没办法处理
+   多个模块需要引入多个 script，增大加载时间
 
-4. AMD: 主要应用于浏览器端；因为浏览器端不应该同步加载所有模块，因此AMD支持异步加载，通过回调的形式在加载完成后才执行代码。
-AMD依赖于require.js，基本思想是通过define方法，将代码定义为模块；通过require方法，实现代码的模块加载。
+4. AMD: 主要应用于浏览器端；因为浏览器端不应该同步加载所有模块，因此 AMD 支持异步加载，通过回调的形式在加载完成后才执行代码。
+   AMD 依赖于 require.js，基本思想是通过 define 方法，将代码定义为模块；通过 require 方法，实现代码的模块加载。
 
 5. commonjs，详见下
 
-6. CMD：整合了commonjs和amd，模块的加载是异步的，模块使用时才会加载执行。CMD的实现是sea.js
+6. CMD：整合了 commonjs 和 amd，模块的加载是异步的，模块使用时才会加载执行。CMD 的实现是 sea.js
 
 7. UMD：可以根据导出类型的不同实现不同的导入方法，可以通过运行时或者编译时让同一个代码模块在使用 Commonjs、CMD 甚至是 AMD 的项目中运行
 
 8. ES6 Moudle：设计思想是尽量的**静态**化，使得编译时就能确定模块的依赖关系，以及输入和输出的变量。
-ES6 模块输出的是值的引用。因此修改原文件中的值也会影响导入的值，但是导出的值不能在被导入的文件中修改
-ES6 模块不是对象，它的对外接口只是一种静态定义，不像commonjs一样导入的是一个对象
+   ES6 模块输出的是值的引用。因此修改原文件中的值也会影响导入的值，但是导出的值不能在被导入的文件中修改
+   ES6 模块不是对象，它的对外接口只是一种静态定义，不像 commonjs 一样导入的是一个对象
 
 ## 模块类型
 
@@ -3561,6 +3559,7 @@ ES6 模块不是对象，它的对外接口只是一种静态定义，不像comm
 > - `exports`
 > - `require`
 > - `global`
+>
 > 只要能够提供这四个变量，浏览器就能加载 CommonJS 模块。
 
 这四个全局变量的主要功能如下：
@@ -3599,8 +3598,8 @@ require 命令的基本功能是，读入并执行一个 JavaScript 文件，然
 > 最后一步的查找优先级：
 > 如果在`/home/ry/projects/foo.js`文件里调用了 `require('bar.js')`，则 Node.js 会按以下顺序查找：
 >
-> 1. `/home/ry/projects/node_modules/bar.js`（当前项目的目录下的node_modules）
-> 1. `/home/ry/node_modules/bar.js`（向上一级，如果有node_modules的话）
+> 1. `/home/ry/projects/node_modules/bar.js`（当前项目的目录下的 node_modules）
+> 1. `/home/ry/node_modules/bar.js`（向上一级，如果有 node_modules 的话）
 > 1. `/home/node_modules/bar.js`
 > 1. `/home/node_modules/bar/index.js`；（如果上面不存在，说明可能是模块名错误，就会从默认按照 index.js 查找）
 > 1. `/node_modules/bar.js`，即总根目录下的模块
@@ -3608,11 +3607,10 @@ require 命令的基本功能是，读入并执行一个 JavaScript 文件，然
 #### 4. global
 
 表示一个全局对象，可以被所有模块看见并共享。
-其上有一些方法和属性，当在nodejs种直接调用某些方法是，就会被看作是从global对象上访问的
-比如：setTimeout、clearTimeout、setImmediate等。可以理解为类似浏览器中的window对象
+其上有一些方法和属性，当在 nodejs 种直接调用某些方法是，就会被看作是从 global 对象上访问的
+比如：setTimeout、clearTimeout、setImmediate 等。可以理解为类似浏览器中的 window 对象
 
-同时，在非严格模式下的顶层this（globalThis）就是这个global对象
-
+同时，在非严格模式下的顶层 this（globalThis）就是这个 global 对象
 
 ### AMD
 
@@ -3724,7 +3722,7 @@ ES6 Module 和 CommonJS 模块的区别：
 
 - CommonJS 是对模块的**浅拷⻉**，ES6 Module 是对模块的引⽤，即 ES6 Module 只存只读，不能改变其值，也就是指针指向不能变，类似 const；
 - import 的接⼝是 read-only（只读状态），不能修改其变量值。 即不能修改其变量的指针指向，但可以改变变量内部指针指向。可以对 commonJS 对重新赋值（改变指针指向），但是对 ES6 Module 赋值会编译报错。
-- ESM是静态导入，即并不需要执行某个具体的函数（比如require），而是在js的解释阶段就可以得到导入结果，并且仅在第一次导入时解析，后续导入都是第一次的复制。这种情况下就可以实现一些解释阶段的优化，比如提前得到依赖关系进行代码精简（treeshaking）等。
+- ESM 是静态导入，即并不需要执行某个具体的函数（比如 require），而是在 js 的解释阶段就可以得到导入结果，并且仅在第一次导入时解析，后续导入都是第一次的复制。这种情况下就可以实现一些解释阶段的优化，比如提前得到依赖关系进行代码精简（treeshaking）等。
 
 ES6 Module 和 CommonJS 模块的共同点：
 
@@ -3743,41 +3741,41 @@ ES6 Module 和 CommonJS 模块的共同点：
 - `<script type="module">`下的 this 是 undefined 而不是 window(这个跟严格模式有关系)
 - `<script type="module">`的脚本是异步的,会等待 html 完全就绪才会运行
 
-### ESM的工作原理
+### ESM 的工作原理
 
 参考：https://juejin.cn/post/7098192216229117959
 
+首先，ESM 可以在浏览器中通过`<script type="module">`直接使用，也可以是通过 webpack 等打包工具辅助解析。但不管是哪种方式，它的原理和流程基本都是一样的。
+如果是浏览器使用，该 script 则会放在渲染之后执行，相当于加了 defer；
 
-首先，ESM可以在浏览器中通过`<script type="module">`直接使用，也可以是通过webpack等打包工具辅助解析。但不管是哪种方式，它的原理和流程基本都是一样的。
-如果是浏览器使用，该script则会放在渲染之后执行，相当于加了defer；
+ESM 的工作流程，大致可以分为三步：
 
-ESM的工作流程，大致可以分为三步：
-1. 创建依赖关系图。在解析阶段通过解析各个模块之间的依赖关系，生成一个模块的依赖关系图（树），不同依赖项之间通过export\import语句来进行关联。
-2. 创建模块记录Module Record。和commonjs不同的是，由于ESM是在编译阶段完成的，因此并不会生成具体的模块对象（类似cjs中的module对象），而是一个Module Record，包含了当前模块的相关信息，比如该模块代码的AST、导入关系、导出值等等。
-  ![](https://pic.imgdb.cn/item/637d0dbb16f2c2beb10860aa.jpg)
-3. 模块记录的实例化，模块记录转化为模块实例，浏览器最终能够读取也就是Module Instance。
-
+1. 创建依赖关系图。在解析阶段通过解析各个模块之间的依赖关系，生成一个模块的依赖关系图（树），不同依赖项之间通过 export\import 语句来进行关联。
+2. 创建模块记录 Module Record。和 commonjs 不同的是，由于 ESM 是在编译阶段完成的，因此并不会生成具体的模块对象（类似 cjs 中的 module 对象），而是一个 Module Record，包含了当前模块的相关信息，比如该模块代码的 AST、导入关系、导出值等等。
+   ![](https://pic.imgdb.cn/item/637d0dbb16f2c2beb10860aa.jpg)
+3. 模块记录的实例化，模块记录转化为模块实例，浏览器最终能够读取也就是 Module Instance。
 
 具体来说，主要有三个过程：构造、实例化和求值：
 
 1. 构造：查找、下载并解析所有文件到模块记录中。这个阶段中，每个模块都会执行这三个步骤
-  - 查找：找出从哪里得到这个文件。从入口文件开始，查找并形成一棵依赖关系树
-  - 下载：获取具体的文件，可以是从URL下载，或者从文件系统获取
-  - 解析：对模块文件生成一个模块记录，包含了当前模块的 AST，引用了哪些模块的变量，以及一些特定属性和方法。**一旦 Module Record 被创建，它会记录在模块映射Module Map中**。被记录后，如果再有对相同 URL 的请求，Loader 将直接采用 Module Map 中 URL 对应的Module Record。
-  在构造过程结束时，从主入口文件变成了一堆模块记录Module Record：
+
+- 查找：找出从哪里得到这个文件。从入口文件开始，查找并形成一棵依赖关系树
+- 下载：获取具体的文件，可以是从 URL 下载，或者从文件系统获取
+- 解析：对模块文件生成一个模块记录，包含了当前模块的 AST，引用了哪些模块的变量，以及一些特定属性和方法。**一旦 Module Record 被创建，它会记录在模块映射 Module Map 中**。被记录后，如果再有对相同 URL 的请求，Loader 将直接采用 Module Map 中 URL 对应的 Module Record。
+  在构造过程结束时，从主入口文件变成了一堆模块记录 Module Record：
   ![](https://pic.imgdb.cn/item/637d102316f2c2beb10ca94f.jpg)
-2. 实例化。实例化阶段的主要作用是保证在静态阶段就把内存和导入导出链接起来，也就是ESM采取的一种叫做**动态链接**的方式。
-  导入希望获取到对应的导出的值，那么导入就需要找到导出变量在内存中存放的位置，读取它并为自己所用。但是这时代码还没有被执行，内存现在都是空的，并且现阶段也不能知道内存中哪些地方会是哪个模块的导出值。因此就需要一种方式，使得提前“预定”好对应的内存位置，使对应的导出和导入都指向这个位置。等到执行阶段，执行代码并向内存中填值，导入和导出就都可以获取到具体的值了。
-    
-  具体来说，JS引擎创建一个**模块环境记录(Module Enviroment Record)**来管理每个 Module Record 的变量。然后它在内存中找到所有导出内容对应的位置，并跟踪该位置；这一步实际上就是在链接内存和导出，可确保所有导入都可以链接到匹配的导出。拥有这样的动态绑定可以使我们在不运行任何代码的情况下连接所有模块。
-  
-  > 导入和导出都是指向内存的同一个位置，这也就解释了为什么ESM导出值不能更改（不能修改内存的指向），但可以修改对象属性（可以修改内存本身）。
+
+2. 实例化。实例化阶段的主要作用是保证在静态阶段就把内存和导入导出链接起来，也就是 ESM 采取的一种叫做**动态链接**的方式。
+   导入希望获取到对应的导出的值，那么导入就需要找到导出变量在内存中存放的位置，读取它并为自己所用。但是这时代码还没有被执行，内存现在都是空的，并且现阶段也不能知道内存中哪些地方会是哪个模块的导出值。因此就需要一种方式，使得提前“预定”好对应的内存位置，使对应的导出和导入都指向这个位置。等到执行阶段，执行代码并向内存中填值，导入和导出就都可以获取到具体的值了。
+
+具体来说，JS 引擎创建一个**模块环境记录(Module Enviroment Record)**来管理每个 Module Record 的变量。然后它在内存中找到所有导出内容对应的位置，并跟踪该位置；这一步实际上就是在链接内存和导出，可确保所有导入都可以链接到匹配的导出。拥有这样的动态绑定可以使我们在不运行任何代码的情况下连接所有模块。
+
+> 导入和导出都是指向内存的同一个位置，这也就解释了为什么 ESM 导出值不能更改（不能修改内存的指向），但可以修改对象属性（可以修改内存本身）。
 
 3. 求值。上一步已经“预定”好了内存的位置，这一步就是执行代码，并向内存中填值。注意这一步执行的是顶层代码，也就是函数之外的代码，主要目的是向导入和导出的变量中填值。
 
 全过程：
 ![](https://pic.imgdb.cn/item/637d169e16f2c2beb112a747.jpg)
-
 
 ### import
 
@@ -3789,21 +3787,22 @@ say.sayHi("John");
 say.sayBye("John");
 ```
 
-导出到as后的这个对象，包含默认导出和基本导出的所有变量，都作为该对象的一个属性。具名导出的属性名就是导出的变量名，而默认导出则会被放在一个叫做“default”的属性里
+导出到 as 后的这个对象，包含默认导出和基本导出的所有变量，都作为该对象的一个属性。具名导出的属性名就是导出的变量名，而默认导出则会被放在一个叫做“default”的属性里
 
-如果导出的是个匿名函数或匿名变量，则这个变量/函数就会被命名为default，可以通过`obj.xxx`访问
+如果导出的是个匿名函数或匿名变量，则这个变量/函数就会被命名为 default，可以通过`obj.xxx`访问
 
 这也是为什么默认导出只能有一个，多的则会相互覆盖。
+
 ```js
 // test.js
-export const hello = 'hello'
-export default () => 'world'
+export const hello = "hello";
+export default () => "world";
 
 // index.js
-import * as test from './test.js'
+import * as test from "./test.js";
 
-test.default() // 'world' // 相当于执行了那个匿名导出的函数，这个函数还是匿名的，test.default是它的引用方式
-test.hello // 'hello'
+test.default(); // 'world' // 相当于执行了那个匿名导出的函数，这个函数还是匿名的，test.default是它的引用方式
+test.hello; // 'hello'
 ```
 
 另外,借助 import(module) 表达式可以实现动态导入
@@ -4065,18 +4064,14 @@ stu.sayHi();
 - 产生的是"John"
   如果有 reflect ,就可以把正常的上下文"receiver"保留,从而使得 this 的指向依旧是"点前面的对象"
 
-
-
 ---
 
-Reflect的其他作用：
+Reflect 的其他作用：
 
 1. `Object`对象的一些明显属于语言内部的方法（比如`Object.defineProperty`），放到`Reflect`对象上。现阶段，某些方法同时在`Object`和`Reflect`对象上部署，未来的新方法将只部署在`Reflect`对象上。也就是说，从`Reflect`对象上可以拿到语言内部的方法。
 
-2. 修改某些`Object`方法的返回结果，返回false、true等比较清晰的信息。比如，`Object.defineProperty(obj, name, desc)`在无法定义属性时，会抛出一个错误，而`Reflect.defineProperty(obj, name, desc)`则会返回`false`。
+2. 修改某些`Object`方法的返回结果，返回 false、true 等比较清晰的信息。比如，`Object.defineProperty(obj, name, desc)`在无法定义属性时，会抛出一个错误，而`Reflect.defineProperty(obj, name, desc)`则会返回`false`。
 3. `Reflect`对象的方法与`Proxy`对象的方法一一对应，只要是`Proxy`对象的方法，就能在`Reflect`对象上找到对应的方法。这就让`Proxy`对象可以方便地调用对应的`Reflect`方法，完成默认行为，作为修改行为的基础。
-
-
 
 # 事件循环、消息队列、同步异步、宏任务微任务、调用栈、垃圾回收等各种原理性杂项
 
@@ -4093,13 +4088,11 @@ JS 环境中分配的内存有如下声明周期：
 
 ## 垃圾回收
 
-js的垃圾回收的对象应该分为基本类型数据和引用类型数据两种方式。
+js 的垃圾回收的对象应该分为基本类型数据和引用类型数据两种方式。
 
 对于基本类型数据，当函数的执行上下文从调用栈中弹出时就相当于销毁了这些变量。但是对于引用数据类型，只是销毁了它的引用，而实际的数据还在堆中占用着空间，这时就需要对存储这些对象的空间做垃圾回收，把没有用的对象回收掉。
 
 ---
-
-
 
 js 的垃圾回收区分为新生代和老生代两个部分。
 
@@ -4153,16 +4146,18 @@ f();
 详细讲解可以看这个视频：https://www.bilibili.com/video/BV1oV411k7XY/?spm_id_from=333.788.recommend_more_video.-1
 从 12 分钟开始看
 
-纠正几个误区： 
+纠正几个误区：
 
 0. 整个结构主要有三个部分：
-  - js 调用栈，即所有同步任务直接进入的地方，所有任务要执行必须经过调用栈
-  - webapis，或者可以是浏览器其他线程（对 js 来说就是一些 api），执行诸如定时器、网络请求等；当条件合适，会把回调放到任务队列中
-  - task queue，即任务队列，上一步完成后会把回调放入在此处排队，等待 eventloop 依次取任务执行。
+
+- js 调用栈，即所有同步任务直接进入的地方，所有任务要执行必须经过调用栈
+- webapis，或者可以是浏览器其他线程（对 js 来说就是一些 api），执行诸如定时器、网络请求等；当条件合适，会把回调放到任务队列中
+- task queue，即任务队列，上一步完成后会把回调放入在此处排队，等待 eventloop 依次取任务执行。
+
 1. event loop 并不是一直在工作，它的作用是把任务队列（消息队列）中的任务（消息）依次给 js 调用栈，让 js 执行这些任务；如果一段代码全部都是同步任务，或者异步任务还没有触发任何回调，event loop 就不工作。
 2. event loop 只有在**调用栈为空**的时候才会从 task queue 中取任务放到调用栈中执行。
 3. 不是所有任务都会经过 task queue，或者叫做消息队列；只有异步回调会经过，其他任务直接在 js 调用栈中运行！
-4. 上面视频最后讲到了渲染，实际上渲染是在和 task queue 争夺调用栈（即GUI渲染线程和JS执行线程是互斥的），同样只有栈空才能渲染；这也是不建议让大量代码堆积阻塞的原因。
+4. 上面视频最后讲到了渲染，实际上渲染是在和 task queue 争夺调用栈（即 GUI 渲染线程和 JS 执行线程是互斥的），同样只有栈空才能渲染；这也是不建议让大量代码堆积阻塞的原因。
 
 # 宏任务微任务
 
@@ -4438,11 +4433,11 @@ console.log(window.pageXOffset);
 ```
 
 这几个属性是相同的：
+
 ```js
 // pageYOffset 就是 scrollY 的别名
-window.pageYOffset === window.scrollY === document.documentElement.scrollTop
+(window.pageYOffset === window.scrollY) === document.documentElement.scrollTop;
 ```
-
 
 如果要更改，可以使用 api 手动滚动：
 
@@ -4459,8 +4454,6 @@ window.pageYOffset === window.scrollY === document.documentElement.scrollTop
 `Mutation Observer`是一个典型的**微任务**，通过这个 api 插入的处理程序会在当前所有 dom 变动之后执行。
 详见：
 https://wangdoc.com/javascript/dom/mutationobserver.html
-
-
 
 # 事件
 
@@ -4611,10 +4604,12 @@ element.addEventListener(event, handler, { options });
 </div>;
 //js
 //如果点击的是inner
-document.getElementsByClassName("main")[0].addEventListener("click", (event) => {
-  clg(event.target.className); //inner
-  clg(this.className); //main
-});
+document
+  .getElementsByClassName("main")[0]
+  .addEventListener("click", (event) => {
+    clg(event.target.className); //inner
+    clg(this.className); //main
+  });
 ```
 
 这个时候如果点击里边的 inner,this 就还是 main,而 target 则是点击的具体元素:inner
@@ -4733,6 +4728,7 @@ table.addEventListener("click", (e) => {
 - 在 `<input type="checkbox">` 上的 click 会选中/取消选中的 input
 
 想阻止默认事件有这几种方法:
+
 - 在事件的 event 对象使用`e.preventDefault()`方法。利用实践委托也可以
 - `return false`,但是只能用于`onxxx`事件
 - `addEventListener` 的可选项 `passive: true`
@@ -4766,7 +4762,7 @@ table.addEventListener("click", (e) => {
 > ```js
 > //onclick="handleSubmit()"其实是
 > elem.onclick = function (event) {
->   	handleSubmit();
+>   handleSubmit();
 > };
 > ```
 >
@@ -4775,6 +4771,7 @@ table.addEventListener("click", (e) => {
 > ```html
 > <form onsubmit="handleSubmit(event)">
 >   <!-- <form onsubmit="handleSubmit(e)"> 不可以-->
+> </form>
 > ```
 
 应该这样：
@@ -4989,42 +4986,45 @@ function request(url, method = "GET") {
 
 #### ProgressEvent
 
-> ProgressEvent 接口是测量如 HTTP 请求（一个XMLHttpRequest，或者一个 `<img>`，`<audio>`，`<video>`，`<style>` 或 `<link>` 等底层资源的加载）等底层流程进度的事件。
+> ProgressEvent 接口是测量如 HTTP 请求（一个 XMLHttpRequest，或者一个 `<img>`，`<audio>`，`<video>`，`<style>` 或 `<link>` 等底层资源的加载）等底层流程进度的事件。
 
-它常出现于xhr中onload、onprogress等事件的回调函数参数中，常用属性有：
+它常出现于 xhr 中 onload、onprogress 等事件的回调函数参数中，常用属性有：
+
 - `ProgressEvent.type`：返回当前时间的
 - `ProgressEvent.lengthComputable` 只读
-是一个 布尔值，表示底层流程将需要完成的总工作量和已经完成的工作量是否可以计算。换句话说，它告诉我们进度是否可以被测量。这一项为true后就可在onprogress事件中记录进度等信息。
+  是一个 布尔值，表示底层流程将需要完成的总工作量和已经完成的工作量是否可以计算。换句话说，它告诉我们进度是否可以被测量。这一项为 true 后就可在 onprogress 事件中记录进度等信息。
 - `ProgressEvent.loaded` 只读
-是一个 unsigned long long 类型数据，表示底层流程已经执行的工作总量。可以用这个属性和 ProgressEvent.total 计算工作完成比例。当使用 HTTP 下载资源，它只表示内容本身的部分，不包括首部和其它开销。
+  是一个 unsigned long long 类型数据，表示底层流程已经执行的工作总量。可以用这个属性和 ProgressEvent.total 计算工作完成比例。当使用 HTTP 下载资源，它只表示内容本身的部分，不包括首部和其它开销。
 - `ProgressEvent.total` 只读
-是一个 unsigned long long 类型数据，表示正在执行的底层流程的工作总量。当使用 HTTP 下载资源，它只表示内容本身的部分，不包括首部和其它开销。
+  是一个 unsigned long long 类型数据，表示正在执行的底层流程的工作总量。当使用 HTTP 下载资源，它只表示内容本身的部分，不包括首部和其它开销。
 
 #### onload
 
-onload事件 —— 当请求完成（即使 HTTP 状态为 400 或 500 等），并且响应已完全下载。
+onload 事件 —— 当请求完成（即使 HTTP 状态为 400 或 500 等），并且响应已完全下载。
 
-onload事件触发后，可以在xhr.response种获取到响应信息。这个值它的具体类型取决于responseType 的值，常见的有arraybuffer、blob、text、json、null这几种。
+onload 事件触发后，可以在 xhr.response 种获取到响应信息。这个值它的具体类型取决于 responseType 的值，常见的有 arraybuffer、blob、text、json、null 这几种。
 
-onload的触发不一定是响应成功，只是表示收到了响应，但是依旧可能存在http错误，比如404、500等错误的响应体可能为null或者错误信息。因此如果需要处理http错误，就需要在onload内部处理：
+onload 的触发不一定是响应成功，只是表示收到了响应，但是依旧可能存在 http 错误，比如 404、500 等错误的响应体可能为 null 或者错误信息。因此如果需要处理 http 错误，就需要在 onload 内部处理：
 
 ```js
-xhr.onload = function() {
-  if (xhr.status != 200) { // 分析响应的 HTTP 状态
+xhr.onload = function () {
+  if (xhr.status != 200) {
+    // 分析响应的 HTTP 状态
     alert(`Error ${xhr.status}: ${xhr.statusText}`); // 例如 404: Not Found
-  } else { // 显示结果
+  } else {
+    // 显示结果
     alert(`Done, got ${xhr.response.length} bytes`); // response 是服务器响应
   }
 };
 ```
 
-onload事件的回调有一个event参数，是xhr事件的ProgressEvent对象。在常见的几个api中都有这个对象的出现；
+onload 事件的回调有一个 event 参数，是 xhr 事件的 ProgressEvent 对象。在常见的几个 api 中都有这个对象的出现；
 
 #### onerror
 
 用于处理错误。
-这里的错误是指请求期间出现的非HTTP错误，即无法发出请求，例如网络中断或者无效的 URL。
-触发这个事件时并没有响应，比如跨域也会导致触发onerror。也是因为没有响应，因此不能在其中使用response、status等参数。一般情况下，也只能在内部打印错误信息，或者在promise封装时reject。
+这里的错误是指请求期间出现的非 HTTP 错误，即无法发出请求，例如网络中断或者无效的 URL。
+触发这个事件时并没有响应，比如跨域也会导致触发 onerror。也是因为没有响应，因此不能在其中使用 response、status 等参数。一般情况下，也只能在内部打印错误信息，或者在 promise 封装时 reject。
 
 #### onprogress
 
@@ -5033,7 +5033,8 @@ onload事件的回调有一个event参数，是xhr事件的ProgressEvent对象�
 
 #### 其他
 
-1. onreadystatechange：这个是旧代码中常用的事件，当它触发时，表明`xhr.readyState`发生了改变。这个值一共有0、1、2、3、4五种取值，分别表示：
+1. onreadystatechange：这个是旧代码中常用的事件，当它触发时，表明`xhr.readyState`发生了改变。这个值一共有 0、1、2、3、4 五种取值，分别表示：
+
 ```
 UNSENT = 0; // 初始状态
 OPENED = 1; // open 被调用
@@ -5041,60 +5042,62 @@ HEADERS_RECEIVED = 2; // 接收到 response header
 LOADING = 3; // 响应正在被加载（接收到一个数据包）
 DONE = 4; // 请求完成
 ```
-实际上通过`XMLHttpRequest.DONE`的写法也可以表示这四个值。
-2. onloadend：在一个资源的加载进度停止之后被触发 (例如，在已经触发“error”，“abort”或“load”事件之后)
-3. onloadstart：当程序开始加载时，loadstart 事件将被触发。
-4. ontimeout：如果设置了xhr.timeout的具体值，那么超时时则会触发这个事件。
 
+实际上通过`XMLHttpRequest.DONE`的写法也可以表示这四个值。 2. onloadend：在一个资源的加载进度停止之后被触发 (例如，在已经触发“error”，“abort”或“load”事件之后) 3. onloadstart：当程序开始加载时，loadstart 事件将被触发。 4. ontimeout：如果设置了 xhr.timeout 的具体值，那么超时时则会触发这个事件。
 
 ### 主要属性
 
 1. readyState：上面说过
-2. response：XMLHttpRequest 的 response 属性返回响应的正文。返回的类型为 ArrayBuffer、Blob、Document、JavaScript Object 或字符串中的一个。这取决于请求的 responseType 属性。response可以通过responseType改变类型；但也可以通过访问responseText/responseXML等形式明确获取希望的返回值类型。
-3. status：一个数字，表示http状态码。如果 XMLHttpRequest 出错，浏览器返回的 status 也为 0
-4. upload：用于检测上传事件的对象。绑定在xhr本身的事件都可以出现在upload上，通过这些事件就可以获取上传进度等信息。
-  - loadstart —— 上传开始。
-  - progress —— 上传期间定期触发。
-  - abort —— 上传中止。
-  - error —— 非 HTTP 错误。
-  - load —— 上传成功完成。
-  - timeout —— 上传超时（如果设置了 timeout 属性）。
-  - loadend —— 上传完成，无论成功还是 error。
-    跟踪上传进度可以这样：
-  ```js
-  function upload(file) {
-    let xhr = new XMLHttpRequest();
+2. response：XMLHttpRequest 的 response 属性返回响应的正文。返回的类型为 ArrayBuffer、Blob、Document、JavaScript Object 或字符串中的一个。这取决于请求的 responseType 属性。response 可以通过 responseType 改变类型；但也可以通过访问 responseText/responseXML 等形式明确获取希望的返回值类型。
+3. status：一个数字，表示 http 状态码。如果 XMLHttpRequest 出错，浏览器返回的 status 也为 0
+4. upload：用于检测上传事件的对象。绑定在 xhr 本身的事件都可以出现在 upload 上，通过这些事件就可以获取上传进度等信息。
 
-    // 跟踪上传进度
-    xhr.upload.onprogress = function(event) {
-      console.log(`Uploaded ${event.loaded} of ${event.total}`);
-    };
+- loadstart —— 上传开始。
+- progress —— 上传期间定期触发。
+- abort —— 上传中止。
+- error —— 非 HTTP 错误。
+- load —— 上传成功完成。
+- timeout —— 上传超时（如果设置了 timeout 属性）。
+- loadend —— 上传完成，无论成功还是 error。
+  跟踪上传进度可以这样：
 
-    // 跟踪完成：无论成功与否
-    xhr.upload.onloadend = function() {
-      if (xhr.status == 200) {
-        console.log("success");
-      } else {
-        console.log("error " + this.status);
-      }
-    };
+```js
+function upload(file) {
+  let xhr = new XMLHttpRequest();
 
-    xhr.open("POST", "/article/xmlhttprequest/post/upload");
-    xhr.send(file);
-  }
-  ```
-5. withCredentials：用于设置跨域请求下是否发送cookie。
+  // 跟踪上传进度
+  xhr.upload.onprogress = function (event) {
+    console.log(`Uploaded ${event.loaded} of ${event.total}`);
+  };
+
+  // 跟踪完成：无论成功与否
+  xhr.upload.onloadend = function () {
+    if (xhr.status == 200) {
+      console.log("success");
+    } else {
+      console.log("error " + this.status);
+    }
+  };
+
+  xhr.open("POST", "/article/xmlhttprequest/post/upload");
+  xhr.send(file);
+}
+```
+
+5. withCredentials：用于设置跨域请求下是否发送 cookie。
 
 ### 主要方法
 
 1. `xhr.setRequestHeader(header,value)`：用于设置响应头部，按照键值对的形式传入。如果要设置多个头就需要多次调用这个函数。一旦设置了 header，就无法撤销了。其他调用会向 header 中添加信息，但不会覆盖它。
+
 ```js
-xhr.setRequestHeader('X-Auth', '123');
-xhr.setRequestHeader('X-Auth', '456');
+xhr.setRequestHeader("X-Auth", "123");
+xhr.setRequestHeader("X-Auth", "456");
 
 // header 将是：
 // X-Auth: 123, 456
 ```
+
 2. `getResponseHeader()/getAllResponseHeaders()`：获取指定的响应头和全部响应头，返回都是字符串。
 3. `abort()`：中断请求
 
@@ -5105,12 +5108,12 @@ xhr.setRequestHeader('X-Auth', '456');
 > 基本方法：`socket.send(data)`/`socket.close([code], [reason])`
 > 基本事件：`onopen`、`onmessage`、`onerror`、`onclose`
 
-
-### Websocket握手过程
+### Websocket 握手过程
 
 https://developer.mozilla.org/zh-CN/docs/Web/API/WebSockets_API/Writing_WebSocket_servers
 
-1. 客户端发起握手请求：客户端将发送一个相当标准的 HTTP 请求（HTTP 版本必须是 1.1 或更高，方法必须是GET）：
+1. 客户端发起握手请求：客户端将发送一个相当标准的 HTTP 请求（HTTP 版本必须是 1.1 或更高，方法必须是 GET）：
+
 ```
 GET /chat HTTP/1.1
 Host: example.com:8000
@@ -5119,25 +5122,27 @@ Connection: Upgrade
 Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
 Sec-WebSocket-Version: 13
 ```
-在请求头中设置upgrade字段用于升级协议。`Sec-WebSocket-Key`将在下面用于服务端的` Sec-WebSocket-Accept`生成；
+
+在请求头中设置 upgrade 字段用于升级协议。`Sec-WebSocket-Key`将在下面用于服务端的` Sec-WebSocket-Accept`生成；
 
 2. 服务端响应握手请求：当服务器收到握手请求时，它应该发回一个特殊的响应，表明协议将从 HTTP 变为 WebSocket。
+
 ```
 HTTP/1.1 101 Switching Protocols
 Upgrade: websocket
 Connection: Upgrade
 Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
 ```
-Sec-WebSocket-Accept 参数需要服务器通过客户端发送的Sec-WebSocket-Key 计算出来。把客户发送的 Sec-WebSocket-Key 和 "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" (这个叫做 "魔法值") 连接起来，把结果用SHA-1编码，再用base64编码一次，就可以了。
+
+Sec-WebSocket-Accept 参数需要服务器通过客户端发送的 Sec-WebSocket-Key 计算出来。把客户发送的 Sec-WebSocket-Key 和 "258EAFA5-E914-47DA-95CA-C5AB0DC85B11" (这个叫做 "魔法值") 连接起来，把结果用 SHA-1 编码，再用 base64 编码一次，就可以了。
 这看起来繁复的处理使得客户端**明确服务端是否支持 WebSocket**。这是十分重要的，如果服务端接收到一个 WebSocket 连接但是把数据作为 HTTP 请求理解可能会导致安全问题。
-一旦服务器发送正确Accept的请求头，握手就完成了，你可以开始交换数据！
+一旦服务器发送正确 Accept 的请求头，握手就完成了，你可以开始交换数据！
 
 3. 跟踪客户端：服务器将不得不跟踪客户的套接字，所以你不会再和已经完成握手的客户握手。同一个客户端 IP 地址可以尝试连接多次（但是如果客户端尝试过多的连接，服务器可以拒绝它们以免遭拒绝服务攻击
 
 4. 交换数据帧：连接建立后，客户端或服务端都可以在任何时间点发送数据，数据的基本格式是二进制加密帧
 
-websocket有自己独特的状态码，在关闭连接时可以传递这些状态码，用于表示关闭原因等信息，详见https://zhuanlan.zhihu.com/p/145628937
-
+websocket 有自己独特的状态码，在关闭连接时可以传递这些状态码，用于表示关闭原因等信息，详见https://zhuanlan.zhihu.com/p/145628937
 
 ### 基本使用
 
@@ -5253,7 +5258,6 @@ https://www.ruanyifeng.com/blog/2018/06/javascript-this.html
   - 构造函数里表示实例对象(new 了以后)
   - 在事件中表示触发事件的对象,比如 click 事件的 this 就会是 button 元素
   - 对象中的方法:就是指这个对象
-  
 - this 的 bind apply call
   - bind:一般给函数使用,bind 一个变量,让函数内部的 this 指向这个变量
   ```javascript
@@ -5268,20 +5272,20 @@ https://www.ruanyifeng.com/blog/2018/06/javascript-this.html
   关于 this 更详细的讲解参考这里：
   https://blog.poetries.top/browser-working-principle/guide/part2/lesson11.html#javascript-%E4%B8%AD%E7%9A%84-this-%E6%98%AF%E4%BB%80%E4%B9%88
 
-### this的绑定
+### this 的绑定
 
-this主要有几种绑定方式：
+this 主要有几种绑定方式：
 
-1. 默认绑定，即函数内直接使用this或者全局状态下使用this，得到的是window或undefined
-2. 显式绑定，即通过call/bind/apply方式显式地将函数内的this绑定到一个对象上
-3. 隐式绑定，即对象调用形式`obj.func()`。当调用对象内的方法时，就相当于把函数内的this隐式绑定到了点符号前的对象上
-4. new绑定：即构造函数内部的this在new的过程中自动绑定到了构造出的实例对象上
+1. 默认绑定，即函数内直接使用 this 或者全局状态下使用 this，得到的是 window 或 undefined
+2. 显式绑定，即通过 call/bind/apply 方式显式地将函数内的 this 绑定到一个对象上
+3. 隐式绑定，即对象调用形式`obj.func()`。当调用对象内的方法时，就相当于把函数内的 this 隐式绑定到了点符号前的对象上
+4. new 绑定：即构造函数内部的 this 在 new 的过程中自动绑定到了构造出的实例对象上
 
-这四种绑定的优先级：new绑定 > 显式绑定 > 隐式绑定 > 默认绑定
+这四种绑定的优先级：new 绑定 > 显式绑定 > 隐式绑定 > 默认绑定
 
 其中后面三个的比较就不说了，这里说一下前两个的比较
 
-在bind的实现中有一个这样的部分，就是判断返回的fn中的this是不是fn的实例，如果是就说明返回的fn是作为构造函数调用，因此应该绑定当前this而不是传入的context：
+在 bind 的实现中有一个这样的部分，就是判断返回的 fn 中的 this 是不是 fn 的实例，如果是就说明返回的 fn 是作为构造函数调用，因此应该绑定当前 this 而不是传入的 context：
 
 ```js
 Function.prototype.mybind = function (context, ...args) {
@@ -5299,20 +5303,18 @@ Function.prototype.mybind = function (context, ...args) {
 };
 ```
 
-这里就可以得出new绑定优先级高于显示绑定的结论，因为显然如果通过new调用一个bind绑定后的函数，依然会以构造函数内部的this优先，最终绑定结果应该是实例，而不是bind传入的显示绑定对象。
+这里就可以得出 new 绑定优先级高于显示绑定的结论，因为显然如果通过 new 调用一个 bind 绑定后的函数，依然会以构造函数内部的 this 优先，最终绑定结果应该是实例，而不是 bind 传入的显示绑定对象。
 
 ```js
-const obj1 = {}
-function stu(age){
-    this.age = age
+const obj1 = {};
+function stu(age) {
+  this.age = age;
 }
-const setStu = stu.bind(obj)
-const newStu = new setStu(20)
-setStu(18) // {age:18}
-newStu // {age:20}
+const setStu = stu.bind(obj);
+const newStu = new setStu(20);
+setStu(18); // {age:18}
+newStu; // {age:20}
 ```
-
-
 
 ### this 特点
 
@@ -5350,8 +5352,9 @@ const getname = new User().getName;
 getname(); //this丢失
 ```
 
-2. setTimeout、setInterval 中的第一个参数，由于触发环境和正常的 js 调用栈完全不同（异步任务），因此内部 this 默认为 window。即使是严格模式，内部的this还是window；
-当然有一种特殊情况，就是这个函数是箭头函数。这种情况下this仍然是外层的
+2. setTimeout、setInterval 中的第一个参数，由于触发环境和正常的 js 调用栈完全不同（异步任务），因此内部 this 默认为 window。即使是严格模式，内部的 this 还是 window；
+   当然有一种特殊情况，就是这个函数是箭头函数。这种情况下 this 仍然是外层的
+
 ```js
 const testObj = {
   name: "test",
@@ -5361,18 +5364,18 @@ const testObj = {
       console.log(this); // testObj ，这里是外层的this。
     }, 0);
   },
-  hi(){
-    console.log(this) // testObj
-    setTimeout(function(){
-        console.log(this) // window，虽然是严格模式但还是window
-    })
-  }
+  hi() {
+    console.log(this); // testObj
+    setTimeout(function () {
+      console.log(this); // window，虽然是严格模式但还是window
+    });
+  },
 };
 
 testObj.hello();
-testObj.hi()
-
+testObj.hi();
 ```
+
 3. 参数传递，因为传入一个函数时相当于赋值给了形参，可能会导致 this 丢失。
    最常见的情况就是装饰器：
 
@@ -6053,15 +6056,17 @@ i++;
 
 ---
 
-对于var导致的问题，解决方法除了使用let之外还有几种：
-1. 利用IIFE(立即执行函数表达式)，每次for循环都是创建一个立即调用函数并传入当前i作为参数。这样每个调用就独立，外部的i改变不会影响传入的i
+对于 var 导致的问题，解决方法除了使用 let 之外还有几种：
+
+1. 利用 IIFE(立即执行函数表达式)，每次 for 循环都是创建一个立即调用函数并传入当前 i 作为参数。这样每个调用就独立，外部的 i 改变不会影响传入的 i
+
 ```js
-for(var i = 1;i <= 5;i++){
-  (function(j){
-    setTimeout(function timer(){
-      console.log(j)
-    }, 0)
-  })(i)
+for (var i = 1; i <= 5; i++) {
+  (function (j) {
+    setTimeout(function timer() {
+      console.log(j);
+    }, 0);
+  })(i);
 }
 
 // 相当于
@@ -6069,25 +6074,31 @@ var i = undefined;
 {
   i = 0;
   i++;
-  (function(j){
-    setTimeout(function timer(){
-      console.log(j)
-    }, 0)
-  })(i) // 1
+  (function (j) {
+    setTimeout(function timer() {
+      console.log(j);
+    }, 0);
+  })(i); // 1
   i++;
-  (function(j){
-    setTimeout(function timer(){
-      console.log(j)
-    }, 0)
-  })(i) // 2
+  (function (j) {
+    setTimeout(function timer() {
+      console.log(j);
+    }, 0);
+  })(i); // 2
 }
 ```
-2. 利用setTimeout第三个参数，把变量传入。原理和上面差不多
+
+2. 利用 setTimeout 第三个参数，把变量传入。原理和上面差不多
+
 ```js
-for(var i=1;i<=5;i++){
-  setTimeout(function timer(j){
-    console.log(j)
-  }, 0, i)
+for (var i = 1; i <= 5; i++) {
+  setTimeout(
+    function timer(j) {
+      console.log(j);
+    },
+    0,
+    i
+  );
 }
 ```
 
@@ -6424,7 +6435,6 @@ function bar(foo, func = () => foo) {
 bar("other"); // other
 ```
 
-
 ## 会改变原数组和不改变的数组方法
 
 https://juejin.cn/post/6844904192671219719
@@ -6573,77 +6583,102 @@ let config = {
 
 ## shadowDOM
 
-shadowDOM是指浏览器内置的样式构建，通常对开发者是隐藏的；想要查看需要特别在浏览器的开发者工具中开启查看shadowdom
+shadowDOM 是指浏览器内置的样式构建，通常对开发者是隐藏的；想要查看需要特别在浏览器的开发者工具中开启查看 shadowdom
 
 比如一个`<input type="range">`的内部样式实际上长这样：
 ![](https://pic.imgdb.cn/item/628798110947543129722127.jpg)
 
-这时浏览器为其内部定制的样式，不能通过js获取。类似的例子还有滚动条等
+这时浏览器为其内部定制的样式，不能通过 js 获取。类似的例子还有滚动条等
 
-shadowDOM的特点：
-- 有自己独立的样式和dom，正常的css和js不能访问
-- 只能通过在某个节点之下用`attachShadow`创建，并且可以选择是否挂载到shadow tree上。
+shadowDOM 的特点：
+
+- 有自己独立的样式和 dom，正常的 css 和 js 不能访问
+- 只能通过在某个节点之下用`attachShadow`创建，并且可以选择是否挂载到 shadow tree 上。
 
 一个 DOM 元素可以有以下两类 DOM 子树：
 
 - Light tree（光明树）：一个常规 DOM 子树，由 HTML 子元素组成。我们在之前章节看到的所有子树都是「光明的」。
 - Shadow tree（影子树）：一个隐藏的 DOM 子树，不在 HTML 中反映，无法被察觉。
 
-调用 `elem.attachShadow({mode: 'open' | 'close'})` 可以创建一个 shadow tree；参数为open则可以通过`elem.shadowRoot`访问。
-这个api有几个限制：
+调用 `elem.attachShadow({mode: 'open' | 'close'})` 可以创建一个 shadow tree；参数为 open 则可以通过`elem.shadowRoot`访问。
+这个 api 有几个限制：
+
 1. 每个元素中，只能创建一个 shadow root。
 2. elem 必须是自定义元素，或者是以下元素的其中一个：「article」、「aside」、「blockquote」、「body」、「div」、「footer」、「h1…h6」、「header」、「main」、「nav」、「p」、「section」或者「span」。其他元素，比如`<img>`，不能容纳 shadow tree。
 
 ```html
 <style>
-  p { color: red; }
+  p {
+    color: red;
+  }
 </style>
 
 <div id="elem"></div>
 
 <script>
-  elem.attachShadow({mode: 'open'});
+  elem.attachShadow({ mode: "open" });
   elem.shadowRoot.innerHTML = `
     <style> p { font-weight: bold; } </style>
     <p>Hello, John!</p>
   `;
 
   // <p> 只对 shadow tree 里面的查询可见 (3)
-  clg(document.querySelectorAll('p').length); // 0
-  clg(elem.shadowRoot.querySelectorAll('p').length); // 1
+  clg(document.querySelectorAll("p").length); // 0
+  clg(elem.shadowRoot.querySelectorAll("p").length); // 1
 </script>
 ```
 
-> 如果想要更改浏览器自带的某些shadowdom的样式，比如滚动条，可以通过点开并查看这个元素上的`pseudo`属性，它的值是一个伪元素；通过给这个元素添加上伪元素限制，就可以更改这个样式了。
+> 如果想要更改浏览器自带的某些 shadowdom 的样式，比如滚动条，可以通过点开并查看这个元素上的`pseudo`属性，它的值是一个伪元素；通过给这个元素添加上伪元素限制，就可以更改这个样式了。
 > ![](https://pic.imgdb.cn/item/628798110947543129722127.jpg)
 
 ## WebComponents
 
-WebComponents就是浏览器自己支持的组件化开发，用户可以自己创建组件，也可以继承一部分原组件并改进。
+WebComponents 就是浏览器自己支持的组件化开发，用户可以自己创建组件，也可以继承一部分原组件并改进。
 用户可以定义两种 custom element：
-1. 全新定义，通常是一个类，继承自浏览器内置的DOM对象
+
+1. 全新定义，通常是一个类，继承自浏览器内置的 DOM 对象
+
 ```js
 class MyElement extends HTMLElement {
-  constructor() { super(); /* ... */ }
-  connectedCallback() { /* ... */ }// 在元素被添加到文档之后，浏览器会调用这个方法（挂载）
-  disconnectedCallback() { /* ... */  }// 在元素被添加到文档之后，浏览器会调用这个方法（卸载）
-  static get observedAttributes() { return [/* 属性数组，这些属性的变化会被监视 */]; } // watch
-  attributeChangedCallback(name, oldValue, newValue) { /* ... */ }// 当元素定义的属性发生变化，并且属于上面数组监听的范畴时候，这个方法会被调用
-  adoptedCallback() { /* ... */ }// 在元素被移动到新的文档的时候，这个方法会被调用
- }
-customElements.define('my-element', MyElement);
+  constructor() {
+    super(); /* ... */
+  }
+  connectedCallback() {
+    /* ... */
+  } // 在元素被添加到文档之后，浏览器会调用这个方法（挂载）
+  disconnectedCallback() {
+    /* ... */
+  } // 在元素被添加到文档之后，浏览器会调用这个方法（卸载）
+  static get observedAttributes() {
+    return [
+      /* 属性数组，这些属性的变化会被监视 */
+    ];
+  } // watch
+  attributeChangedCallback(name, oldValue, newValue) {
+    /* ... */
+  } // 当元素定义的属性发生变化，并且属于上面数组监听的范畴时候，这个方法会被调用
+  adoptedCallback() {
+    /* ... */
+  } // 在元素被移动到新的文档的时候，这个方法会被调用
+}
+customElements.define("my-element", MyElement);
 ```
+
 2. 已有元素扩展，通常表现为仍是原有元素，但是属性上有一个`is`，可以把一般元素变为自定义元素。
+
 ```js
-class MyButton extends HTMLButtonElement { /*...*/ }
-customElements.define('my-button', MyElement, {extends: 'button'});
+class MyButton extends HTMLButtonElement {
+  /*...*/
+}
+customElements.define("my-button", MyElement, { extends: "button" });
 /* <button is="my-button"> */
 ```
 
 ## template
 
-可以使用`<template>`封装一部分HTML元素，浏览器会保存其内部的HTML元素排列。但是，样式不会被应用，脚本也不会被执行， `<video autoplay>` 也不会运行，相当于只是在单纯的保存。
+可以使用`<template>`封装一部分 HTML 元素，浏览器会保存其内部的 HTML 元素排列。但是，样式不会被应用，脚本也不会被执行， `<video autoplay>` 也不会运行，相当于只是在单纯的保存。
 它的一个重要应用是，可以把其中的内容完整的插入到一个元素中，而不只能通过字符串拼接的形式：
+
 ```html
 <template id="tmpl">
   <script>
@@ -6653,13 +6688,14 @@ customElements.define('my-button', MyElement, {extends: 'button'});
 </template>
 
 <script>
-  let elem = document.createElement('div');
+  let elem = document.createElement("div");
 
   elem.append(tmpl.content.cloneNode(true));
 
   document.body.append(elem);
 </script>
 ```
-当把template元素插入节点时，实际上插入的是其内部的子节点（`template.content`值）；插入之后将会类似正常的HTML一样去解析。
 
-可以把一些shadowdom的样式在template中封装好，然后插入到元素的`elem.shadowRoot`中
+当把 template 元素插入节点时，实际上插入的是其内部的子节点（`template.content`值）；插入之后将会类似正常的 HTML 一样去解析。
+
+可以把一些 shadowdom 的样式在 template 中封装好，然后插入到元素的`elem.shadowRoot`中

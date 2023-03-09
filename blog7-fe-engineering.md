@@ -149,8 +149,8 @@ npm run 可以运行定义在 package.json 中的脚本配置项。通常这些�
 
 ```json
 "scripts": {
-    "build": "webpack",
-    "start": "webpack serve --open"
+  "build": "webpack",
+  "start": "webpack serve --open"
 }
 ```
 

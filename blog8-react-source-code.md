@@ -337,190 +337,6 @@ extractEvents 是事件插件的核心，在 React18 有大更改，18 中的主
 
 当事件插件对应的事件被触发时，并不会直接触发绑定的回调，而是先经过事件插件的处理，创建并绑定事件对象和 listener 之后，才会在后面统一触发。
 
-## 事件绑定
-
-事件绑定是指 React 在 render 阶段处理元素的 props 时，如果发现 props 是一个事件，就把事件进行绑定的过程。也就是事件流程的第一步，先绑定了事件，后面才会有触发等其他工作。
-
-事件绑定的流程是：
-
-0. 在创建元素的 fiber 时，元素的 props 会绑定在该元素对应的 fiber 上，以`memoizedProps` 和 `pendingProps`形成保存。
-
-```js
-memoizedProps = {
-  onClick: function handerClick() {},
-  className: "button",
-};
-```
-
-比如这样一段代码：
-
-```js
-export default function Index() {
-  const handleClick = () => console.log("点击事件");
-  const handleChange = () => console.log("change事件");
-  return (
-    <div>
-      <input onChange={handleChange} />
-      <button onClick={handleClick}>点击</button>
-    </div>
-  );
-}
-```
-
-会形成这样的 fiber：
-![](https://pic.imgdb.cn/item/63a5c81b08b6830163d70cd9.jpg)
-
-1. 创建 fiber 后，在下一次的 diff 过程中，如果判断是 dom 元素类型的 fiber 就会检查 props，并对该元素的 props 用`diff props`函数`diffProperties`单独处理。这个函数如果发现某个 props 是合成事件，就会调用`legacyListenToEvent`函数注册事件监听器。
-
-```js
-function diffProperties(){
-    /* 判断当前的 propKey 是不是 React合成事件 */
-    if(registrationNameModules.hasOwnProperty(propKey)){
-         /* 这里多个函数简化了，如果是合成事件， 传入成事件名称 onClick ，向document注册事件  */
-         legacyListenToEvent(registrationName, document）;
-    }
-}
-
-function legacyListenToEvent(registrationName，mountAt){
-   const dependencies = registrationNameDependencies[registrationName]; // 根据 onClick 获取  onClick 依赖的事件数组 [ 'click' ]。
-    for (let i = 0; i < dependencies.length; i++) {
-      /* 这里的dependencies就是合成事件对应的数组，
-      比如onChange事件数组为  [blur , change , input , keydown , keyup]，就会依次遍历绑定这些原生事件。
-      */
-    const dependency = dependencies[i];
-    //  执行真正的绑定到dom上，实际上是绑定到顶层元素上，React的所有事件都绑定在顶层
-     addTrappedEventListener(element,topLevelType,PLUGIN_EVENT_SYSTEM,false)
-  }
-}
-```
-
-绑定在顶层真实 dom 元素（v17 是 container，v 之前是 document）上的事件是 React 的 dispatchEvent，用于统一处理事件。
-
-2. 绑定 `dispatchEvent`，进行事件监听；上一步出发到了`addTrappedEventListener`函数，但这个函数并不是真的`addEventListener`，React 也不会直接把事件处理函数安插在上面，而是通过`dispatchEvent`统一绑定事件，再插入到 dom 元素上.
-
-```js
-/*
-  targetContainer -> document
-  topLevelType ->  click
-  capture = false
-*/
-function addTrappedEventListener(
-  targetContainer,
-  topLevelType,
-  eventSystemFlags,
-  capture
-) {
-  const listener = dispatchEvent.bind(
-    null,
-    topLevelType, // 事件类型
-    eventSystemFlags, // 事件标记
-    targetContainer // document，即要绑定到的对象
-  );
-  if (capture) {
-    // 事件捕获阶段处理函数。
-  } else {
-    /* TODO: 重要, 这里进行真正的事件绑定。*/
-    targetContainer.addEventListener(topLevelType, listener, false); // document.addEventListener('click',listener,false)
-  }
-}
-```
-
-在绑定 dispatchEvent 时，就提前把 dispatchEvent 对应的事件通过 bind 绑定好了。这样如果调用 dispatchEvent，就会知道具体是触发的什么事件了。
-
-## 事件触发
-
-0. React 事件注册时候，统一的监听器`dispatchEvent`，也就是当我们点击按钮之后，首先执行的是`dispatchEvent`函数。dispatchEvent 会被传入原生的 event，通过 event 可以找到原生的 dom 元素，再找到对应的 fiber。
-
-> fiber 和 dom 的对应关系如下，可以通过 dom 反向找到对应的 fiber，fiber.stateNode 就指的是对应的 dom（前提是 fiber 是元素类型的）
-> ![](https://pic.imgdb.cn/item/62470e5027f86abb2a323c64.jpg)
-
-至于为什么要这么做，主要是 React 所有事件都是绑定在顶层的，当事件触发时都是在顶层捕获的，因此需要找出事件触发的具体位置，然后再做批量更新、调用绑定的回调等操作。
-
-```js
-function dispatchEvent(
-  topLevelType, // 事件类型
-  eventSystemFlags,
-  targetContainer, // 事件绑定目标
-  nativeEvent // event，原生事件对象
-) {
-  /* 获取原生事件event对应的dom元素 */
-  const nativeEventTarget = getEventTarget(nativeEvent);
-  // 从dom元素获取到对应的fiber
-  let targetInst = getClosestInstanceFromNode(nativeEventTarget);
-  /* 进行批量更新 */
-  dispatchEventForLegacyPluginEventSystem(
-    topLevelType,
-    eventSystemFlags,
-    nativeEvent,
-    targetInst
-  );
-  return null;
-}
-```
-
-1. 批量更新：上一步找到了对应的 fiber 之后，就从 fiber.memorizedProps 取出之前绑定好的事件，然后开启批量更新，但是先不执行回调，要等到后面收集完成事件后再执行，这里只是开启了批量更新。
-
-2. 合成事件源：通过 `onClick` 找到对应的处理插件 `SimpleEventPlugin` ，合成新的事件源 `e` ，里面包含了 `preventDefault` 和 `stopPropagation` 等方法。
-
-3. 形成事件执行队列：即从第一步获取到的 dom 对应的 fiber 开始，依次从下向上遍历 fiber 树，遇到元素类型 fiber ，就会收集事件，用一个数组收集事件：
-   - 如果遇到捕获阶段事件 `onClickCapture` ，就会 `unshift` 放在数组**前面**。以此模拟事件捕获阶段。
-   - 如果遇到冒泡阶段事件 `onClick` ，就会 `push` 到数组**后面**，模拟事件冒泡阶段。
-   - 一直收集到最顶端 app ，形成执行队列，在接下来阶段，**依次执行**队列里面的函数。
-
-大致流程代码如下：
-
-```js
-// instance是触发事件的dom元素的fiber
-while (instance !== null) {
-  const { stateNode, tag } = instance;
-  if (tag === HostComponent && stateNode !== null) {
-    /* DOM 元素 */
-    const currentTarget = stateNode;
-    if (captured !== null) {
-      /* 事件捕获 */
-      /* 在事件捕获阶段,真正的事件处理函数 */
-      const captureListener = getListener(instance, captured); // onClickCapture
-      if (captureListener != null) {
-        /* 对应发生在事件捕获阶段的处理函数，逻辑是将执行函数unshift添加到队列的最前面 */
-        dispatchListeners.unshift(captureListener);
-      }
-    }
-    if (bubbled !== null) {
-      /* 事件冒泡 */
-      /* 事件冒泡阶段，真正的事件处理函数，逻辑是将执行函数push到执行队列的最后面 */
-      const bubbleListener = getListener(instance, bubbled); //
-      if (bubbleListener != null) {
-        dispatchListeners.push(bubbleListener); // onClick
-      }
-    }
-  }
-  // 向上
-  instance = instance.return;
-}
-```
-
-这样就形成了类似原生事件中的捕获、冒泡效果，即先从上向下触发捕获，再从下向上触发冒泡。
-
-如果想要阻止冒泡也很简单，在遍历执行中跳过即可：
-
-```js
-function runEventsInBatch() {
-  const dispatchListeners = event._dispatchListeners; // 这里是React自己合成的event
-  if (Array.isArray(dispatchListeners)) {
-    // 遍历执行事件队列中的事件
-    for (let i = 0; i < dispatchListeners.length; i++) {
-      if (event.isPropagationStopped()) {
-        /* 判断是否已经阻止事件冒泡 */
-        break;
-      }
-      dispatchListeners[i](event); /* 执行真正的处理函数 */
-    }
-  }
-}
-```
-
-这也就解释了为什么在 React 事件中`return false`不能阻止默认行为，因为实际执行事件是`dispatchListeners[i](event)`这个表达式，在这里返回 false 没有任何用处。
-
 ## React 18 新事件系统
 
 新旧事件系统差别：
@@ -643,7 +459,8 @@ function addTrappedEventListener(
 }
 ```
 
-注意`createEventListenerWrapperWithPriority`，这个函数会根据事件优先级的不同，创建不同的 dispatchEvent；详见下
+listener是react创建的事件回调，当事件触发时执行的就是listener函数。
+listener通过`createEventListenerWrapperWithPriority`创建，这个函数会根据事件优先级的不同，创建不同的 dispatchEvent；详见下
 
 ```ts
 function createEventListenerWrapperWithPriority(
@@ -655,13 +472,16 @@ function createEventListenerWrapperWithPriority(
   let listenerWrapper;
   switch (eventPriority) {
     case DiscreteEventPriority:
+      // 非连续性事件，比如click
       listenerWrapper = dispatchDiscreteEvent;
       break;
     case ContinuousEventPriority:
+      // 持续性事件，比如mousemove
       listenerWrapper = dispatchContinuousEvent;
       break;
     case DefaultEventPriority:
     default:
+      // 其他类型
       listenerWrapper = dispatchEvent;
       break;
   }
@@ -687,6 +507,7 @@ function dispatchDiscreteEvent(
   const prevTransition = ReactCurrentBatchConfig.transition;
   ReactCurrentBatchConfig.transition = null;
   try {
+    // 当事件触发时，将本次更新优先级设置为Discrete，即非连续事件的优先级（最高）
     setCurrentUpdatePriority(DiscreteEventPriority);
     dispatchEvent(domEventName, eventSystemFlags, container, nativeEvent);
   } finally {
@@ -699,6 +520,12 @@ function dispatchDiscreteEvent(
 函数内部的核心还是 dispatchEvent，但是这里会设置更新优先级。当事件触发时，事件内的更新就会以此优先级执行。
 
 ### 事件触发
+
+当我们触发事件是，比如点击一个按钮，那么事件会向上冒泡，最终到达container元素并被收集到。因为react预先添加了所有的捕获和冒泡事件，所以dispatchEvent实际上会触发两次，一次是捕获阶段触发，一次是冒泡阶段触发。
+
+> 触发两次dispatchEvent也就意味着react**每次实际上是处理了两次事件**（只针对同时能冒泡和捕获的事件），一次是捕获阶段的addEventListener触发的，一次是冒泡阶段的。
+> 两次dispatchEvent也就意味着收集了两次事件，捕获阶段只会收集捕获类型的事件，冒泡阶段也只会收集冒泡阶段的事件，两者不会冲突；事件的收集都是从下向上的，只是收集的目标不同。
+> 收集完成后，再根据本次是冒泡触发的还是捕获触发的，按照不同顺序执行收集的事件。
 
 当事件触发，首先执行 addEventListener 传入的回调，即通过 createEventListenerWrapperWithPriority 创建的三种 dispatchEvent 之一；
 在他们内部，还是会调用 dispatchEvent，然后调用 dispatchEventOriginal、dispatchEventForPluginEventSystem，最后来到这样一段代码：
@@ -773,7 +600,8 @@ function extractEvents(
       // Unknown event. This is used by createEventHandle.
       break;
   }
-  // 找到事件监听者，也就是我们绑定的事件处理函数
+  // 找到所有会触发的事件监听的函数，是一个数组
+  // 也就是收集事件的过程
   const listeners = accumulateSinglePhaseListeners(
     targetInst,
     reactName, // 指定要收集的事件名，比如'onclick'，那么就只收集onclick事件
@@ -796,7 +624,55 @@ function extractEvents(
 }
 ```
 
-accumulateSinglePhaseListeners 函数，会获取存储在 Fiber 上的 Props 的对应事件，然后通过 createDispatchListener 返回的对象（就是下面这个 listener 对象）加入到监听集合上，如果是不会冒泡的函数则会停止（比如：scroll）,反之会向上递归。收集可以指定收集哪种事件、是否是捕获，收集的结果一半都是所有会触发的事件（同一类事件，要么捕获要么收集）
+accumulateSinglePhaseListeners 函数，会获取存储在 Fiber 上的 Props 的对应事件，然后通过一个循环收集事件，也就是我们说的收集事件的环节：
+```ts
+export function accumulateSinglePhaseListeners(
+  targetFiber: Fiber | null,
+  reactName: string | null, // 要收集的事件名称
+  nativeEventType: string,
+  inCapturePhase: boolean, // 是否是捕获阶段的事件
+  accumulateTargetOnly: boolean,
+  nativeEvent: AnyNativeEvent,
+): Array<DispatchListener> {
+  const captureName = reactName !== null ? reactName + 'Capture' : null;
+  const reactEventName = inCapturePhase ? captureName : reactName;
+  // 创建用于收集事件的数组
+  let listeners: Array<DispatchListener> = [];
+  // 事件触发的那个fiber
+  let instance = targetFiber;
+  let lastHostComponent = null;
+
+  // 从事件触发的那个节点开始，从下向上收集事件
+  while (instance !== null) {
+    const {stateNode, tag} = instance;
+    // 处理放在dom类型element上的事件
+    if (
+      (tag === HostComponent ||
+        (enableFloat ? tag === HostResource : false) ||
+        (enableHostSingletons ? tag === HostSingleton : false)) &&
+      stateNode !== null
+    ) {
+      lastHostComponent = stateNode;
+
+      // Standard React on* listeners, i.e. onClick or onClickCapture
+      if (reactEventName !== null) {
+        // 获取fiber上绑定的listener函数
+        const listener = getListener(instance, reactEventName);
+        if (listener != null) {
+          listeners.push(
+            createDispatchListener(instance, listener, lastHostComponent),
+          );
+        }
+      }
+    }
+    // 递归向上收集
+    instance = instance.return;
+  }
+  return listeners;
+}
+```
+
+然后通过 createDispatchListener 返回的对象（就是下面这个 listener 对象）加入到监听集合上，如果是不会冒泡的函数则会停止（比如：scroll）,反之会向上递归。收集可以指定收集哪种事件、是否是捕获，同一类事件，要么捕获要么冒泡。
 
 listeners 是一个数组，里面每一项有三个属性：
 
@@ -815,22 +691,9 @@ listeners 就是从 fiber 上获取的事件处理函数，是一个数组，因
 
 接下来就是 processDispatchQueue 执行事件了。他会遍历 dispatchQueue，取出每一项的 listeners 去执行。
 
-> dispatchQueue 虽然是一个数组，但它通常只有一项，即当前事件的冒泡类型。如果当前事件的捕获类型也存在，那就会放入两项。比如同时存在 onClick 和 onClickCapture 在同一个元素上，那就会有两项；
->
-> ```ts
-> const dispatchQueue = [
->   {
->     event: BubbleEvent;
->     listeners: []
->   },
->   {
->     event: CaptureEvent;
->     listeners: []
->   }
-> ]
-> ```
->
-> 注意 dispatchQueue 并非存储具体事件处理函数的数组，其内部对象的 listeners 才是
+> dispatchQueue 虽然是一个数组，但它通常只有一项。注意 dispatchQueue 并非存储具体事件处理函数的数组，其内部对象的 listeners 才是
+> ![](https://pic.imgdb.cn/item/64032cd5f144a01007bd8a9c.jpg)
+
 
 这里执行 listeners 的顺序，也就是冒泡和捕获的顺序。因为 listeners 存储的是一类事件的全部（比如全部 onclick），因此 listeners 要么顺序执行（冒泡），要么倒序执行（捕获）。
 
@@ -936,7 +799,9 @@ const update = {
 
 enqueueSetState 作用实际很简单，就是创建一个 update ，然后放入当前 fiber 对象的待更新队列（updateQueue）中，最后开启调度更新（scheduleUpdateOnFiber）。
 
-### 批量更新
+### 老版批量更新
+
+> 以下是react17及之前的策略
 
 如果在事件处理函数中调用 setState，那么会执行一个绑定批量更新的步骤 batchedEventUpdates。这个函数会在事件执行开始前开启一个批量更新的开关，再在执行之后关闭它。当开关开启时，enqueueSetState 函数中的 scheduleUpdateOnFiber 就会按照 fiber 上的更新队列依次执行批量更新。
 
@@ -1057,7 +922,9 @@ handleClick();
 
 函数组件的 state 主要依靠 usestate 实现。具体还是需要参考 hooks 部分的 useState 解析。
 
-函数组件 state 底层实现和类组件类似。尽管函数组件主要依靠 hooks 和 fiber 的配合完成状态的更新和保留，但是他们底层都有批量更新机制，同时也都是调用了 scheduleUpdateOnFiber 方法
+函数组件 state 底层实现和类组件类似。尽管函数组件主要依靠 hooks 和 fiber 的配合完成状态的更新和保留，但是他们底层都有批量更新机制，同时也都是调用了 scheduleUpdateOnFiber 方法。
+
+具体参考下面hooks讲解内的useState原理。
 
 ## setState 的同步异步
 
@@ -1170,7 +1037,7 @@ export default () => {
 };
 ```
 
-## React18 的特殊情况
+## React18 的自动批量更新
 
 如果开启 18 的 concurrent 模式，就没有了之前的批量更新的概念。React18 取消了之前的 isBatchingEventUpdates 机制，而是采用微任务的形式，将所有同步更新整理后立即执行。
 具体来说是这一段代码：
@@ -1205,6 +1072,7 @@ function ensureRootIsScheduled(root, currentTime) {
           (executionContext & (RenderContext | CommitContext)) ===
           NoContext
         ) {
+          // 这个地方和旧版一样，收集事件内部的所有setState，然后一次性执行更新
           flushSyncCallbacks();
         }
       });
@@ -1224,7 +1092,7 @@ function ensureRootIsScheduled(root, currentTime) {
 }
 ```
 
-当同步状态下触发多次 useState 的时候。
+当同步状态下触发多次 setState 的时候。
 
 - 首先第一次进入到 ensureRootIsScheduled ，会计算出 newCallbackPriority 可以理解成执行新的更新任务的优先级。那么和之前的 callbackPriority 进行对比，如果相等那么退出流程，那么第一次两者肯定是不相等的；如果是第二次以及以后再次触发 useState，显然这些任务都是一样的优先级 Synclane，那么就不会再执行后续的步骤
 - 同步状态下常规的更新 newCallbackPriority 是等于 SyncLane 的，就是之前在 lane 机制说过的所有事件同步更新的优先级，那么会执行两个函数，scheduleSyncCallback 和 scheduleMicrotask。
@@ -1242,7 +1110,8 @@ function ensureRootIsScheduled(root, currentTime) {
 
 ---
 
-异步情况下，会直接执行 scheduleCallback，即 Scheduler 内部的 unstable_ScheduleCallback，详情参考下面 Schduler 部分
+异步情况下，会直接执行 scheduleCallback，即 Scheduler 内部的 unstable_ScheduleCallback。scheduler是一个具有时间分片机制的调度器。
+也就是说，异步情况下其实也可以说是concurrent模式下，此时react不会像同步状态那样直接顺序执行，而是采用时间分片的机制执行任务。具体时间分片的原理参考下面的scheduler讲解。
 
 至于为什么微任务可以实现同步更新的效果，可以参考下面这个例子：
 要实现任务的批量更新，本质上就是先收集任务，再在某个恰当的时机一起执行这些任务。对 React 来说就是收集各个 setState，再一次性执行完成这些 setState，达成只更新一次的效果。
@@ -1459,6 +1328,8 @@ workInProgressFiber.alternate = currentFiber;
 ## 调和的开始
 
 当组件更新，本质上是从 fiberRoot 开始深度调和 fiber 树。在调度那部分讲过，调度的主要对象，即调和的入口函数是 performSyncWorkOnRoot
+在调度的入口函数ensureRootIsScheduled中，调度的对象实际上就是performSyncWorkOnRoot函数。Sync优先级的更新都会触发这个函数，也就是开始了调和过程
+
 
 ```js
 function performSyncWorkOnRoot(root) {
@@ -2165,6 +2036,9 @@ function App() {
 ##### update
 
 上面的 updateHostComponent 函数就是在 completeWork 中对 HostComponent 的更新处理函数。mount 阶段已经完成了属性的初始化，在 update 阶段就负责这些属性的更新。
+
+update阶段处理的对象是host组件和hostText上的属性。他会比较fiber上的props，如果发生更新就打上Update标记
+
 updateHostComponent 的关键是 diffProperties 函数。这个函数负责对更新前后的属性进行 diff，一共两次遍历
 
 - 第一次标记删除更新前有更新后没有的属性
@@ -2205,7 +2079,38 @@ function diffProperties(
 
 完成之后，会把发生变动的属性挂载在对应 fiber 的 updateQueue 上去。
 
----
+```ts
+updateHostComponent = function(
+    current: Fiber,
+    workInProgress: Fiber,
+    type: Type,
+    newProps: Props,
+  ) {
+    // 比较新旧fiber上的props是否相同
+    const oldProps = current.memoizedProps;
+    if (oldProps === newProps) {
+      return;
+    }
+
+    const instance: Instance = workInProgress.stateNode;
+    const currentHostContext = getHostContext();
+    
+    const updatePayload = prepareUpdate(
+      instance,
+      type,
+      oldProps,
+      newProps,
+      currentHostContext,
+    );
+    workInProgress.updateQueue = (updatePayload: any);
+    // 如果更新，就给当前fiber打上update标记。
+    if (updatePayload) {
+      markUpdate(workInProgress);
+    }
+  };
+```
+
+以及，检查新旧ref是否相同，并markRefz也是在这里。
 
 completeWork 主要是对 HostComponent 做处理，执行完成后已经创建了真实 dom，以及标记了 flags 的 workInProgress tree。接下来就到了 commit 阶段了。
 
@@ -2825,7 +2730,7 @@ function reconcileChildrenArray(
       // 取下一个oldFiber
       nextOldFiber = oldFiber.sibling;
     }
-    // updateSlot 内部会判断当前的 tag 和 key 是否匹配，如果匹配复用老 fiber 形成新的 fiber
+    // updateSlot 内部会判断当前的 tag 和 key 是否匹配，如果匹配，复用老 fiber 形成新的 fiber
     // 如果不匹配，返回 null ，此时 newFiber 等于 null 。
     const newFiber = updateSlot(
       returnFiber,
@@ -2862,7 +2767,7 @@ function reconcileChildrenArray(
   // 当第一次循环结束时有两种情况：
   // 1. newFiber遍历完，但oldFiber !== null：oldFiber多余，删除多余的oldFiber（下面第一个if）
   // 2. oldFiber === null，newFiber没遍历完：oldFiber不足，直接创建新的newFiber（下面第二个if）
-  // 3. newFiber遍历完，并且oldFiber也遍历完：这时不多不少，说明是发生了移动或者更复杂的情况，进入下一次循环（下面的for）
+  // 3. newFiber遍历完，并且oldFiber也遍历完，或者是他俩都没遍历完：这时说明是发生了移动或者更复杂的情况，进入下一次循环（下面的for）
 
   // 走到这里说明newFiber遍历完
   // 如果进入下面的if说明所有newFiber都被遍历完，但oldFiber还有，那么剩下没有遍历 oldFiber 也就没有用了，
@@ -2892,7 +2797,7 @@ function reconcileChildrenArray(
   }
 
   // 如果走到这里，说明节点发生移动，或者是移动+删除+增加等多种复杂情况，而不只是单纯的增加或删除
-  // existingChildren里存放剩余的老的 fiber 和对应的 key (或 index )的映射关系。
+  // existingChildren里存放剩余的老的 fiber 和对应的 key (或 index )的映射关系。键是key，值是oldFiber
   const existingChildren = mapRemainingChildren(returnFiber, oldFiber);
 
   for (; newIdx < newChildren.length; newIdx++) {
@@ -2946,6 +2851,65 @@ function reconcileChildrenArray(
 ## 单节点 Diff
 
 单节点 diff 针对的是在更新后只有一个节点的 fiber，即并非是数组类型的。
+
+单节点diff针对单个组件类型、html元素类型以及一些react特殊组件（比如fragment），不包括字符串（文本类型）、数组（多节点diff）等。即使有多个相同的element，依然还是被视作单节点，然后按照单节点diff一个一个处理。因此，这里探讨的过程实际上是针对一个节点的。
+
+先来看一下源码：
+```ts
+function reconcileSingleElement(
+    returnFiber: Fiber,
+    currentFirstChild: Fiber | null,
+    element: ReactElement,
+    lanes: Lanes,
+  ): Fiber {
+    const key = element.key;
+    let child = currentFirstChild;
+
+    // 如果child为null，说明是挂载阶段，直接创建
+    while (child !== null) {
+      // 首先比较key
+      if (child.key === key) {
+        const elementType = element.type;
+        if (elementType === REACT_FRAGMENT_TYPE) {
+        } else {
+          if (
+            child.elementType === elementType
+          ) {
+            // key相同比较type
+            // 如果type也相同，那就复用这个了，其他的兄弟节点不用再考虑。
+            deleteRemainingChildren(returnFiber, child.sibling);
+
+            const existing = useFiber(child, element.props);
+            existing.ref = coerceRef(returnFiber, child, element);
+            existing.return = returnFiber;
+            return existing;
+          }
+        }
+        // 如果key相同但type不同，还是删掉所有兄弟节点
+        // 因为其他节点一定是key和type都不同的，没有意义
+        deleteRemainingChildren(returnFiber, child);
+        break;
+      } else {
+        // 不能复用，删掉对应current树中的fiber
+        deleteChild(returnFiber, child);
+      }
+      // 循环，向当前节点对应的current树中的那个节点的兄弟节点循环
+      child = child.sibling;
+    }
+
+    // 创建当前fiber
+    if (element.type === REACT_FRAGMENT_TYPE) {
+    } else {
+      const created = createFiberFromElement(element, returnFiber.mode, lanes);
+      created.ref = coerceRef(returnFiber, currentFirstChild, element);
+      created.return = returnFiber;
+      return created;
+    }
+  }
+```
+
+这里有一个while循环，主要目的是检查current树上的兄弟节点能不能用。也就是说，这个过程实际上是从current树中**一堆兄弟节点**中挑出来**一个**可以复用的，然后把其他的删掉
+
 
 确定 dom 节点是否可以复用需要经过几个步骤：
 
@@ -3537,7 +3501,7 @@ if (supportsMicrotasks) {
 >
 > - scheduleMicrotask 之所以采用微任务，主要还是为了收集事件和批量更新，其实 flushSyncCallbacks 也完全可以正常同步执行，微任务只是一种批量更新的实现，和调度本身的那种依赖 MessageChannel 实现不阻塞的原理不同。**scheduleMicrotask 的对象是放入 syncQueue 中的调和任务**
 > - 而我们说的 scheduler 的异步调度，实际上是 scheduleCallback 这个函数的实现，即通过 MessageChannel 将阻塞任务改为空闲时执行，它的执行对象是所有 React 中的任务，里面有 taskQueue、timerQueue 这样存储各种任务的结构，可以把它理解为 Scheduler 本身。
->   并且，通过微任务收集事件的方法是 v18 新增的，在之前的版本中都是通过批量更新开关和同步执行 flushSyncCallbacks 来实现的。因此 v18 之前的版本在 setTimeout 内部的 setState 不会被合并。v18 中会在 setTimeout 内部等 React 不可控的地方仍然实现批量更新；至于怎么实现的，参考 state 那部分的章节。
+> 并且，通过微任务收集事件的方法是 v18 新增的，在之前的版本中都是通过批量更新开关和同步执行 flushSyncCallbacks 来实现的。因此 v18 之前的版本在 setTimeout 内部的 setState 不会被合并。v18 中会在 setTimeout 内部等 React 不可控的地方仍然实现批量更新；至于怎么实现的，参考 state 那部分的章节。
 
 ### 空闲期的同步任务(React17)
 
@@ -3587,7 +3551,31 @@ flushSyncCallbackQueue 内部代码也很简单，就是取出 syncQueue，依�
 
 ### scheduleCallback 统一调度
 
-上面所说的内容大部分是更新产生的调度。对于一个事件中的更新任务来说，除了同步 setState 之外（Synclane），其他优先级的任务都会进入异步流程，即调用 schedulerCallback 进行调度。这个函数就是 scheduler 的核心
+只有在concurrent模式下才会进入scheduleCallback，并且是否开启时间分片还需要进一步判断
+
+```ts
+if (root.tag === LegacyRoot) {
+  scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
+} else {
+  // scheduleSyncCallback就是把performSyncWorkOnRoot放入syncQueue中，下面flushSyncCallbacks就是执行syncQueue
+  scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
+}
+// supportsMicrotasks类似于一个配置，如果开启这个配置，就不会进入scheduleCallback，反之则会进入
+if (supportsMicrotasks) {
+  scheduleMicrotask(() => {
+    if (
+      (executionContext & (RenderContext | CommitContext)) ===
+      NoContext
+    ) {
+      flushSyncCallbacks();
+    }
+  });
+} else {
+  // Flush the queue in an Immediate task.
+  // 调度的任务仍然是flushSyncCallbacks函数，这个函数会循环执行syncQueue中的任务
+  scheduleCallback(ImmediateSchedulerPriority, flushSyncCallbacks);
+}
+```
 
 对 React18 来说，当调用 schedulerCallback 时需要先确定一个优先级，即第一个参数。这个优先级不同于更新任务的 lane 优先级，而是一套调度优先级，根据任务的过期时间确定任务的优先级。
 
@@ -3880,10 +3868,77 @@ function workLoop() {
 ```
 
 workLoop 是一个 while 循环，类似 EventLoop 一样执行 taskQueue 中的任务，每次循环还会检查 timerQueue 中是否还有任务到时间了，把它加入到 taskQueue 中。
+workLoop执行的单位是在scheduleCallback中创建的task。实际上是task.callback，即具体的调和任务。
 当这个循环结束，可能有两种情况：
 
 1. shouldYieldToHost 导致的中断。中断的原因可能有很多，比如需要给浏览器渲染线程让出 cpu、某些任务超时等，这时 taskQueue 还没执行完。workLoop 会返回 true，然后在上面说的 performWorkUntilDeadline 中，再注册一个回调，等到浏览器下一次空闲时再继续执行 taskqueue 中的任务
 2. taskQueue 执行完毕，timerQueue 可能还有任务，但暂时还没到时间。这时会返回 false，即不用再注册一个任务了，并且如果 timerQueue 还有任务，就调用 requestHostTimeout 继续调度 timerQueue。
+
+#### shouldYieldToHost
+
+> 这个函数既用于调度阶段的workLoop，也用于concurrent模式下的调和阶段的workLoopConcurrent的中断。
+
+这个函数是用于判断什么时候中断的，当返回true时说明要中断了。简化代码如下：
+```ts
+function shouldYieldToHost(): boolean {
+  // 当前任务已经执行的时间
+  const timeElapsed = getCurrentTime() - startTime;
+  // 
+  if (timeElapsed < frameInterval) {
+    return false;
+  }
+
+  if (enableIsInputPending) {
+    if (needsPaint) {
+      return true;
+    }
+    if (timeElapsed < continuousInputInterval) {
+      if (isInputPending !== null) {
+        return isInputPending();
+      }
+    } else if (timeElapsed < maxInterval) {
+      if (isInputPending !== null) {
+        return isInputPending(continuousOptions);
+      }
+    } else {
+      return true;
+    }
+  }
+
+  // `isInputPending` isn't available. Yield now.
+  return true;
+}
+```
+
+有几个关键变量：
+- frameInterval: 一帧的时间。默认是16.6，实际会根据`1000 / 帧率`来计算，帧率范围在0-125之间。
+- enableIsInputPending: 能使用 isInputPending api，这个api下面会说到
+- needsPaint: 浏览器需要去绘制。这个变量取决于requestPaint函数，同样取决于isInputPending
+- continuousInputInterval: 直译为持续输入的间隔，比如mousemove事件会在每n毫秒触发一次，那么n毫秒就是这个间隔。如果当前任务的执行耗时没有超过这个间隔，就不会阻塞用户对持续事件的输入，因此并不需要立即中断。
+- maxInterval: 最大间隔，默认为300毫秒，任务执行不能超出这个时间。
+
+以下情况会返回true导致中断：
+- 任务执行时间超过用户持续输入的最小间隔，即可能会阻塞用户输入
+- 任务执行时间超过最大间隔300毫秒
+- 浏览器需要绘制
+- isInputPending返回true，即用户此时正在输入。
+
+isInputPending，参考https://developer.chrome.com/articles/isinputpending/
+
+这个API当浏览器有需要处理的输入事件时，调用`isInputPending()`会返回true
+在不传入任何参数的情况下，将会检测所有类型的输入事件，包括按键、鼠标、滚轮触控等DOM UI事件，也可以手动传入一个包含事件类型的数组参数。
+
+也就是说，当浏览器检测到用户输入时，这个函数会实时返回true。比如我们将其放入一个循环中，如果用户触发事件，这个循环就会中断：
+```js
+while (workQueue.length > 0) {
+  if (navigator.scheduling.isInputPending()) {
+    break;
+  }
+  let job = workQueue.shift();
+  job.execute();
+}
+```
+这种方式可以更灵活地检测用户输入，从而保证不会阻塞用户的输入。
 
 # Hooks 原理
 
@@ -4311,7 +4366,7 @@ function dispatchSetState<S, A>(
   // 生成 update 对象
   const update: Update<S, A> = {
     lane,
-    action,
+    action, // 在useState中，action就是dispatch传入的新的状态或一个函数
     hasEagerState: false,
     eagerState: null,
     next: (null: any),
@@ -5263,10 +5318,21 @@ function workLoopConcurrent() {
 
 可以看到，关键就在于 workLoopConcurrent 的!shouldYield()判断。这个函数来自于 scheduler，会根据 cpu 占用等情况分析当前任务能不能被继续执行。
 
+> shouldYield函数实际上是scheduler中的shouldYieldToHost函数，具体参考上面的scheduler部分。
+
 Concurrent 模式的选择其实来自于两次选择：
 
-1. performConcurrentWorkOnRoot 的选择，在 ensureRootIsScheduled 函数内部，只有当 nextLanes 的最高优先级不等于 SyncLane 时，才会选择 Concurrent。这也就是说，假如有一个 SyncLane 级别的更新，那么就一定不会选到 Concurrent 模式
-2. renderRootConcurrent 的选择，取决于 shouldTimeSlice 变量。这个机制在上面 timeSlice 讲过。
+1. 根据当前的FiberRoot是LegacyRoot还是ConcurrentRoot决定。如果是通过createRoot创建的ConcurrentRoot，就会使用scheduleCallback来调度任务，即开启了Concurrent模式。
+```ts
+ if (root.tag === LegacyRoot) {
+  // legacy模式
+  scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
+} else {
+  // Concurrent模式
+  scheduleSyncCallback(performSyncWorkOnRoot.bind(null, root));
+}
+```
+2. performConcurrentWorkOnRoot 函数内部的选择，取决于 shouldTimeSlice 变量。大多数时候这个值都为true，即开启时间分片；只有当某些任务过长时间得不到执行（饥饿）或者在其他地方禁用了时间分片时才会关闭时间分片。
 
 # React FiberRoot
 

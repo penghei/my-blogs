@@ -688,3 +688,5 @@ export default function handler(req, res) {
 ```
 
 函数的参数 req 和 res 就是 nodejs 中的 req 和 res；其中 req 来自客户端代码发送的请求。**注意不要从三个函数内部向 api 路由发请求**，通常是在客户端代码中写。
+
+

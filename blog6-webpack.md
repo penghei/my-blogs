@@ -63,6 +63,8 @@ chunk在打包过程中会被分成三种类型：
   - ` __webpack_require__.f`、`__webpack_require__.r` 等功能实现最起码的模块化
   - 动态加载特性，则需要写入 `__webpack_require__.e` 函数
 
+绝大多数情况下，webpack会为每个chunk都生成一个单独的js文件。比如项目中使用了5次import()来动态导入，那么webpack就会额外生成5个js文件，分别表示这5个chunk的输出结果。
+
 ## 安装使用及配置
 
 ### 安装
@@ -908,7 +910,6 @@ threadLoader.warmup(
 
 #### Parallel-Webpack
 
-
 Parallel-Webpack其实是一个webpack的套壳升级版。因为Thread-loader、HappyPack 这类组件所提供的并行能力都仅作用于文件加载过程，对后续 AST 解析、依赖收集、打包、优化代码等过程均没有影响；而Parallel-Webpack则可以影响整个过程。具体来说，Parallel-Webpack实际上是创建了不同的独立进程来运行webpack
 
 如果要使用，首先安装：
@@ -1133,7 +1134,6 @@ module.exports = {
 ```
 
 
-
 #### 压缩 js
 
 主要使用 TerserWebpackPlugin 来压缩 JavaScript；webpack5 自带最新的 terser-webpack-plugin，无需手动安装。
@@ -1210,7 +1210,6 @@ module.exports = {
 ```
 
 ### tree-shaking
-
 #### 效果
 
 `Tree Shaking` 可以用来剔除 JavaScript 中用不上的死代码，确切来说是没有使用的引用代码。
@@ -1305,6 +1304,7 @@ export default 'foo-bar'
 
 usedExports 字段表示告知 webpack 去决定每个模块使用的导出内容，也就是说让 webpack 自己取判断哪些导出被使用了，哪些没有被用到，没有被用到的导出就不会被引用。
 比如：
+
 ```js
 module.exports = {
   mode: "production",
@@ -1330,6 +1330,7 @@ export const foo = 'foo'
 import {bar,foo} from './bar.js'
 const f = foo
 ```
+
 这里的f变量虽然引用了foo导出，但是f实际上也没有被使用。这种情况下treeshaking不会把foo看作是没使用的导出，因此tree-shaking就不会剔除foo的导出。
 
 2. 标记纯函数或副作用
@@ -1343,6 +1344,7 @@ const f = foo
 ![](https://pic.imgdb.cn/item/63e32f4c4757feff33d16e4f.jpg)
 
 3. 禁止babel编译esm语句。需要将`@babel/preset-env`的配置中的modules属性改为false
+
 ```json
 {
   "presets": [
@@ -1356,8 +1358,7 @@ const f = foo
 }
 ```
 
-
-
+4. 使用es6模块的库。比如如果想对lodash进行shaking就应该采用es6模块的lodash-es。
 #### sideEffects
 
 后来添加了一个 sideEffects 的配置，用于处理导出中包含副作用的情况。所谓副作用其实就是当执行某个模块时，该模块除了返回导出值之外，还会产生一些额外影响，比如修改全局作用域下的变量等。
@@ -1371,7 +1372,7 @@ const f = foo
 ```
 
 如果所有代码都不包含副作用，我们就可以简单地将该属性标记为 false，来告知 webpack 它可以安全地删除未用到的 export。
-相反，如果有一些代码有副作用，就需要在这里指明具体的路径
+相反，如果有一些代码有副作用，就需要在这里指明具体的路径，防止webpack将其shaking掉。
 
 ```json
 {
@@ -1388,7 +1389,18 @@ const f = foo
 }
 ```
 
-### SplitChunksPlugin
+当设置完成sideEffects后，其余没有包含在内的文件都被视为是无副作用的，这样webpack就可以放心地进行tree-shaking了。
+
+### 代码分割
+
+代码分割是webpack最常见的减少打包体积的方式。同时，代码分割也可以减少主模块的大小，从而加快浏览器加载页面。
+代码分割的主要方式有三个：
+1. 多个entry手动分割。这种方式一般是额外创建几个入口文件，然后把部分代码移入。也可以通过dependOn的形式将公共依赖单独打包。这种方式比较麻烦而且容易出错
+2. 动态导入。通过import语法，webpack会自动为动态导入的模块创建async chunk，从而减小核心模块大小。动态导入的对象可以是react组件、大型的库、资源文件等。
+3. splitChunk。splitChunk实际上是在chunk的单位上进行分割，可以将chunk之间公共的依赖模块单独拆分到一个chunk中，也可以直接拆分node_modules中的某些库和模块。比如可以通过`chunks: 'all'`，webpack将找出所有chunk中重复使用的module，将其单独打包或统一打包到一个bundle中，减少了模块冗余。
+
+
+#### SplitChunksPlugin
 
 SplitChunksPlugin 是 Webpack 4 之后内置实现的最新分包方案，它能够基于一些更灵活、合理的启发式规则将 Module 编排进不同的 Chunk，最终构建出性能更佳，缓存更友好的应用产物。
 
@@ -1400,10 +1412,12 @@ SplitChunksPlugin是为了解决chunk构建的问题的。chunk是module对象�
 
 Initial Chunk 与 Async Chunk 这种略显粗暴的规则会带来两个明显问题：
 1. 模块重复打包：
+
 假如多个 Chunk 同时依赖同一个 Module，那么这个 Module 会被不受限制地重复打包进这些 Chunk，这样对于多个chunk来说，每个都包含了相同的module，就会造成体积增大
 ![](https://pic.imgdb.cn/item/63e103c24757feff33a5310e.jpg)
 
 2. 所有模块都被打入同一个包。
+
 Async Chunk默认会和Initial Chunk打包在一起，如果没有多个入口的话，那么最终的chunk可能只有一个。对于一个庞大的项目来说，打包在一起是很致命的：
 - 资源冗余：客户端必须等待整个应用的代码包都加载完毕才能启动运行，但可能用户当下访问的内容只需要使用其中一部分代码
 - 缓存失效：将所有资源达成一个包后，所有改动 —— 即使只是修改了一个字符，客户端都需要重新下载整个代码包，缓存命中率极低
@@ -1422,15 +1436,22 @@ module.exports = {
 ```
 
 
-#### 设置分包范围
+##### 设置分包范围
 
-SplitChunksPlugin 默认情况下只对 Async Chunk 生效，我们可以通过 splitChunks.chunks 调整作用范围
+SplitChunksPlugin 默认情况下只对 Async Chunk 生效，我们可以通过 splitChunks.chunks 调整作用范围。
+
 - `'all'` ：对 Initial Chunk 与 Async Chunk 都生效，建议优先使用该值；
 - `'initial'` ：只对 Initial Chunk 生效；
 - `'async'` ：只对 Async Chunk 生效；
 - 函数 `(chunk) => boolean` ：该函数返回 true 时生效；
 
-#### 根据 Module 使用频率分包
+> 这三个值用于配置，对什么类型的chunk，将其公共模块单独打包到一个chunk中去。
+> 比如一次打包过程中有5个chunk，其中有三个是动态导入产生的async chunk，其他的是initial chunk
+> - async:默认值，这三个async chunk才会被处理，webpack将这几个chunk之间相同的依赖单独打包，防止重复
+> - all: webpack在所有模块之间处理，即包括async和initial，把这些chunk之间重复引用的模块单独打包。
+> - initial: 只对初始模块生效。
+
+##### 根据 Module 使用频率分包
 
 SplitChunksPlugin 支持按 Module 被 Chunk 引用的次数决定是否分包，借助这种能力我们可以轻易将那些被频繁使用的模块打包成独立文件，减少代码重复。
 
@@ -1446,7 +1467,7 @@ module.exports = {
 }
 ```
 
-#### 限制分包体积
+##### 限制分包体积
 
 Webpack 提供了一系列与 Chunk 大小有关的分包判定规则，借助这些规则我们可以实现当包体过小时直接取消分包，防止产物过"碎"；
 当包体过大时尝试对 Chunk 再做拆解，避免单个 Chunk 过大。
@@ -1459,7 +1480,58 @@ Webpack 提供了一系列与 Chunk 大小有关的分包判定规则，借助�
 - maxInitialSize： 与 maxSize 类似，但只对 entry 配置的入口模块生效；
 - enforceSizeThreshold： 超过这个尺寸的 Chunk 会被强制分包，忽略上述其它 Size 限制。
 
-### 动态导入
+##### 设置cacheGroup
+
+splitChunks.cacheGroups可以自定义打包范围。举个例子：
+
+```js
+module.exports = {
+  //...
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        commons: {
+          test: /[\\/]node_modules[\\/]/,
+          name: 'vendors',
+          chunks: 'all',
+        },
+      },
+    },
+  },
+};
+```
+这里我们在cacheGroup内创建了一个对象commons（这个名字不重要），内部选择了`node_modules`目录作为分包的对象，采取all的分包方式。
+这里每个对象可以看作是要分出来的一个chunk。比如这里就会创建一个名为vendor的chunk，相当于把项目中引用的所有`node_modules`内的模块打包到一个chunk中。
+
+这种方式会把依赖和源代码拆成两个chunk。因为依赖通常不会变化，而源代码变化较多，因此这种方式可以加快主应用的构建速度，减少主应用的包的大小。
+
+或者单独把react打包：
+```js
+module.exports = {
+  entry: {
+    main: '.src/index.js',
+  },
+  output: {
+    filename: '[name].bundle.js',
+    path: path.resolve(__dirname, 'dist'),
+  },
+  optimization: {
+    splitChunks: {
+      cacheGroups: {
+        react: {
+          test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
+          name: 'react',
+          chunks: 'all',
+        },
+      },
+    },
+  },
+};
+```
+
+通过这种方式，可以任意打包自己想打包的指定的模块。
+
+#### 动态导入
 
 即 webpack 的代码分离。原理是利用 ES6 的动态导入实现按需加载，而不是任何情况都在文件头部静态导入
 如果通过import()动态导入一个模块，那么在构建期间就会产生额外的产物文件，即单独生成动态导入的模块的文件。
@@ -1798,7 +1870,9 @@ class EntryPlugin {
     }
 }
 ```
+
 addEntry内部会调用addModuleTree方法，它会创建并生成模块的依赖树。对每个依赖来说，都是调用 handleModuleCreation，根据文件类型构建 module 子类 —— 一般是 NormalModule
+
 ```js
 addModuleTree({ context, dependency, contextInfo }, callback) {
 		const Dep = dependency.constructor
@@ -1872,7 +1946,9 @@ addModuleTree({ context, dependency, contextInfo }, callback) {
 
 
 seal阶段的过程从chunk角度来说可以这样梳理：
+
 ![](https://pic.imgdb.cn/item/63e49d6c4757feff330dcd09.jpg)
+
 1. 创建入口模块和初始化chunkgraph：调用 seal() 函数后，遍历 entry 配置，为每个入口创建一个空的 Chunk 与 EntryPoint 对象（一种特殊的 ChunkGroup），并初步设置好基本的 ChunkGraph 结构关系，在之后会逐渐填充chunkgraph内容。
 这一步主要是将entry的几个入口模块生成chunk，并放入entryPoint中，形成这样的结构：
 ![](https://pic.imgdb.cn/item/63e49db54757feff330e651f.jpg)
@@ -2568,6 +2644,7 @@ react fast refresh是更新的实现方式，它采用webpack5提供的`HMRv2`�
 fast refresh相对于hot reload，更新范围更小，只需要更新当前组件及其依赖，而不会影响到其他组件的内容。因此更新速度更快、更不易出错。
 
 > HMR v2（不是这个名字，但大概意思是一个全新的版本）是webpack5提供的更新的一种hmr方式，无需刷新页面即可更新组件。另外它还借助了babel的一个plugin，可以注入代码帮助确定在hmr期间需要更新哪些组件并保留状态。
+
 ### 原理
 
 热更新流程可以分为以下几步：
@@ -2603,10 +2680,6 @@ fast refresh相对于hot reload，更新范围更小，只需要更新当前组�
 
 5. 浏览器加载发生变更的增量模块。
 6. Webpack 运行时触发变更模块的 module.hot.accept 回调，执行代码变更逻辑；到这一步时浏览器已经加载完了最新模块代码，执行回调内的逻辑其实就是相当于一段额外代码，会修改原有的逻辑。
-
-
-
-
 
 # 练习配置
 
@@ -2974,4 +3047,55 @@ plugins: [
 另外，快速刷新仍然依赖于hmr，因此还是需要开启`devServer.hot = true`.
 
 
+
+
+# 优化实录
+
+没有任何优化手段，默认打包：
+![](https://pic.imgdb.cn/item/64049ac9f144a01007cb34c6.jpg)
+
+总打包大小约为5M
+![](https://pic.imgdb.cn/item/6404a0d3f144a01007d52429.jpg)
+
+## 打包速度优化
+
+1. 引入缓存
+
+引入缓存后先打包一次，第二次及以后的时间都会骤降：
+![](https://pic.imgdb.cn/item/6404a151f144a01007d5eb10.jpg)
+
+2. 限制范围-loader：
+
+对于css相关的loder以及小一点的loader，几乎没有影响
+但是babel-loader必须通过include指定src内编译，不然就会非常恐怖
+
+3. 关闭部分优化项：即关闭诸如minimize这种减少体积的优化。
+
+关闭之前为10.24 关闭之后为9.9 略有优化
+
+4. noParse：不解析react，而直接采用react.development.js
+
+有效果，主要体现在减少module打包时间上，减少约1秒以上；但是有点极端了，对于lodash这样的库尚可，对于react还是谨慎这么做
+
+
+## 产物优化
+
+1. 开启production模式.
+
+只需要把mode设为production，打包体积就从5.56MB骤降到1.19MB
+![](https://pic.imgdb.cn/item/6404a920f144a01007e455ce.jpg)
+
+2. 压缩代码：
+
+js压缩和css压缩的效果都不是很明显，大致降低了5%左右。
+production模式下，本来就对js进行了压缩，因此再压缩的变化并不明显。但是可以看出产物进行了合并一行、去除空位等改变。
+
+3. splitChunk
+
+如果只开启`chunks:"all"`的话，对单入口项目没有用。
+但是可以配置`splitChunks.cacheGroups`，就可以自定义分包对象。我们可以设置`node_modules`内的模块也为分包对象。这样减少了输出的index的大小，但是总体大小没有改变。
+
+4. 动态导入：配合React.lazy，可以明显看到减少了一部分体积。如果把大多数组件都动态加载，那么打包的结果就会含有比较少的源代码
+
+5. tree-shaking：配置成功，但效果一般，猜测是项目中能被优化的部分不多，大多数导出还是被正常使用的。
 

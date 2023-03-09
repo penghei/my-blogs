@@ -154,6 +154,7 @@ History 接口允许操作浏览器的曾经在标签页或者框架里访问的
 
 其中，后两个是最常用的方法，用于修改浏览器的url显示以及浏览记录。
 假设在 `http://mozilla.org/foo.html` 页面的 console 中执行了以下 JavaScript 代码：
+
 ```js
 window.onpopstate = function(e) {
    alert(2);
@@ -164,6 +165,7 @@ let stateObj = {
 };
 history.pushState(stateObj, "page 2", "bar.html");
 ```
+
 这将使浏览器地址栏显示为 `http://mozilla.org/bar.html`，但并不会导致浏览器加载 bar.html ，甚至不会检查bar.html 是否存在。
 同时history.state对象将会变成`{foo: "bar"}`
 如果这时点击后退按钮，就会回到`http://mozilla.org/foo.html`。也就是相当于为浏览器添加了一条历史记录
@@ -173,6 +175,7 @@ replaceState和pushState最大的差别在于pushState会像push栈一样添加�
 
 调用 `history.pushState()` 或者 `history.replaceState()` 不会触发 popstate 事件。但是仍然可以在popstate事件中获取到最新的由这两个api设置的state对象。
 popstate 事件只会在浏览器某些行为下触发，比如点击后退按钮，或者在 JavaScript 中调用 history.back/forward 之类的方法
+
 ```js
 window.onpopstate = function(event) {
   alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
@@ -185,9 +188,6 @@ history.back(); // 弹出 "location: http://example.com/example.html?page=1, sta
 history.back(); // 弹出 "location: http://example.com/example.html, state: null
 history.go(2);  // 弹出 "location: http://example.com/example.html?page=3, state: {"page":3}
 ```
-
-
-
 # Location
 
 ## 属性
@@ -1005,7 +1005,8 @@ function* gen2() {
 > - 第二步，协程 A 执行到一半，进入暂停，执行权转移到协程 B。
 > - 第三步，（一段时间后）协程 B 交还执行权。
 > - 第四步，协程 A 恢复执行。
->   上面流程的协程 A，就是异步任务，因为它分成两段（或多段）执行。
+> 
+> 上面流程的协程 A，就是异步任务，因为它分成两段（或多段）执行。
 
 比如：
 

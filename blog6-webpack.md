@@ -20,7 +20,7 @@ sticky: 7
 - `Module`：模块，在 Webpack 里一切皆模块，一个模块对应着一个文件。Webpack 会从配置的 Entry 开始递归找出所有依赖的模块。`module`本质上是 webpack 对打包的基本单位，每一个文件都算一个 module；module 下有一个 rules 字段，rules 下有就是处理模块的规则，配置哪类的模块，交由哪类 loader 来处理。
 
 - `Chunk`：代码块，Chunk 是 Webpack 打包过程中一堆 module 的集合。Webpack 的打包是从一个入口文件开始，也可以说是入口模块，入口模块引用这其他模块，模块再引用模块。Webpack 通过引用关系逐个打包模块，这些 module 就形成了一个 Chunk；
-一条路径一般只会形成一个 Chunk；如果module是异步的（比如动态导入的module），就会创建新的Async chunk，并把该异步模块及其子模块放入。
+  一条路径一般只会形成一个 Chunk；如果 module 是异步的（比如动态导入的 module），就会创建新的 Async chunk，并把该异步模块及其子模块放入。
   chunk 还有一些属性，被称为内置变量，可以在`filename`等配置中用`[]`引用，主要有：
   |变量名| 含义|
   |---|---|
@@ -35,9 +35,9 @@ sticky: 7
 > - 首先，hash 和项目相关，当项目中的某个文件改变时，整个项目的 hash 都会发生改变，那些没改变的 chunk、content 也会改变 hash
 > - chunkhash 和对应的 chunk 相关。由于 chunk 通常是从一个 entry 开始的所有文件的打包结果，因此如果 chunk 内部的某个文件内容改变，可能会导致该 chunk 包含的其他文件的 chunkhash 也改变
 > - contenthash 则是根据文件内容，相对来说最精确
->  除了便于输出文件不重名，这几个 hash 还有更重要的作用，就是在缓存时表示哪个文件被修改，需要更新缓存。
->  注意这里的更新一般指的是版本上的更新。比如说当前页面已经上线，现在做了一次更新；但是由于用户客户端的缓存还没有过期，客户端还用的是之前的代码，该如何让客户端主动请求最新的资源呢？方法就是直接修改资源的文件名。当文件名发生变换，相当于静态资源的路径改了，这样，就相当于第一次访问这些资源，从而更新缓存，完成版本更新
->  大多数情况下，我们可以对可能需要更新的资源文件名，比如 js、css 和图片等静态资源加入 hash 值，方便后续的更新。
+>   除了便于输出文件不重名，这几个 hash 还有更重要的作用，就是在缓存时表示哪个文件被修改，需要更新缓存。
+>   注意这里的更新一般指的是版本上的更新。比如说当前页面已经上线，现在做了一次更新；但是由于用户客户端的缓存还没有过期，客户端还用的是之前的代码，该如何让客户端主动请求最新的资源呢？方法就是直接修改资源的文件名。当文件名发生变换，相当于静态资源的路径改了，这样，就相当于第一次访问这些资源，从而更新缓存，完成版本更新
+>   大多数情况下，我们可以对可能需要更新的资源文件名，比如 js、css 和图片等静态资源加入 hash 值，方便后续的更新。
 
 - `Loader`：模块转换器，用于把模块原内容按照需求转换成新内容。
 - `Plugin`：扩展插件，在 Webpack 构建流程中的特定时机注入扩展逻辑来改变构建结果或做你想要的事情。
@@ -52,18 +52,19 @@ sticky: 7
 
 ### chunk
 
-chunk由module在seal阶段组成，这部分的具体流程可以参考：
+chunk 由 module 在 seal 阶段组成，这部分的具体流程可以参考：
 
 https://juejin.cn/book/7115598540721618944/section/7119035921680302115
 
-chunk在打包过程中会被分成三种类型：
-- Entry Chunk：同一个 entry 下触达到的模块组织成一个 Chunk；一个entry就会创建一个chunk，相应的n个入口就有n个chunk
+chunk 在打包过程中会被分成三种类型：
+
+- Entry Chunk：同一个 entry 下触达到的模块组织成一个 Chunk；一个 entry 就会创建一个 chunk，相应的 n 个入口就有 n 个 chunk
 - Async Chunk：异步模块单独组织为一个 Chunk，从异步导入的那个入口模块开始，它的所有子模块都会被打包到异步模块中
-- Runtime Chunk：entry.runtime 不为空时，会将运行时模块单独组织成一个 Chunk。这种chunk主要包含的是运行时代码，在输出时会被注入到代码中，实现部分功能，比如
+- Runtime Chunk：entry.runtime 不为空时，会将运行时模块单独组织成一个 Chunk。这种 chunk 主要包含的是运行时代码，在输出时会被注入到代码中，实现部分功能，比如
   - ` __webpack_require__.f`、`__webpack_require__.r` 等功能实现最起码的模块化
   - 动态加载特性，则需要写入 `__webpack_require__.e` 函数
 
-绝大多数情况下，webpack会为每个chunk都生成一个单独的js文件。比如项目中使用了5次import()来动态导入，那么webpack就会额外生成5个js文件，分别表示这5个chunk的输出结果。
+绝大多数情况下，webpack 会为每个 chunk 都生成一个单独的 js 文件。比如项目中使用了 5 次 import()来动态导入，那么 webpack 就会额外生成 5 个 js 文件，分别表示这 5 个 chunk 的输出结果。
 
 ## 安装使用及配置
 
@@ -375,7 +376,7 @@ module.exports = {
 ```
 
 foo 的 dependOn 属性为 main，即说明 foo 依赖于 main 入口的打包结果，加载 foo 之前一定会加载 main，因此可以将重复的模块代码、运行时代码等都放到 main 产物，减少不必要的重复。
-**注意，dependOn的对象通常是某个外部库，比如lodash、react等，一般不能用作自己编写的模块**
+**注意，dependOn 的对象通常是某个外部库，比如 lodash、react 等，一般不能用作自己编写的模块**
 
 ---
 
@@ -421,7 +422,8 @@ module.exports = {
   - `hash`：`'[hash].js'`，表示文件的哈希值，用于区分不同文件；一般前 8 位即可，用`[hash:8]`可以取到前 8 位。hash 是根据打包中所有的文件计算出的 hash 值。在一次打包中，所有出口文件的 filename 获得的[hash]都是**一样**的。
   - `id`：Chunk 的唯一标识，从 0 开始
   - `name`：chunk 的名字，即原文件的名字，如果 entry 是对象形式就是和 entry 的键名保持一致
-  - `chunkhash`：Chunk 内容的 Hash 值，相比于 hash，每个 chunk 对应的出口 filename 获得的[chunkhash]是不一样的。这样可以保证打包后每一个 JS 文件名都**不一样**
+  - `chunkhash`：此 Chunk 独特的 Hash 值，相比于 hash，每个 chunk 对应的出口 filename 获得的[chunkhash]是不一样的。这样可以保证打包后每一个 JS 文件名都**不一样**
+  - `contenthash`：chunk 内容的 hash 值。和 chunkhash 不同的是，contenthash 仅和内容型的文件的内容有关，即代码文件的内容，而和图片等资源文件无关。
 
 #### output.path
 
@@ -787,7 +789,6 @@ module.exports = function (env = {}, argv) {
 - `env`：当前运行时的 Webpack 专属环境变量，`env` 是一个 Object。读取时直接访问 Object 的属性，设置它需要在启动 Webpack 时带上参数。例如启动命令是 `webpack --env.production --env.bao=foo`时，则 env 的值是 `{"production":"true","bao":"foo"}`。
 - `argv`：代表在启动 Webpack 时所有通过命令行传入的参数，例如 `--config`、`--env`、`--devtool`，可以通过 `webpack -h` 列出所有 Webpack 支持的命令行参数。
 
-
 # 优化
 
 关于 webpack 的优化有很多内容，因为其优化方式本身就有很多，原理有些也比较复杂。这里只总结一些常用或常问的，最重要的还是原理性理解
@@ -910,34 +911,38 @@ threadLoader.warmup(
 
 #### Parallel-Webpack
 
-Parallel-Webpack其实是一个webpack的套壳升级版。因为Thread-loader、HappyPack 这类组件所提供的并行能力都仅作用于文件加载过程，对后续 AST 解析、依赖收集、打包、优化代码等过程均没有影响；而Parallel-Webpack则可以影响整个过程。具体来说，Parallel-Webpack实际上是创建了不同的独立进程来运行webpack
+Parallel-Webpack 其实是一个 webpack 的套壳升级版。因为 Thread-loader、HappyPack 这类组件所提供的并行能力都仅作用于文件加载过程，对后续 AST 解析、依赖收集、打包、优化代码等过程均没有影响；而 Parallel-Webpack 则可以影响整个过程。具体来说，Parallel-Webpack 实际上是创建了不同的独立进程来运行 webpack
 
 如果要使用，首先安装：
+
 ```
 yarn add -D parallel-webpack
 ```
 
-然后最重要的是，导出类型必须是一个数组，即多个webpack配置对象。这也就说明Parallel-Webpack本质上是为每个配置对象创建一个进程，让他们独立、并行构建，最后统一输出。如果只导出一个对象，优化效果就不是很明显。
+然后最重要的是，导出类型必须是一个数组，即多个 webpack 配置对象。这也就说明 Parallel-Webpack 本质上是为每个配置对象创建一个进程，让他们独立、并行构建，最后统一输出。如果只导出一个对象，优化效果就不是很明显。
 
 ```js
-module.exports = [{
-    entry: 'pageA.js',
+module.exports = [
+  {
+    entry: "pageA.js",
     output: {
-        path: './dist',
-        filename: 'pageA.js'
-    }
-}, {
-    entry: 'pageB.js',
+      path: "./dist",
+      filename: "pageA.js",
+    },
+  },
+  {
+    entry: "pageB.js",
     output: {
-        path: './dist',
-        filename: 'pageB.js'
-    }
-}];
+      path: "./dist",
+      filename: "pageB.js",
+    },
+  },
+];
 ```
 
 #### 并行压缩
 
-Webpack5使用Terser实现了多进程并行压缩能力。
+Webpack5 使用 Terser 实现了多进程并行压缩能力。
 
 TerserWebpackPlugin 插件默认已开启并行压缩，开发者也可以通过 parallel 参数（默认值为 require('os').cpus() - 1）设置具体的并发进程数量，如：
 
@@ -945,16 +950,16 @@ TerserWebpackPlugin 插件默认已开启并行压缩，开发者也可以通过
 const TerserPlugin = require("terser-webpack-plugin");
 
 module.exports = {
-    optimization: {
-        minimize: true,
-        minimizer: [new TerserPlugin({
-            parallel: 2 // number | boolean
-        })],
-    },
+  optimization: {
+    minimize: true,
+    minimizer: [
+      new TerserPlugin({
+        parallel: 2, // number | boolean
+      }),
+    ],
+  },
 };
-
 ```
-
 
 ### 缩小范围
 
@@ -988,13 +993,12 @@ module.exports = {
 };
 ```
 
-
 #### 不解析部分模块
 
-还可以设置noParse属性跳过文件编译。因为有不少 NPM 库已经提前做好打包处理，可以直接放在浏览器上运行，比如lodash；
-可以在noParse属性中添加相应的路径，以跳过构建。这样在我们编写的代码中如果引入了该模块，那么就会跳过webpack对它的解析，而是直接使用该文件。
-具体来说，noParse的作用是，忽视指定文件中的导入、导出，相当于不去解析这个文件中的导入导出，但不会影响loader、plugin的处理过程，也不会影响文件本身的ast构建等。
-比如设置了lodash，那么就会忽视lodash/index.js中的所有静态、动态、cjs导入，只是解析index.js本身。
+还可以设置 noParse 属性跳过文件编译。因为有不少 NPM 库已经提前做好打包处理，可以直接放在浏览器上运行，比如 lodash；
+可以在 noParse 属性中添加相应的路径，以跳过构建。这样在我们编写的代码中如果引入了该模块，那么就会跳过 webpack 对它的解析，而是直接使用该文件。
+具体来说，noParse 的作用是，忽视指定文件中的导入、导出，相当于不去解析这个文件中的导入导出，但不会影响 loader、plugin 的处理过程，也不会影响文件本身的 ast 构建等。
+比如设置了 lodash，那么就会忽视 lodash/index.js 中的所有静态、动态、cjs 导入，只是解析 index.js 本身。
 
 ```js
 // webpack.config.js
@@ -1006,8 +1010,8 @@ module.exports = {
 };
 ```
 
-举个例子，如果我们想用noParse跳过react的构建过程，就不能直接使用`'react'`这样的导入；因为这种实际上是`node_module/react/index.js` 文件，包含了模块导入语句 require。
-而真正没有导入导出的文件是react.development.js 和 react.production.min.js。因此我们需要我们可以先找到适用的代码文件，然后用 resolve.alias 配置项重定向到该文件；这样在文件中引用react时，引用的实际上就是noParse的react.development.js或react.production.min.js文件，相当于跳过了react的构建。
+举个例子，如果我们想用 noParse 跳过 react 的构建过程，就不能直接使用`'react'`这样的导入；因为这种实际上是`node_module/react/index.js` 文件，包含了模块导入语句 require。
+而真正没有导入导出的文件是 react.development.js 和 react.production.min.js。因此我们需要我们可以先找到适用的代码文件，然后用 resolve.alias 配置项重定向到该文件；这样在文件中引用 react 时，引用的实际上就是 noParse 的 react.development.js 或 react.production.min.js 文件，相当于跳过了 react 的构建。
 
 ```js
 // webpack.config.js
@@ -1031,14 +1035,14 @@ module.exports = {
 
 ---
 
-除了noParse，还有一个externals属性也可以设置不处理部分模块。
-区别在于，externals配置的实际上相当于完全不打包，即完全忽视掉指定的模块，转而让用户通过cdn或某些方式将其继续融入到用户依赖中去。而noParse实际上只是无视了模块内的依赖，还不至于完全不处理。
+除了 noParse，还有一个 externals 属性也可以设置不处理部分模块。
+区别在于，externals 配置的实际上相当于完全不打包，即完全忽视掉指定的模块，转而让用户通过 cdn 或某些方式将其继续融入到用户依赖中去。而 noParse 实际上只是无视了模块内的依赖，还不至于完全不处理。
 
 ```js
 module.exports = {
   //...
   externals: {
-    jquery: 'jQuery',
+    jquery: "jQuery",
   },
 };
 
@@ -1047,10 +1051,10 @@ module.exports = {
   src="https://code.jquery.com/jquery-3.1.0.js"
   integrity="sha256-slogkvB1K3VOkzAI8QITxV3VzpOnkeNVsKvtkYLMjfk="
   crossorigin="anonymous"
-></script>
+></script>;
 ```
-这里的意思就是，把jQuery模块
 
+这里的意思就是，把 jQuery 模块
 
 #### 最小化 watch 监控范围
 
@@ -1063,31 +1067,34 @@ module.exports = {
 module.exports = {
   //...
   watchOptions: {
-    ignored: /node_modules/
+    ignored: /node_modules/,
   },
 };
 ```
 
-### optimization部分配置
+### optimization 部分配置
 
 常见的构建速度优化，适用于开发环境
 
-- optimization.removeAvailableModules: false，如果一个模块已经包含在所有父级模块中，就从当前chunk中检查出该模块并剔除。这个过程能减少构建大小，但是很耗时。应该设置为false
-- optimization.removeEmptyChunks: false，移除空chunk，同样是设置为false可以加快
+- optimization.removeAvailableModules: false，如果一个模块已经包含在所有父级模块中，就从当前 chunk 中检查出该模块并剔除。这个过程能减少构建大小，但是很耗时。应该设置为 false
+- optimization.removeEmptyChunks: false，移除空 chunk，同样是设置为 false 可以加快
 - optimization.splitChunks: false，关闭代码分割
 - optimization.minimize: false，关闭代码压缩
-- optimization.usedExports: false，如果为true则会检查每个chunk，未使用的导出内容不会被生成，有利于treeshaking这种清除无用代码的工具。
+- optimization.usedExports: false，如果为 true 则会检查每个 chunk，未使用的导出内容不会被生成，有利于 treeshaking 这种清除无用代码的工具。
 
 ### preload & prefetch
 
-动态导入的import函数可以通过添加注释来控制模块的preload和prefetch。实际上就是创建一个包含preload、prefetch属性的link标签并插入到html中，因此含义和在html中的相同。
+动态导入的 import 函数可以通过添加注释来控制模块的 preload 和 prefetch。实际上就是创建一个包含 preload、prefetch 属性的 link 标签并插入到 html 中，因此含义和在 html 中的相同。
 使用方式：
+
 ```js
-import(/* webpackPrefetch: true */ './path/to/LoginModal.js');
+import(/* webpackPrefetch: true */ "./path/to/LoginModal.js");
 ```
+
 这会生成 `<link rel="prefetch" href="login-modal-chunk.js">` 并追加到页面头部
 
 关于两者的区别：
+
 - preload chunk 会在父 chunk 加载时，以并行方式开始加载。prefetch chunk 会在父 chunk 加载结束后开始加载。
 - preload chunk 具有中等优先级，并立即下载。prefetch chunk 在浏览器闲置时下载。
 - preload chunk 会在父 chunk 中立即请求，用于当下时刻。prefetch chunk 会用于未来的某个时刻。
@@ -1095,7 +1102,7 @@ import(/* webpackPrefetch: true */ './path/to/LoginModal.js');
 ## 产物优化
 
 产物优化主要针对于生产环境的构建，即通过压缩、剔除冗余代码的形式，减小打包结果，尽可能降低生产环境产物的体积。
-需要注意的是，这些优化方式虽然减少体积，但是对开发环境并不是很好，因为这些功能都要花费大量的时间。在开发环境下，反而应该去掉Tree-Shaking、SplitChunks、Minimizer等压缩类插件，以及关闭一些optimization的配置项。
+需要注意的是，这些优化方式虽然减少体积，但是对开发环境并不是很好，因为这些功能都要花费大量的时间。在开发环境下，反而应该去掉 Tree-Shaking、SplitChunks、Minimizer 等压缩类插件，以及关闭一些 optimization 的配置项。
 
 ### 压缩代码
 
@@ -1104,7 +1111,7 @@ import(/* webpackPrefetch: true */ './path/to/LoginModal.js');
 现代 Web 应用大多会选择使用 React、Vue 等 MVVM 框架，这衍生出来的一个副作用是原生 HTML 的开发需求越来越少，HTML 代码占比越来越低，所以大多数现代 Web 项目中其实并不需要考虑为 HTML 配置代码压缩工作流。
 不过凡事都有例外，某些场景如 SSG 或官网一类偏静态的应用中就存在大量可被优化的 HTML 代码
 
-html-minifier-terser就是一个压缩html的工具。需要借助借助 html-minimizer-webpack-plugin 插件接入 html-minifier-terser
+html-minifier-terser 就是一个压缩 html 的工具。需要借助借助 html-minimizer-webpack-plugin 插件接入 html-minifier-terser
 
 参考https://webpack.js.org/plugins/html-minimizer-webpack-plugin/
 
@@ -1133,25 +1140,26 @@ module.exports = {
 };
 ```
 
-
 #### 压缩 js
 
 主要使用 TerserWebpackPlugin 来压缩 JavaScript；webpack5 自带最新的 terser-webpack-plugin，无需手动安装。
 
-主要通过 optimization 选项开启。多数情况下使用默认 Terser 配置即可，也可以向TerserPlugin传入更详细的配置
+主要通过 optimization 选项开启。多数情况下使用默认 Terser 配置即可，也可以向 TerserPlugin 传入更详细的配置
 
 ```js
 module.exports = {
   optimization: {
     minimize: true,
-    minimizer: [new TerserPlugin({
-      terserOptions: {
+    minimizer: [
+      new TerserPlugin({
+        terserOptions: {
           compress: {
             reduce_vars: true,
             pure_funcs: ["console.log"],
           },
-      }
-    })],
+        },
+      }),
+    ],
   },
 };
 ```
@@ -1166,7 +1174,7 @@ module.exports = {
 同样是在 optimization 选项中配置。安装后配置如下：
 
 - 在 plugins 用引入`MiniCssExtractPlugin`
-- 在 loader 中启用`MiniCssExtractPlugin.loader`，就是它自带的一个 loader，放置在所有 cssloader 最前面，并且代替style-loader的位置
+- 在 loader 中启用`MiniCssExtractPlugin.loader`，就是它自带的一个 loader，放置在所有 cssloader 最前面，并且代替 style-loader 的位置
 - 在 minimizer 中引入`CssMinimizerPlugin`即可。
 
 ```js
@@ -1210,6 +1218,7 @@ module.exports = {
 ```
 
 ### tree-shaking
+
 #### 效果
 
 `Tree Shaking` 可以用来剔除 JavaScript 中用不上的死代码，确切来说是没有使用的引用代码。
@@ -1237,7 +1246,7 @@ console.log(add(3, 4));
 ![](https://pic.imgdb.cn/item/637e22c016f2c2beb16d8af9.jpg)
 
 可以看到有一行注释“unused harmony export sqrt”，表示 sqrt 这个函数是没有被使用的导出。因此在导出中就不包含这个函数。
-不过这时函数的生命依然还存在，但他已成为了“未使用”的变量。在之后的terser压缩中，将会删去这种未使用的变量。
+不过这时函数的生命依然还存在，但他已成为了“未使用”的变量。在之后的 terser 压缩中，将会删去这种未使用的变量。
 
 假如没有开启 tree-shaking，这里的导出对象则会包含 sqrt 函数，就像这样：
 ![](https://pic.imgdb.cn/item/637e243b16f2c2beb1700e7c.jpg)
@@ -1246,27 +1255,30 @@ console.log(add(3, 4));
 
 #### 原理
 
-tree-shaking不是某个插件或loader，而是webpack内部的一种机制，因此tree-shaking的原理和webpack的工作流程分不开。
+tree-shaking 不是某个插件或 loader，而是 webpack 内部的一种机制，因此 tree-shaking 的原理和 webpack 的工作流程分不开。
 Tree-Shaking 的实现大致上可以分为三个步骤：
 
-1. make阶段，「收集」 模块导出变量并记录到模块依赖关系图 ModuleGraph 对象中；
-1. seal阶段，遍历所有模块，「标记」 模块导出变量有没有被使用；
+1. make 阶段，「收集」 模块导出变量并记录到模块依赖关系图 ModuleGraph 对象中；
+1. seal 阶段，遍历所有模块，「标记」 模块导出变量有没有被使用；
 1. 使用代码优化插件 —— 如 Terser，删除无效导出代码。
 
-##### make阶段
+##### make 阶段
 
 1. 将模块的所有 ESM 导出语句转换为 Dependency 对象，并记录到 module 对象的 dependencies 集合，转换规则：
-  - 具名导出转换为 HarmonyExportSpecifierDependency 对象；
-  - default 导出转换为 HarmonyExportExpressionDependency 对象。
+
+- 具名导出转换为 HarmonyExportSpecifierDependency 对象；
+- default 导出转换为 HarmonyExportExpressionDependency 对象。
 
 例如对于下面的模块：
-```js
-export const bar = 'bar';
-export const foo = 'foo';
 
-export default 'foo-bar'
+```js
+export const bar = "bar";
+export const foo = "foo";
+
+export default "foo-bar";
 ```
-对应的dependencies 值为：
+
+对应的 dependencies 值为：
 
 ![](https://pic.imgdb.cn/item/63e32a084757feff33c82a78.jpg)
 
@@ -1274,18 +1286,18 @@ export default 'foo-bar'
 3. FlagDependencyExportsPlugin 插件 遍历 所有 module 对象；
 4. 遍历 module 对象的 dependencies 数组，找到所有 HarmonyExportXXXDependency 类型的依赖对象，将其转换为 ExportInfo 对象并记录到 ModuleGraph 对象中。
 
-这一步结束之后，moduleGraph中就包含了各个模块的导出情况
+这一步结束之后，moduleGraph 中就包含了各个模块的导出情况
 
-##### seal阶段
+##### seal 阶段
 
-接下来，Webpack 需要再次遍历所有模块，逐一标记出模块导出列表中，哪些导出值有被其它模块用到，哪些没有。然后在seal阶段最后的生成代码中，针对两种不同的导出值生成不同的语句
+接下来，Webpack 需要再次遍历所有模块，逐一标记出模块导出列表中，哪些导出值有被其它模块用到，哪些没有。然后在 seal 阶段最后的生成代码中，针对两种不同的导出值生成不同的语句
 这个过程主要发生在 FlagDependencyUsagePlugin 插件中：
 
 1. 触发 compilation.hooks.optimizeDependencies 钩子，执行 FlagDependencyUsagePlugin 插件回调；
 2. 在 FlagDependencyUsagePlugin 插件中，遍历每一个 module 对象的 exportInfo 数组，为每一个 exportInfo 确定其对应的 dependency 对象有否被其它模块使用；如果导出被其他模块使用，就将其标记为已被使用；
-3. 修改 exportInfo._usedInRuntime 属性，记录该导出被如何使用。执行完毕后，Webpack 会将所有导出语句的使用状况记录到 exportInfo._usedInRuntime 字典中。
+3. 修改 exportInfo.\_usedInRuntime 属性，记录该导出被如何使用。执行完毕后，Webpack 会将所有导出语句的使用状况记录到 exportInfo.\_usedInRuntime 字典中。
 
-然后到了代码生成阶段，即执行compilation.codeGeneration 函数生成最终代码的时候。这部分具体逻辑由导出语句对应的 HarmonyExportXXXDependency 类实现。简单说，这一步的逻辑就是，用前面收集好的 exportsInfo 对象为模块的导出值分别生成导出语句。具体流程为：
+然后到了代码生成阶段，即执行 compilation.codeGeneration 函数生成最终代码的时候。这部分具体逻辑由导出语句对应的 HarmonyExportXXXDependency 类实现。简单说，这一步的逻辑就是，用前面收集好的 exportsInfo 对象为模块的导出值分别生成导出语句。具体流程为：
 
 1. compilation.codeGeneration 中会逐一遍历模块的 dependencies ，并调用 HarmonyExportXXXDependency.Template.apply 方法生成导出语句代码；
 2. 在 apply 方法内，读取 ModuleGraph 中存储的 exportsInfo 信息，判断哪些导出值被使用，哪些未被使用；
@@ -1316,34 +1328,36 @@ module.exports = {
 
 #### 实践
 
-tree-shaking虽然可以保证在大多数情况下实现shaking效果，但是还有部分情况可能会影响效果，在实践中应该注意这些情况
+tree-shaking 虽然可以保证在大多数情况下实现 shaking 效果，但是还有部分情况可能会影响效果，在实践中应该注意这些情况
 
 1. 无意义赋值，导致导入模块没有被使用，只是单纯的赋值
 
 比如：
+
 ```js
 // bar.js
-export const bar = 'bar'
-export const foo = 'foo'
+export const bar = "bar";
+export const foo = "foo";
 
 // index.js
-import {bar,foo} from './bar.js'
-const f = foo
+import { bar, foo } from "./bar.js";
+const f = foo;
 ```
 
-这里的f变量虽然引用了foo导出，但是f实际上也没有被使用。这种情况下treeshaking不会把foo看作是没使用的导出，因此tree-shaking就不会剔除foo的导出。
+这里的 f 变量虽然引用了 foo 导出，但是 f 实际上也没有被使用。这种情况下 treeshaking 不会把 foo 看作是没使用的导出，因此 tree-shaking 就不会剔除 foo 的导出。
 
 2. 标记纯函数或副作用
 
-默认情况下 Webpack 并不会对函数调用做 Tree Shaking 操作，因为函数可能产生副作用，因此tree-shaking不会删去无用的函数导出。
+默认情况下 Webpack 并不会对函数调用做 Tree Shaking 操作，因为函数可能产生副作用，因此 tree-shaking 不会删去无用的函数导出。
 如果希望删去函数，就需要指明这个函数没有副作用，可以放心删除。
 方法有两个
-- 用sideEffects标记，详见下
-- 在调用函数的语句前面加上注释`/*#__PURE__*/`，明确告诉 Webpack 该次函数调用并不会对上下文环境产生副作用
+
+- 用 sideEffects 标记，详见下
+- 在**调用**函数的语句前面加上注释`/*#__PURE__*/`，明确告诉 Webpack 该次函数调用并不会对上下文环境产生副作用
 
 ![](https://pic.imgdb.cn/item/63e32f4c4757feff33d16e4f.jpg)
 
-3. 禁止babel编译esm语句。需要将`@babel/preset-env`的配置中的modules属性改为false
+3. 禁止 babel 编译 esm 语句。需要将`@babel/preset-env`的配置中的 modules 属性改为 false
 
 ```json
 {
@@ -1358,7 +1372,8 @@ const f = foo
 }
 ```
 
-4. 使用es6模块的库。比如如果想对lodash进行shaking就应该采用es6模块的lodash-es。
+4. 使用 es6 模块的库。比如如果想对 lodash 进行 shaking 就应该采用 es6 模块的 lodash-es。
+
 #### sideEffects
 
 后来添加了一个 sideEffects 的配置，用于处理导出中包含副作用的情况。所谓副作用其实就是当执行某个模块时，该模块除了返回导出值之外，还会产生一些额外影响，比如修改全局作用域下的变量等。
@@ -1372,7 +1387,7 @@ const f = foo
 ```
 
 如果所有代码都不包含副作用，我们就可以简单地将该属性标记为 false，来告知 webpack 它可以安全地删除未用到的 export。
-相反，如果有一些代码有副作用，就需要在这里指明具体的路径，防止webpack将其shaking掉。
+相反，如果有一些代码有副作用，就需要在这里指明具体的路径，防止 webpack 将其 shaking 掉。
 
 ```json
 {
@@ -1389,36 +1404,38 @@ const f = foo
 }
 ```
 
-当设置完成sideEffects后，其余没有包含在内的文件都被视为是无副作用的，这样webpack就可以放心地进行tree-shaking了。
+当设置完成 sideEffects 后，其余没有包含在内的文件都被视为是无副作用的，这样 webpack 就可以放心地进行 tree-shaking 了。
 
 ### 代码分割
 
-代码分割是webpack最常见的减少打包体积的方式。同时，代码分割也可以减少主模块的大小，从而加快浏览器加载页面。
+代码分割是 webpack 最常见的减少打包体积的方式。同时，代码分割也可以减少主模块的大小，从而加快浏览器加载页面。
 代码分割的主要方式有三个：
-1. 多个entry手动分割。这种方式一般是额外创建几个入口文件，然后把部分代码移入。也可以通过dependOn的形式将公共依赖单独打包。这种方式比较麻烦而且容易出错
-2. 动态导入。通过import语法，webpack会自动为动态导入的模块创建async chunk，从而减小核心模块大小。动态导入的对象可以是react组件、大型的库、资源文件等。
-3. splitChunk。splitChunk实际上是在chunk的单位上进行分割，可以将chunk之间公共的依赖模块单独拆分到一个chunk中，也可以直接拆分node_modules中的某些库和模块。比如可以通过`chunks: 'all'`，webpack将找出所有chunk中重复使用的module，将其单独打包或统一打包到一个bundle中，减少了模块冗余。
 
+1. 多个 entry 手动分割。这种方式一般是额外创建几个入口文件，然后把部分代码移入。也可以通过 dependOn 的形式将公共依赖单独打包。这种方式比较麻烦而且容易出错
+2. 动态导入。通过 import 语法，webpack 会自动为动态导入的模块创建 async chunk，从而减小核心模块大小。动态导入的对象可以是 react 组件、大型的库、资源文件等。
+3. splitChunk。splitChunk 实际上是在 chunk 的单位上进行分割，可以将 chunk 之间公共的依赖模块单独拆分到一个 chunk 中，也可以直接拆分 node_modules 中的某些库和模块。比如可以通过`chunks: 'all'`，webpack 将找出所有 chunk 中重复使用的 module，将其单独打包或统一打包到一个 bundle 中，减少了模块冗余。
 
 #### SplitChunksPlugin
 
 SplitChunksPlugin 是 Webpack 4 之后内置实现的最新分包方案，它能够基于一些更灵活、合理的启发式规则将 Module 编排进不同的 Chunk，最终构建出性能更佳，缓存更友好的应用产物。
 
-SplitChunksPlugin是为了解决chunk构建的问题的。chunk是module对象的集合，通常是module的构建结果。从模块类型可以将chunk类型分为三种：
+SplitChunksPlugin 是为了解决 chunk 构建的问题的。chunk 是 module 对象的集合，通常是 module 的构建结果。从模块类型可以将 chunk 类型分为三种：
 
 - Initial Chunk：entry 模块及相应子模块打包成 Initial Chunk；
 - Async Chunk：通过 import('./xx') 等语句导入的异步模块及相应子模块组成的 Async Chunk；
 - Runtime Chunk：运行时代码抽离成 Runtime Chunk，即设置 entry.runtime 时就会生成
 
 Initial Chunk 与 Async Chunk 这种略显粗暴的规则会带来两个明显问题：
+
 1. 模块重复打包：
 
-假如多个 Chunk 同时依赖同一个 Module，那么这个 Module 会被不受限制地重复打包进这些 Chunk，这样对于多个chunk来说，每个都包含了相同的module，就会造成体积增大
+假如多个 Chunk 同时依赖同一个 Module，那么这个 Module 会被不受限制地重复打包进这些 Chunk，这样对于多个 chunk 来说，每个都包含了相同的 module，就会造成体积增大
 ![](https://pic.imgdb.cn/item/63e103c24757feff33a5310e.jpg)
 
 2. 所有模块都被打入同一个包。
 
-Async Chunk默认会和Initial Chunk打包在一起，如果没有多个入口的话，那么最终的chunk可能只有一个。对于一个庞大的项目来说，打包在一起是很致命的：
+Async Chunk 默认会和 Initial Chunk 打包在一起，如果没有多个入口的话，那么最终的 chunk 可能只有一个。对于一个庞大的项目来说，打包在一起是很致命的：
+
 - 资源冗余：客户端必须等待整个应用的代码包都加载完毕才能启动运行，但可能用户当下访问的内容只需要使用其中一部分代码
 - 缓存失效：将所有资源达成一个包后，所有改动 —— 即使只是修改了一个字符，客户端都需要重新下载整个代码包，缓存命中率极低
 
@@ -1432,9 +1449,8 @@ module.exports = {
       // ...
     },
   },
-}
+};
 ```
-
 
 ##### 设置分包范围
 
@@ -1445,10 +1461,11 @@ SplitChunksPlugin 默认情况下只对 Async Chunk 生效，我们可以通过 
 - `'async'` ：只对 Async Chunk 生效；
 - 函数 `(chunk) => boolean` ：该函数返回 true 时生效；
 
-> 这三个值用于配置，对什么类型的chunk，将其公共模块单独打包到一个chunk中去。
-> 比如一次打包过程中有5个chunk，其中有三个是动态导入产生的async chunk，其他的是initial chunk
-> - async:默认值，这三个async chunk才会被处理，webpack将这几个chunk之间相同的依赖单独打包，防止重复
-> - all: webpack在所有模块之间处理，即包括async和initial，把这些chunk之间重复引用的模块单独打包。
+> 这三个值用于配置，对什么类型的 chunk，将其公共模块单独打包到一个 chunk 中去。
+> 比如一次打包过程中有 5 个 chunk，其中有三个是动态导入产生的 async chunk，其他的是 initial chunk
+>
+> - async:默认值，这三个 async chunk 才会被处理，webpack 将这几个 chunk 之间相同的依赖单独打包，防止重复
+> - all: webpack 在所有模块之间处理，即包括 async 和 initial，把这些 chunk 之间重复引用的模块单独打包。
 > - initial: 只对初始模块生效。
 
 ##### 根据 Module 使用频率分包
@@ -1461,10 +1478,10 @@ module.exports = {
   optimization: {
     splitChunks: {
       // 设定引用次数超过 2 的模块才进行分包
-      minChunks: 2
+      minChunks: 2,
     },
   },
-}
+};
 ```
 
 ##### 限制分包体积
@@ -1475,14 +1492,14 @@ Webpack 提供了一系列与 Chunk 大小有关的分包判定规则，借助�
 这一规则相关的配置项有：
 
 - minSize： 超过这个尺寸的 Chunk 才会正式被分包；
-- maxSize： 超过这个尺寸的 Chunk 会尝试进一步拆分出更小的 Chunk；
+- maxSize： 超过这个尺寸的 Chunk 会尝试进一步拆分出更小的 Chunk，但不会分割出小于minSize的chunk。设置maxSize形成的零碎chunk有利于http/2的缓存优化，也可以减小chunk大小。
 - maxAsyncSize： 与 maxSize 功能类似，但只对异步引入的模块生效；
 - maxInitialSize： 与 maxSize 类似，但只对 entry 配置的入口模块生效；
 - enforceSizeThreshold： 超过这个尺寸的 Chunk 会被强制分包，忽略上述其它 Size 限制。
 
-##### 设置cacheGroup
+##### 设置 cacheGroup
 
-splitChunks.cacheGroups可以自定义打包范围。举个例子：
+splitChunks.cacheGroups 可以自定义打包范围。举个例子：
 
 ```js
 module.exports = {
@@ -1492,36 +1509,38 @@ module.exports = {
       cacheGroups: {
         commons: {
           test: /[\\/]node_modules[\\/]/,
-          name: 'vendors',
-          chunks: 'all',
+          name: "vendors",
+          chunks: "all",
         },
       },
     },
   },
 };
 ```
-这里我们在cacheGroup内创建了一个对象commons（这个名字不重要），内部选择了`node_modules`目录作为分包的对象，采取all的分包方式。
-这里每个对象可以看作是要分出来的一个chunk。比如这里就会创建一个名为vendor的chunk，相当于把项目中引用的所有`node_modules`内的模块打包到一个chunk中。
 
-这种方式会把依赖和源代码拆成两个chunk。因为依赖通常不会变化，而源代码变化较多，因此这种方式可以加快主应用的构建速度，减少主应用的包的大小。
+这里我们在 cacheGroup 内创建了一个对象 commons（这个名字不重要），内部选择了`node_modules`目录作为分包的对象，采取 all 的分包方式。
+这里每个对象可以看作是要分出来的一个 chunk。比如这里就会创建一个名为 vendor 的 chunk，相当于把项目中引用的所有`node_modules`内的模块打包到一个 chunk 中。
 
-或者单独把react打包：
+这种方式会把依赖和源代码拆成两个 chunk。因为依赖通常不会变化，而源代码变化较多，因此这种方式可以加快主应用的构建速度，减少主应用的包的大小。
+
+或者单独把 react 打包：
+
 ```js
 module.exports = {
   entry: {
-    main: '.src/index.js',
+    main: ".src/index.js",
   },
   output: {
-    filename: '[name].bundle.js',
-    path: path.resolve(__dirname, 'dist'),
+    filename: "[name].bundle.js",
+    path: path.resolve(__dirname, "dist"),
   },
   optimization: {
     splitChunks: {
       cacheGroups: {
         react: {
           test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-          name: 'react',
-          chunks: 'all',
+          name: "react",
+          chunks: "all",
         },
       },
     },
@@ -1534,7 +1553,7 @@ module.exports = {
 #### 动态导入
 
 即 webpack 的代码分离。原理是利用 ES6 的动态导入实现按需加载，而不是任何情况都在文件头部静态导入
-如果通过import()动态导入一个模块，那么在构建期间就会产生额外的产物文件，即单独生成动态导入的模块的文件。
+如果通过 import()动态导入一个模块，那么在构建期间就会产生额外的产物文件，即单独生成动态导入的模块的文件。
 比如
 
 ```js
@@ -1569,22 +1588,21 @@ module.exports = {
 ```
 
 另外，动态导入不宜过多。
+
 - 过度使用会使产物变得过度细碎，产物文件过多，运行时 HTTP 通讯次数也会变多
 - 使用时 Webpack 需要在客户端注入一大段用于支持动态加载特性的 Runtime，对于较小的模块反而会增大代码量，得不偿失
 
-
-## http优化
+## http 优化
 
 Webpack 只是一个工程化构建工具，没有能力决定应用最终在网络分发时的缓存规则，但我们可以调整产物文件的名称(通过 Hash)与内容(通过 Code Splitting)，使其更适配 HTTP 持久化缓存策略。
-具体来说，output配置项可以为导出的文件配置文件名，其中可以设置为hash值。包括：
+具体来说，output 配置项可以为导出的文件配置文件名，其中可以设置为 hash 值。包括：
 
 - `[fullhash]`：整个项目的内容 Hash 值，项目中任意模块变化都会产生新的 fullhash；
 - `[chunkhash]`：产物对应 Chunk 的 Hash，Chunk 中任意模块变化都会产生新的 chunkhash；
 - `[contenthash]`：产物内容 Hash 值，仅当产物内容发生变化时才会产生新的 contenthash，因此实用性较高。
 
 每个产物文件名都会带上一段由产物内容计算出的唯一 Hash 值，文件内容不变，Hash 也不会变化，这就很适合用作 HTTP 持久缓存 资源。一直到文件内容发生变化，引起 Hash 变化生成不同 URL 路径之后，才需要请求新的资源文件，能有效提升网络性能
-通过这种方式，就可以放心的给产物文件的响应打上最长时间的max-age，保证缓存的最长可用。
-
+通过这种方式，就可以放心的给产物文件的响应打上最长时间的 max-age，保证缓存的最长可用。
 
 # 常用 plugin 和 loader
 
@@ -1635,7 +1653,7 @@ Webpack 只是一个工程化构建工具，没有能力决定应用最终在网
 
 # 工作原理
 
-webpack集成了很多功能，包括模块打包、代码分割、按需加载、devserver等等，但是最核心的部分还是它的静态模块打包能力。即，Webpack 能够将各种类型的资源 —— 包括图片、音视频、CSS、JavaScript 代码等，通通转译、组合、拼接、生成标准的、能够在不同版本浏览器兼容执行的 JavaScript 代码文件，这一特性能够轻易抹平开发 Web 应用时处理不同资源的逻辑差异，使得开发者以一致的心智模型开发、消费这些不同的资源文件
+webpack 集成了很多功能，包括模块打包、代码分割、按需加载、devserver 等等，但是最核心的部分还是它的静态模块打包能力。即，Webpack 能够将各种类型的资源 —— 包括图片、音视频、CSS、JavaScript 代码等，通通转译、组合、拼接、生成标准的、能够在不同版本浏览器兼容执行的 JavaScript 代码文件，这一特性能够轻易抹平开发 Web 应用时处理不同资源的逻辑差异，使得开发者以一致的心智模型开发、消费这些不同的资源文件
 
 ## 流程
 
@@ -1648,37 +1666,39 @@ Webpack 的运行流程是一个串行的过程，从启动到结束会依次执
 2. 构建阶段：从 entry 文件开始，调用 loader 将模块转译为 JavaScript 代码，调用 Acorn 将代码转换为 AST 结构，遍历 AST 从中找出该模块依赖的模块；之后 递归 遍历所有依赖模块，找出依赖的依赖，直至遍历所有项目资源后，构建出完整的 模块依赖关系图；
 3. 生成阶段：根据 entry 配置，将模块组装为一个个 Chunk 对象，之后调用一系列 Template 工厂类翻译 Chunk 代码并封装为 Asset，最后写出到文件系统。
 
-
 单次构建过程自上而下按顺序执行，如果启动了 watch ，则构建完成后不会退出 Webpack 进程，而是持续监听文件内容，发生变化时回到「构建」阶段重新执行构建。
 三个阶段环环相扣，「初始化」的重点是根据用户配置设置好构建环境；「构建阶段」则重在解读文件输入与文件依赖关系；最后在「生成阶段」按规则组织、包装模块，并翻译为适合能够直接运行的产物包。
 
 ### 几个关键对象
 
-webpack有几个基础对象贯穿工作流程始终，包括：
-- Entry：编译入口。初始化是从配置中提取到的entry对象
-- Compiler：编译管理器，Webpack 启动后会创建 compiler 对象，该对象一直存活直到构建结束进程退出；compiler对象包含非常多的内容，包括：
-  - 各种hook
-  - 整个编译过程的各种参数，比如配置options
-  - 编译要用到的方法，最主要的是compile方法，还有run、emitAssets等方法
+webpack 有几个基础对象贯穿工作流程始终，包括：
+
+- Entry：编译入口。初始化是从配置中提取到的 entry 对象
+- Compiler：编译管理器，Webpack 启动后会创建 compiler 对象，该对象一直存活直到构建结束进程退出；compiler 对象包含非常多的内容，包括：
+  - 各种 hook
+  - 整个编译过程的各种参数，比如配置 options
+  - 编译要用到的方法，最主要的是 compile 方法，还有 run、emitAssets 等方法
 - Compilation：单次构建过程的管理器，主要用于构建过程，内容也主要是供构建过程使用的参数和方法，比如：
-  - addModuleTree方法将文件转化为module并建立moduleTree
-  - addEntry方法
-  每次调用compile方法都会创建一个compilation对象，并且如果开启文件监听，那么每次文件刷新都会再创建compilation对象。
-- Dependence：依赖对象，记录模块间依赖关系；在进入构建阶段时的EntryPlugin就会从entry解析依赖关系，创建dependence对象；后续的构建阶段就会根据这个对象确定的依赖关系来递归把文件解析为module。
+  - addModuleTree 方法将文件转化为 module 并建立 moduleTree
+  - addEntry 方法
+    每次调用 compile 方法都会创建一个 compilation 对象，并且如果开启文件监听，那么每次文件刷新都会再创建 compilation 对象。
+- Dependence：依赖对象，记录模块间依赖关系；在进入构建阶段时的 EntryPlugin 就会从 entry 解析依赖关系，创建 dependence 对象；后续的构建阶段就会根据这个对象确定的依赖关系来递归把文件解析为 module。
 - Module：Webpack 内部所有资源都会以 Module 对象形式存在，所有关于资源的操作、转译、合并都是以 Module 为单位进行的；
 - Chunk：编译完成准备输出时，将 Module 按特定的规则组织成一个一个的 Chunk。
-- ChunkGraph：所有关于module如何与chunk连接的信息都存储在 ChunkGraph 类中
+- ChunkGraph：所有关于 module 如何与 chunk 连接的信息都存储在 ChunkGraph 类中
 - ChunkGroup：一个 ChunkGroup 内包含一个或多个 Chunk 对象
-- ModuleGraph：所有关于module如何在相互连接的信息都存储在 ModuleGraph 类中。
+- ModuleGraph：所有关于 module 如何在相互连接的信息都存储在 ModuleGraph 类中。
 
-graph类型的数据都是为了更好的显示关系的。在webpack5之前，module之间的关系都是直接使用module和dependency来得出的，而webpack5则对这种关系做了加深，通过图的形式使得module之间、module和chunk之间的关系更加清晰
+graph 类型的数据都是为了更好的显示关系的。在 webpack5 之前，module 之间的关系都是直接使用 module 和 dependency 来得出的，而 webpack5 则对这种关系做了加深，通过图的形式使得 module 之间、module 和 chunk 之间的关系更加清晰
 
 #### ModuleGraph
 
 参考https://juejin.cn/post/7138285996500025352
 
-moduleGraph实际上是几个module之间的依赖关系的记录的数据结构的集合。具体来说，主要包含了两个重要属性：
-- _dependencyMap ：记录入口dependency与module连接关系的信息。注意这个是入口文件的dependency和入口module的关系信息，它只会记录当前module和一个引用当前module的module
+moduleGraph 实际上是几个 module 之间的依赖关系的记录的数据结构的集合。具体来说，主要包含了两个重要属性：
+
+- \_dependencyMap ：记录入口 dependency 与 module 连接关系的信息。注意这个是入口文件的 dependency 和入口 module 的关系信息，它只会记录当前 module 和一个引用当前 module 的 module
+
 ```js
 {
 	module:  Module, // 当前module
@@ -1689,7 +1709,9 @@ _dependencyMap:{
     <dep-index, connection{originModule: undefined, module: mod-index}>,
 }
 ```
-- _moduleMap ：记录当前module被谁引用以及引用了谁。moduleMap内的数据结构如下
+
+- \_moduleMap ：记录当前 module 被谁引用以及引用了谁。moduleMap 内的数据结构如下
+
 ```js
 {
 	inComingConnections:[], // 表示一个有哪些modules引用了当前module
@@ -1697,121 +1719,121 @@ _dependencyMap:{
 }
 ```
 
-当moduleGraph被确定后，所有module之间的依赖关系、导入导出值都可以从其中直接获得。
+当 moduleGraph 被确定后，所有 module 之间的依赖关系、导入导出值都可以从其中直接获得。
 
 #### ChunkGraph
 
 参考 https://juejin.cn/post/7141067021734641671
 
-ChunkGraph就是以chunk为中心描绘chunk与module关系对象，可以理解为webpack的分包规则。
-ChunkGraph为例记录chunk和module的关系，就必然有这样的数据结构：
-- 有哪些chunk，chunk里面有哪些module
-- 有哪些module，module属于哪些chunk
+ChunkGraph 就是以 chunk 为中心描绘 chunk 与 module 关系对象，可以理解为 webpack 的分包规则。
+ChunkGraph 为例记录 chunk 和 module 的关系，就必然有这样的数据结构：
 
-而实际上ChunkGraph内部也正是两类数据结构：
-- _chunks：`Map<chunk, ChunkGraphChunk>`，ChunkGraphChunk是记录一个chunk有哪些module 
-- _modules：`Map<modules, ChunkGraphModule>，`ChunkGraphModule是记录一个module属于哪些chunk。
+- 有哪些 chunk，chunk 里面有哪些 module
+- 有哪些 module，module 属于哪些 chunk
 
-在seal阶段会初始化并构建完整的ChunkGraph，后续的SpiltChunkPlugin等分包手段也依赖于它。
+而实际上 ChunkGraph 内部也正是两类数据结构：
+
+- \_chunks：`Map<chunk, ChunkGraphChunk>`，ChunkGraphChunk 是记录一个 chunk 有哪些 module
+- \_modules：`Map<modules, ChunkGraphModule>，`ChunkGraphModule 是记录一个 module 属于哪些 chunk。
+
+在 seal 阶段会初始化并构建完整的 ChunkGraph，后续的 SpiltChunkPlugin 等分包手段也依赖于它。
 
 ### 初始化阶段
 
-初始化阶段的主要功能是整理合并参数，然后根据参数创建compiler对象，并开始编译。
+初始化阶段的主要功能是整理合并参数，然后根据参数创建 compiler 对象，并开始编译。
 
 ![](https://pic.imgdb.cn/item/63e1c1774757feff33ab514f.jpg)
 
-在源码中，实际上是webpack.js中的webpack函数，大致如下：https://github1s.com/webpack/webpack/blob/HEAD/lib/webpack.js
+在源码中，实际上是 webpack.js 中的 webpack 函数，大致如下：https://github1s.com/webpack/webpack/blob/HEAD/lib/webpack.js
 
 ```js
 const webpack = (options, callback) => {
-	const create = () => {
+  const create = () => {
     // 初始化compiler
-		let compiler;
-		let watch = false;
-		let watchOptions;
-		if (Array.isArray(options)) {
+    let compiler;
+    let watch = false;
+    let watchOptions;
+    if (Array.isArray(options)) {
       // 如果配置对象是数组，就创建多个compiler
-			compiler = createMultiCompiler(
-				options,
-				options
-			);
-			watch = options.some(options => options.watch);
-			watchOptions = options.map(options => options.watchOptions || {});
-		} else {
+      compiler = createMultiCompiler(options, options);
+      watch = options.some((options) => options.watch);
+      watchOptions = options.map((options) => options.watchOptions || {});
+    } else {
       // 正常情况，创建compiler，传入配置对象，初始化watch对象
-			const webpackOptions = options
-			compiler = createCompiler(webpackOptions);
-			watch = webpackOptions.watch;
-			watchOptions = webpackOptions.watchOptions || {};
-		}
-		return { compiler, watch, watchOptions };
-	};
-	if (callback) {
-		try {
+      const webpackOptions = options;
+      compiler = createCompiler(webpackOptions);
+      watch = webpackOptions.watch;
+      watchOptions = webpackOptions.watchOptions || {};
+    }
+    return { compiler, watch, watchOptions };
+  };
+  if (callback) {
+    try {
       // 调用create方法创建这几个对象
-			const { compiler, watch, watchOptions } = create();
-			if (watch) {
+      const { compiler, watch, watchOptions } = create();
+      if (watch) {
         // 开启监听
-				compiler.watch(watchOptions, callback);
-			} else {
+        compiler.watch(watchOptions, callback);
+      } else {
         // 调用run方法
-				compiler.run((err, stats) => {
-					compiler.close(err2 => {
-						callback(err || err2, stats);
-					});
-				});
-			}
-			return compiler;
-		} catch (err) {
-			process.nextTick(() => callback(err));
-			return null;
-		}
-	} else {
-		const { compiler, watch } = create();
-		return compiler;
-	}
-}
+        compiler.run((err, stats) => {
+          compiler.close((err2) => {
+            callback(err || err2, stats);
+          });
+        });
+      }
+      return compiler;
+    } catch (err) {
+      process.nextTick(() => callback(err));
+      return null;
+    }
+  } else {
+    const { compiler, watch } = create();
+    return compiler;
+  }
+};
 ```
 
-而createCompiler函数功能如下：
-1. 收集各种配置。除了配置对象之外，还包括webpack的默认配置、命令行配置等
+而 createCompiler 函数功能如下：
+
+1. 收集各种配置。除了配置对象之外，还包括 webpack 的默认配置、命令行配置等
 2. 遍历 配置中的 plugins 集合，执行插件的 apply 方法。
 3. 调用 new WebpackOptionsApply().process 方法，根据配置内容动态注入相应插件
 
 ```js
-const createCompiler = rawOptions => {
+const createCompiler = (rawOptions) => {
   // 默认配置
-	const options = getNormalizedWebpackOptions(rawOptions);
-	applyWebpackOptionsBaseDefaults(options);
-	const compiler = new Compiler(options.context, options);
+  const options = getNormalizedWebpackOptions(rawOptions);
+  applyWebpackOptionsBaseDefaults(options);
+  const compiler = new Compiler(options.context, options);
   //  注入环境变量
-	new NodeEnvironmentPlugin({
-		infrastructureLogging: options.infrastructureLogging
-	}).apply(compiler);
+  new NodeEnvironmentPlugin({
+    infrastructureLogging: options.infrastructureLogging,
+  }).apply(compiler);
   // 遍历执行plugins
-	if (Array.isArray(options.plugins)) {
-		for (const plugin of options.plugins) {
-			if (typeof plugin === "function") {
+  if (Array.isArray(options.plugins)) {
+    for (const plugin of options.plugins) {
+      if (typeof plugin === "function") {
         plugin.call(compiler, compiler);
-			} else {
+      } else {
         // plugins大多数是类，因此调用上面的apply方法
-				plugin.apply(compiler);
-			}
-		}
-	}
-	applyWebpackOptionsDefaults(options);
+        plugin.apply(compiler);
+      }
+    }
+  }
+  applyWebpackOptionsDefaults(options);
   // 调用environment和afterEnvironment两个hook，分别表示创建环境和创建环境完成
-	compiler.hooks.environment.call();
-	compiler.hooks.afterEnvironment.call();
+  compiler.hooks.environment.call();
+  compiler.hooks.afterEnvironment.call();
   // 这一步是根据配置内容动态注入相应插件
-	new WebpackOptionsApply().process(options, compiler);
-	compiler.hooks.initialize.call();
-	return compiler;
+  new WebpackOptionsApply().process(options, compiler);
+  compiler.hooks.initialize.call();
+  return compiler;
 };
 ```
 
 最后，调用 compiler.compile 方法开始执行构建。
-compile方法没有具体逻辑，只是不断调用hook上的call方法执行回调，但他确定了整个编译过程的流程，使得编译过程一环套一环，过程如下：
+compile 方法没有具体逻辑，只是不断调用 hook 上的 call 方法执行回调，但他确定了整个编译过程的流程，使得编译过程一环套一环，过程如下：
 
 1. 调用 newCompilation 方法创建 compilation 对象；
 1. 触发 make 钩子，紧接着 EntryPlugin 在这个钩子中调用 compilation 对象的 addEntry 方法创建入口模块，主流程开始进入「构建阶段」；
@@ -1819,7 +1841,7 @@ compile方法没有具体逻辑，只是不断调用hook上的call方法执行�
 1. 执行 compilation.seal 函数，进入「生成阶段」，开始封装 Chunk，生成产物；
 1. seal 函数结束后，触发 afterCompile 钩子，开始执行收尾逻辑。
 
-从触发make hook开始，就进入了构建阶段（make），初始化阶段完成
+从触发 make hook 开始，就进入了构建阶段（make），初始化阶段完成
 
 ```js
 compile(callback) {
@@ -1849,29 +1871,28 @@ compile(callback) {
   }
 ```
 
-
 ### 构建阶段
 
 构建阶段从 entry 模块开始递归解析模块内容、找出模块依赖，按图索骥逐步构建出项目整体 module 集合以及 module 之间的 依赖关系图，这个阶段的主要作用就是读入并理解所有原始代码。
-webpack内部一个plugin，EntryPlugin会在make hook被触发时调用，它的主要做用是调用addEntry函数找到入口文件，然后解析入口文件的导入，得到入口文件的依赖。也就是从入口文件开始了构建过程
+webpack 内部一个 plugin，EntryPlugin 会在 make hook 被触发时调用，它的主要做用是调用 addEntry 函数找到入口文件，然后解析入口文件的导入，得到入口文件的依赖。也就是从入口文件开始了构建过程
 
 ```js
 class EntryPlugin {
-    apply(compiler) {
-        const { entry, options, context } = this;
-        // 解析entry对象，创建dependence对象
-        const dep = EntryPlugin.createDependency(entry, options);
+  apply(compiler) {
+    const { entry, options, context } = this;
+    // 解析entry对象，创建dependence对象
+    const dep = EntryPlugin.createDependency(entry, options);
 
-        compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
-            compilation.addEntry(context, dep, options, err => {
-                callback(err);
-            });
-        });
-    }
+    compiler.hooks.make.tapAsync("EntryPlugin", (compilation, callback) => {
+      compilation.addEntry(context, dep, options, (err) => {
+        callback(err);
+      });
+    });
+  }
 }
 ```
 
-addEntry内部会调用addModuleTree方法，它会创建并生成模块的依赖树。对每个依赖来说，都是调用 handleModuleCreation，根据文件类型构建 module 子类 —— 一般是 NormalModule
+addEntry 内部会调用 addModuleTree 方法，它会创建并生成模块的依赖树。对每个依赖来说，都是调用 handleModuleCreation，根据文件类型构建 module 子类 —— 一般是 NormalModule
 
 ```js
 addModuleTree({ context, dependency, contextInfo }, callback) {
@@ -1904,59 +1925,58 @@ addModuleTree({ context, dependency, contextInfo }, callback) {
 ```
 
 接下来就是调用一些外部库进行转化，比如：
+
 1. 调用 loader-runner 转译 module 内容，将各类资源类型转译为 Webpack 能够理解的标准 JavaScript 文本；
 1. 调用 acorn 将 JavaScript 代码解析为 AST 结构；
 
-> acorn 需要将各种类型的模块内容（js、css、静态资源）解析为 AST 结构，要使用 loaders 将不同类型的资源转译为标准 JavaScript 代码，才能转化为ast。
+> acorn 需要将各种类型的模块内容（js、css、静态资源）解析为 AST 结构，要使用 loaders 将不同类型的资源转译为标准 JavaScript 代码，才能转化为 ast。
 
-当得到入口js代码的ast之后，就是最关键的一步，即解析ast，得到其中的模块依赖关系。具体来说是：
-1. 解析ast，解析过程中如果检查到了导入语句，就触发相关hook。HarmonyExportDependencyParserPlugin插件监听到AST解析钩子exportImportSpecifier则会回调module.addDependency()将依赖对象添加到module的依赖列表dependencies
-2. 遍历依赖列表dependencies，把每个Dependency 转换为 Module 对象。
-3. 对于每个module对象，就再递归处理（执行上面的两步），直到所有文件都被处理完毕。
+当得到入口 js 代码的 ast 之后，就是最关键的一步，即解析 ast，得到其中的模块依赖关系。具体来说是：
 
-最后，所有的文件都被构建成module。其中第三步的递归，就是构建module的核心。注意这个过程中module和dependences数组的关系没有断掉，一个module会有它的dependences数组，表示它依赖的模块的module；最后会形成module tree这样的结构。
-在下一步生成chunk的过程中，会利用到module和dependency的关系，将对应的module关联起来。
+1. 解析 ast，解析过程中如果检查到了导入语句，就触发相关 hook。HarmonyExportDependencyParserPlugin 插件监听到 AST 解析钩子 exportImportSpecifier 则会回调 module.addDependency()将依赖对象添加到 module 的依赖列表 dependencies
+2. 遍历依赖列表 dependencies，把每个 Dependency 转换为 Module 对象。
+3. 对于每个 module 对象，就再递归处理（执行上面的两步），直到所有文件都被处理完毕。
+
+最后，所有的文件都被构建成 module。其中第三步的递归，就是构建 module 的核心。注意这个过程中 module 和 dependences 数组的关系没有断掉，一个 module 会有它的 dependences 数组，表示它依赖的模块的 module；最后会形成 module tree 这样的结构。
+在下一步生成 chunk 的过程中，会利用到 module 和 dependency 的关系，将对应的 module 关联起来。
 
 具体递归过程可以参考https://juejin.cn/book/7115598540721618944/section/7119035873802813475
 
-
 ### 生成阶段
 
-当构建阶段完成后，所有的文件都变成了module；生成阶段则负责根据一系列内置规则，将上一步构建出的所有 Module 对象拆分编排进若干 Chunk 对象中，之后以 Chunk 粒度将源码转译为适合在目标环境运行的产物形态，并写出为产物文件
+当构建阶段完成后，所有的文件都变成了 module；生成阶段则负责根据一系列内置规则，将上一步构建出的所有 Module 对象拆分编排进若干 Chunk 对象中，之后以 Chunk 粒度将源码转译为适合在目标环境运行的产物形态，并写出为产物文件
 
 ![](https://pic.imgdb.cn/item/63e264334757feff33c6d787.jpg)
 
+生成阶段的名称是 seal，因此生成阶段的入口函数就是`compilation.seal`方法。这一步的代码很复杂，我们只关注流程：
 
-生成阶段的名称是seal，因此生成阶段的入口函数就是`compilation.seal`方法。这一步的代码很复杂，我们只关注流程：
-1. 创建本次构建的 ChunkGraph 对象。ChunkGraph是一个记录chunk和module关系的数据结构
+1. 创建本次构建的 ChunkGraph 对象。ChunkGraph 是一个记录 chunk 和 module 关系的数据结构
 2. 遍历 入口集合 compilation.entries：
-  1. 调用addChunk 方法为每一个入口 创建 对应的 Chunk 对象（EntryPoint Chunk）；
-  2. 遍历该入口module对应的 Dependency 集合，找到相应 Module 对象并关联到该 Chunk。
-3. 到这里可以得到若干 Chunk，之后调用 buildChunkGraph 方法将这些 Chunk 处理成 Graph 结构，方便后续处理。
-4. 之后，触发 optimizeModules/optimizeChunks 等钩子，由插件（如 SplitChunksPlugin）进一步修剪、优化 Chunk 结构。
-5. 一直到最后一个 Optimize 钩子 optimizeChunkModules 执行完毕后，开始调用 compilation.codeGeneration 方法生成 Chunk 代码
+3. 调用 addChunk 方法为每一个入口 创建 对应的 Chunk 对象（EntryPoint Chunk）；
+4. 遍历该入口 module 对应的 Dependency 集合，找到相应 Module 对象并关联到该 Chunk。
+5. 到这里可以得到若干 Chunk，之后调用 buildChunkGraph 方法将这些 Chunk 处理成 Graph 结构，方便后续处理。
+6. 之后，触发 optimizeModules/optimizeChunks 等钩子，由插件（如 SplitChunksPlugin）进一步修剪、优化 Chunk 结构。
+7. 一直到最后一个 Optimize 钩子 optimizeChunkModules 执行完毕后，开始调用 compilation.codeGeneration 方法生成 Chunk 代码
 
-这一步完成之后，其实已经结束了seal阶段。seal阶段的结果就是chunk的生成；接下来，需要将chunk变为实质输出的代码，将其写入文件系统中。这一步又被称为emit阶段。
+这一步完成之后，其实已经结束了 seal 阶段。seal 阶段的结果就是 chunk 的生成；接下来，需要将 chunk 变为实质输出的代码，将其写入文件系统中。这一步又被称为 emit 阶段。
 
-6. 在codeGeneration回调中调用 createChunkAssets 函数，为每一个 Chunk 生成assets文件。这时还是一种“资源”类型的文件，还不是真正的代码文件。每个chunk都有对应的asset
+6. 在 codeGeneration 回调中调用 createChunkAssets 函数，为每一个 Chunk 生成 assets 文件。这时还是一种“资源”类型的文件，还不是真正的代码文件。每个 chunk 都有对应的 asset
 7. 调用 compilation.emitAssets 函数“提交”文件，触发 callback 回调，控制流回到 compiler 函数。
-8. 最后调用 compiler 对象的 emitAssets 方法，将需要生成的文件代码写入文件系统。到这一步之后，就可以看到webpack的输出结果了。
+8. 最后调用 compiler 对象的 emitAssets 方法，将需要生成的文件代码写入文件系统。到这一步之后，就可以看到 webpack 的输出结果了。
 
 ---
 
-
-seal阶段的过程从chunk角度来说可以这样梳理：
+seal 阶段的过程从 chunk 角度来说可以这样梳理：
 
 ![](https://pic.imgdb.cn/item/63e49d6c4757feff330dcd09.jpg)
 
-1. 创建入口模块和初始化chunkgraph：调用 seal() 函数后，遍历 entry 配置，为每个入口创建一个空的 Chunk 与 EntryPoint 对象（一种特殊的 ChunkGroup），并初步设置好基本的 ChunkGraph 结构关系，在之后会逐渐填充chunkgraph内容。
-这一步主要是将entry的几个入口模块生成chunk，并放入entryPoint中，形成这样的结构：
-![](https://pic.imgdb.cn/item/63e49db54757feff330e651f.jpg)
-若此时配置了 entry.runtime，Webpack 还会在这个阶段为运行时代码 创建相应的 Chunk 并直接注入到 entry 对应的 ChunkGroup对象。一切准备就绪后调用 buildChunkGraph 函数，进入下一步骤。
-2. 把所有module生成chunk并装入：在 buildChunkGraph 函数内遍历 ModuleGraph，将所有 Module 按照依赖关系分配给不同 Chunk 对象；这个过程中若遇到**异步模块**，则为该模块创建新的 ChunkGroup 与 Chunk 对象，形成如下结构：
-![](https://pic.imgdb.cn/item/63e49e244757feff330f3da6.jpg)
-3. 完善chunkgraph对象：在 buildChunkGraph 函数中调用 connectChunkGroups 方法，建立 ChunkGroup 之间、Chunk 之间的依赖关系，生成完整的 ChunkGraph 对象
-
+1. 创建入口模块和初始化 chunkgraph：调用 seal() 函数后，遍历 entry 配置，为每个入口创建一个空的 Chunk 与 EntryPoint 对象（一种特殊的 ChunkGroup），并初步设置好基本的 ChunkGraph 结构关系，在之后会逐渐填充 chunkgraph 内容。
+   这一步主要是将 entry 的几个入口模块生成 chunk，并放入 entryPoint 中，形成这样的结构：
+   ![](https://pic.imgdb.cn/item/63e49db54757feff330e651f.jpg)
+   若此时配置了 entry.runtime，Webpack 还会在这个阶段为运行时代码 创建相应的 Chunk 并直接注入到 entry 对应的 ChunkGroup 对象。一切准备就绪后调用 buildChunkGraph 函数，进入下一步骤。
+2. 把所有 module 生成 chunk 并装入：在 buildChunkGraph 函数内遍历 ModuleGraph，将所有 Module 按照依赖关系分配给不同 Chunk 对象；这个过程中若遇到**异步模块**，则为该模块创建新的 ChunkGroup 与 Chunk 对象，形成如下结构：
+   ![](https://pic.imgdb.cn/item/63e49e244757feff330f3da6.jpg)
+3. 完善 chunkgraph 对象：在 buildChunkGraph 函数中调用 connectChunkGroups 方法，建立 ChunkGroup 之间、Chunk 之间的依赖关系，生成完整的 ChunkGraph 对象
 
 ## loader
 
@@ -1972,8 +1992,8 @@ module.exports = function (source) {
 };
 ```
 
-loader的执行对象是经历过make阶段之后生成的module。loader可以通过配置文件后缀确定接收哪类文件的module，比如只接收css类型的module、只接受ts类型的module等。因此loader函数会被调用n次，n为符合类型要求的文件（module）数量
-因此loader本身只用考虑单个文件的编译结果即可。比如css-loader只用考虑css文件的编译，babel-loader不必关心css的导入结果。
+loader 的执行对象是经历过 make 阶段之后生成的 module。loader 可以通过配置文件后缀确定接收哪类文件的 module，比如只接收 css 类型的 module、只接受 ts 类型的 module 等。因此 loader 函数会被调用 n 次，n 为符合类型要求的文件（module）数量
+因此 loader 本身只用考虑单个文件的编译结果即可。比如 css-loader 只用考虑 css 文件的编译，babel-loader 不必关心 css 的导入结果。
 
 Loader 接收三个参数，分别为：
 
@@ -1981,13 +2001,15 @@ Loader 接收三个参数，分别为：
 - sourceMap: 可选参数，代码的 sourcemap 结构；
 - data: 可选参数，其它需要在 Loader 链中传递的信息，比如 posthtml/posthtml-loader 就会通过这个参数传递额外的 AST 对象。
 
-此外loader内部还有一部分上下文接口，即通过`this.xxx`获取的参数。这些参数来自于webpack运行时的上下文，也非常重要。参考https://webpack.docschina.org/api/loaders/
+此外 loader 内部还有一部分上下文接口，即通过`this.xxx`获取的参数。这些参数来自于 webpack 运行时的上下文，也非常重要。参考https://webpack.docschina.org/api/loaders/
 常用的一些上下文有：
+
 - fs：Compilation 对象的 inputFileSystem 属性，我们可以通过这个对象获取更多资源文件的内容；
 - resource：当前文件的绝对路径，包括 query 参数，例如 import "abc/a?foo=bar" 的 resource 值为 abc/a?foo=bar；
-- resourcePath: 不包含query的绝对路径。大多数时候用的是这个，因为query参数很少用到
+- resourcePath: 不包含 query 的绝对路径。大多数时候用的是这个，因为 query 参数很少用到
 - callback：可用于返回多个结果；
-  callback函数参数为：
+  callback 函数参数为：
+
   ```js
   this.callback(
     err: Error | null,
@@ -1996,16 +2018,18 @@ Loader 接收三个参数，分别为：
     meta?: any
   );
   ```
+
   - 第一个参数必须是 Error 或者 null
   - 第二个参数是一个 string 或者 Buffer，即要输出的结果
   - 可选的：第三个参数必须是一个 source map。
-  - 可选的：第四个参数，会被 webpack 忽略，可以是任何东西（例如一些元数据）。比如希望在loader之间共享ast，就可以通过这个接口传，不会影响到webpack本身，但是其他loader可以接收到。
+  - 可选的：第四个参数，会被 webpack 忽略，可以是任何东西（例如一些元数据）。比如希望在 loader 之间共享 ast，就可以通过这个接口传，不会影响到 webpack 本身，但是其他 loader 可以接收到。
 
-  如果调用callback函数返回结果，那loader函数就不能返回任何值，防止造成混淆
+  如果调用 callback 函数返回结果，那 loader 函数就不能返回任何值，防止造成混淆
 
 - getOptions：用于获取当前 Loader 的配置对象；
 - async：用于声明这是一个异步 Loader，开发者需要通过 async 接口返回的 callback 函数传递处理结果；
-  大多数时候同步loader可以完成任务，但是有些库的解析过程本身就是异步的，比如less的编译、prettier的处理、ast的解析等过程的函数本身就是异步的。这时候就需要loader异步返回结果，而异步返回的callback就来自于this.async的返回值
+  大多数时候同步 loader 可以完成任务，但是有些库的解析过程本身就是异步的，比如 less 的编译、prettier 的处理、ast 的解析等过程的函数本身就是异步的。这时候就需要 loader 异步返回结果，而异步返回的 callback 就来自于 this.async 的返回值
+
   ```js
   async function lessLoader(source) {
     // 1. 获取异步回调函数
@@ -2030,48 +2054,60 @@ Loader 接收三个参数，分别为：
 
   export default lessLoader;
   ```
+
 - emitWarning：添加警告；
 - emitError：添加错误信息，注意这不会中断 Webpack 运行；
 - emitFile：用于直接写出一个产物文件，例如 file-loader 依赖该接口写出 Chunk 之外的产物；
-- addDependency：在loader中手动添加依赖。比如less-loader会解析less文件中的import语句，然后把所有import的部分都添加到依赖，这样这些文件发生变化时也会触发重新编译。也可以添加对配置文件的依赖，比如babel-loader可以添加.babelrc为依赖，当配置文件发生变化时就重新编译
+- addDependency：在 loader 中手动添加依赖。比如 less-loader 会解析 less 文件中的 import 语句，然后把所有 import 的部分都添加到依赖，这样这些文件发生变化时也会触发重新编译。也可以添加对配置文件的依赖，比如 babel-loader 可以添加.babelrc 为依赖，当配置文件发生变化时就重新编译
 
-### loader编写示例 typing-for-css-modules-loader
+### loader 编写示例 typing-for-css-modules-loader
 
-该loader的目的是自动为css module生成类型声明文件。
-在ts中如果直接导入css module类型的模块，就会提示不是一个模块，因为css module没有类型，而我们需要对该模块声明一个类型。并且，还希望styles对象能包含具体的类名而不是一个any类型，这样通过style的语法提示就可以获取类名了
-首先要清楚如何声明一个css module。
-如果我们有这样一个css文件：
+该 loader 的目的是自动为 css module 生成类型声明文件。
+在 ts 中如果直接导入 css module 类型的模块，就会提示不是一个模块，因为 css module 没有类型，而我们需要对该模块声明一个类型。并且，还希望 styles 对象能包含具体的类名而不是一个 any 类型，这样通过 style 的语法提示就可以获取类名了
+首先要清楚如何声明一个 css module。
+如果我们有这样一个 css 文件：
+
 ```css
-.container{
-  ...
+.container {
+  ...;
 }
-.title{
-  ...
+.title {
+  ...;
 }
 ```
-经过css-loader编译之后（cssloader的module模式要开启），会变成这种形式：
+
+经过 css-loader 编译之后（cssloader 的 module 模式要开启），会变成这种形式：
+
 ```js
 // Imports
 import ___CSS_LOADER_API_NO_SOURCEMAP_IMPORT___ from "../node_modules/css-loader/dist/runtime/noSourceMaps.js";
 import ___CSS_LOADER_API_IMPORT___ from "../node_modules/css-loader/dist/runtime/api.js";
-var ___CSS_LOADER_EXPORT___ = ___CSS_LOADER_API_IMPORT___(___CSS_LOADER_API_NO_SOURCEMAP_IMPORT___);
+var ___CSS_LOADER_EXPORT___ = ___CSS_LOADER_API_IMPORT___(
+  ___CSS_LOADER_API_NO_SOURCEMAP_IMPORT___
+);
 // Module
-___CSS_LOADER_EXPORT___.push([module.id, ".container_qe3E3 {\n  display: flex;\n}\n.container_qe3E3 .title_Q9ieQ {\n  color: green;\n}\n", ""]);
+___CSS_LOADER_EXPORT___.push([
+  module.id,
+  ".container_qe3E3 {\n  display: flex;\n}\n.container_qe3E3 .title_Q9ieQ {\n  color: green;\n}\n",
+  "",
+]);
 // Exports
 ___CSS_LOADER_EXPORT___.locals = {
-        "container": "container_qe3E3",
-        "title": "title_Q9ieQ"
+  container: "container_qe3E3",
+  title: "title_Q9ieQ",
 };
 export default ___CSS_LOADER_EXPORT___;
 ```
-`___CSS_LOADER_EXPORT___.locals`对象包含了css文件中的类选择器的类名。css中没有使用类名选择器，而是直接元素或id选择器，就不会放入locals中。因此我们获取类名的范围应该是在locals对象中
-然后通过style-loader不加额外处理插入到原本的js module中。这时显然`___CSS_LOADER_EXPORT___`这个对象就是我们导出的styles对象
+
+`___CSS_LOADER_EXPORT___.locals`对象包含了 css 文件中的类选择器的类名。css 中没有使用类名选择器，而是直接元素或 id 选择器，就不会放入 locals 中。因此我们获取类名的范围应该是在 locals 对象中
+然后通过 style-loader 不加额外处理插入到原本的 js module 中。这时显然`___CSS_LOADER_EXPORT___`这个对象就是我们导出的 styles 对象
 
 ```js
-import styles from './app.module.css'
+import styles from "./app.module.css";
 ```
 
-我们希望给`___CSS_LOADER_EXPORT___`对象添加类型，以保证styles也是有类型的。因此可以编写一个声明文件
+我们希望给`___CSS_LOADER_EXPORT___`对象添加类型，以保证 styles 也是有类型的。因此可以编写一个声明文件
+
 ```ts
 // app.module.less.d.ts
 // 因为app.module.less文件本来导出的是一个对象，所以这里用type或interface都可以
@@ -2085,13 +2121,16 @@ export = cssTypes // 这种形式也是默认导出
 // 不能这样，这样是具名导出
 export const cssTypes: {...}
 ```
-这样就可以看到在ts文件中没有报错了，并且styles对象也有了类型。
 
-我们的目的就是通过loader自动生成这样的一个类型声明文件。基本逻辑：
-1. css-loader已经生成了js形式的css代码。从上可以看出`___CSS_LOADER_EXPORT___.locals`对象包含了我们所需要的类名，因此我们可以用正则提取其中的类名，作为生成的类名使用
-2. 输出形式也已经确定好了，即上面的形式，我们可以通过模板字符串插入需要的变量名和类名，然后修改生成文件的文件名为`xxx.d.ts`，最后通过文件系统fs.writeFileSync将其写出到相同目录即可。
+这样就可以看到在 ts 文件中没有报错了，并且 styles 对象也有了类型。
 
-最简单的loader结构如下：
+我们的目的就是通过 loader 自动生成这样的一个类型声明文件。基本逻辑：
+
+1. css-loader 已经生成了 js 形式的 css 代码。从上可以看出`___CSS_LOADER_EXPORT___.locals`对象包含了我们所需要的类名，因此我们可以用正则提取其中的类名，作为生成的类名使用
+2. 输出形式也已经确定好了，即上面的形式，我们可以通过模板字符串插入需要的变量名和类名，然后修改生成文件的文件名为`xxx.d.ts`，最后通过文件系统 fs.writeFileSync 将其写出到相同目录即可。
+
+最简单的 loader 结构如下：
+
 ```js
 const path = require("path");
 const fs = require("fs");
@@ -2113,13 +2152,14 @@ function getClassesKeys(content) {
 
 module.exports = function (content) {
   // 从.locals开始切割字符串，从这里才开始寻找。如果没有locals对象就说明没有类选择器，就不用继续了
-  const localsIndex = content.indexOf(`.locals`)
-  if(localsIndex < 0) return content
-  const sliceLocals = content.slice(localsIndex)
+  const localsIndex = content.indexOf(`.locals`);
+  if (localsIndex < 0) return content;
+  const sliceLocals = content.slice(localsIndex);
   // 获取类名
   const cssSelectorNames = getClassesKeys(content);
   const filename = this.resourcePath; // 这里的filename是处理的module的绝对路径
-  const outputFilename = path.join( // 输出的文件名也应该包含绝对路径
+  const outputFilename = path.join(
+    // 输出的文件名也应该包含绝对路径
     path.dirname(filename),
     `${path.basename(filename)}.d.ts`
   );
@@ -2128,8 +2168,9 @@ module.exports = function (content) {
   const interfaceName = `I${baseName}`;
   const moduleName = `Module${baseName}`;
   // 根据类名生成`xxx:string`这种形式
-  const interfaceProperties = cssSelectorNames
-    .map((selector) => `'${selector}':string`);
+  const interfaceProperties = cssSelectorNames.map(
+    (selector) => `'${selector}':string`
+  );
   // 创建输出字符串
   const outputContent = `const ${moduleName}:{${interfaceProperties}};export default${moduleName}`;
   // 直接将输出内容写入文件
@@ -2139,16 +2180,17 @@ module.exports = function (content) {
 };
 ```
 
-当然这个只是loader最简单的形式，实际还需要考虑其他情况，比如配置项、schema验证配置项、异步loader等。
-有一个更完善的相同功能的loader：https://github.com/TeamSupercell/typings-for-css-modules-loader
+当然这个只是 loader 最简单的形式，实际还需要考虑其他情况，比如配置项、schema 验证配置项、异步 loader 等。
+有一个更完善的相同功能的 loader：https://github.com/TeamSupercell/typings-for-css-modules-loader
 
-## hook架构
+## hook 架构
 
-hook架构是webpack的插件体系的核心。hook本质是一个发布-订阅模式的发布者，可以在hook上监听事件，然后在webpack的特定阶段执行这些事件。
+hook 架构是 webpack 的插件体系的核心。hook 本质是一个发布-订阅模式的发布者，可以在 hook 上监听事件，然后在 webpack 的特定阶段执行这些事件。
 
-在webpack中，hooks实际上是compiler类中的一个对象，包含了不同阶段的不同hook。这些hook可以被plugin获取到，在其上注册事件，而不同hook的执行事件的阶段不同，每个hook都会在某个特定阶段调用call方法去执行之前添加的任务。因此，**可以把这些hook看做是webpack编译过程的不同阶段**。通过在plugin内部调用不同的hook，就可以访问到webpack执行过程的各种阶段，从而实现不同效果。
+在 webpack 中，hooks 实际上是 compiler 类中的一个对象，包含了不同阶段的不同 hook。这些 hook 可以被 plugin 获取到，在其上注册事件，而不同 hook 的执行事件的阶段不同，每个 hook 都会在某个特定阶段调用 call 方法去执行之前添加的任务。因此，**可以把这些 hook 看做是 webpack 编译过程的不同阶段**。通过在 plugin 内部调用不同的 hook，就可以访问到 webpack 执行过程的各种阶段，从而实现不同效果。
 
 比如：
+
 - compiler.hooks.compilation ：
   - 时机：Webpack 刚启动完，创建出 compilation 对象后触发；
   - 参数：当前编译的 compilation 对象。
@@ -2162,7 +2204,7 @@ hook架构是webpack的插件体系的核心。hook本质是一个发布-订阅�
   - 时机：编译完成后触发；
   - 参数： stats 对象，包含编译过程中的各类统计信息。
 
-每个钩子传递的参数不同，大致包括：compiler、compilation、module、chunk、stats等对象。
+每个钩子传递的参数不同，大致包括：compiler、compilation、module、chunk、stats 等对象。
 
 ```js
 this.hooks = Object.freeze({
@@ -2177,19 +2219,19 @@ this.hooks = Object.freeze({
 })
 ```
 
-compiler对象从开始构建到结束，会触发以下hook：
+compiler 对象从开始构建到结束，会触发以下 hook：
 ![](https://pic.imgdb.cn/item/63e1da724757feff33d3ce00.jpg)
-compilation对象也会按一定顺序触发各种hook：
+compilation 对象也会按一定顺序触发各种 hook：
 ![](https://pic.imgdb.cn/item/63e1dae24757feff33d48d30.jpg)
 
-其他部分的各种阶段也会触发相应的hook。因此可以说，hook是webpack各个阶段的映射，控制hook就可以访问到执行过程的各种阶段，从而执行不同操作。
-
+其他部分的各种阶段也会触发相应的 hook。因此可以说，hook 是 webpack 各个阶段的映射，控制 hook 就可以访问到执行过程的各种阶段，从而执行不同操作。
 
 ### Tapable
 
-tapable本质上可以看作是一个加强的发布-订阅模式。普通的发布订阅，订阅者很少会影响到发布者本身，而tapable形式的发布订阅，订阅者（比如各种插件）可以获取到足够的执行上下文信息，并且可以影响到自己之后的编译流程和状态。
+tapable 本质上可以看作是一个加强的发布-订阅模式。普通的发布订阅，订阅者很少会影响到发布者本身，而 tapable 形式的发布订阅，订阅者（比如各种插件）可以获取到足够的执行上下文信息，并且可以影响到自己之后的编译流程和状态。
 
-tapable导出了很多种hook，这些hook就可以看做是一个可以注册和执行事件的对象，比如：
+tapable 导出了很多种 hook，这些 hook 就可以看做是一个可以注册和执行事件的对象，比如：
+
 ```js
 const { SyncHook } = require("tapable");
 
@@ -2207,21 +2249,22 @@ sleep.call();
 // 运行结果：
 // callback A
 ```
+
 使用 Tapable 时通常需要经历三个步骤：
 
 1. 创建钩子实例
 1. 调用订阅接口注册回调，包括：tap、tapAsync、tapPromise
 1. 调用发布接口触发回调，包括：call、callAsync、promise
 
-大部分的hook使用都遵循上面的步骤，区别主要在于hook类型以及注册、调用方法的不同。
+大部分的 hook 使用都遵循上面的步骤，区别主要在于 hook 类型以及注册、调用方法的不同。
 
-### hook类型
+### hook 类型
 
-hook主要有以下几种：
+hook 主要有以下几种：
 ![](https://pic.imgdb.cn/item/63e1c9f64757feff33b8da16.jpg)
 
 - 按回调逻辑，分为：
-  - 基本类型，名称不带 Waterfall/Bail/Loop 关键字：与通常 订阅/回调 模式相似，按钩子注册顺序，逐次调用回调，比如基本的SyncHook，就是一种同步调用回调的方式
+  - 基本类型，名称不带 Waterfall/Bail/Loop 关键字：与通常 订阅/回调 模式相似，按钩子注册顺序，逐次调用回调，比如基本的 SyncHook，就是一种同步调用回调的方式
   - waterfall 类型：前一个回调的返回值会被带入下一个回调；
   - bail 类型：逐次调用回调，若有任何一个回调返回非 undefined 值，则终止后续调用；
   - loop 类型：逐次、循环调用，直到所有回调函数都返回 undefined 。
@@ -2231,7 +2274,8 @@ hook主要有以下几种：
 
 不同类型的钩子会直接影响到回调函数的写法，以及插件与其他插件的互通关系。
 
-以最简单的Synchook为例，简单使用如下：
+以最简单的 Synchook 为例，简单使用如下：
+
 ```js
 const { SyncHook } = require("tapable");
 
@@ -2267,8 +2311,10 @@ person.sleep();
 // callback C
 ```
 
-这是最基本的SyncHook的使用，如果是其他类型的hook，基本上就是在这个基础上做一些改动。不同hook的应用场景不同
-- SyncBailHook，就是在执行回调的过程中，如果有一个回调有非undefined的返回值，那就终止其他回调的执行，适用于发布者需要关心订阅回调运行结果的场景。比如shouldEmit这个hook，如果在plugin中注册的回调内返回一个false，那么就会终止其他回调的执行，然后这个hook的call返回一个false，可以被调用者接收到，表示出现了错误。
+这是最基本的 SyncHook 的使用，如果是其他类型的 hook，基本上就是在这个基础上做一些改动。不同 hook 的应用场景不同
+
+- SyncBailHook，就是在执行回调的过程中，如果有一个回调有非 undefined 的返回值，那就终止其他回调的执行，适用于发布者需要关心订阅回调运行结果的场景。比如 shouldEmit 这个 hook，如果在 plugin 中注册的回调内返回一个 false，那么就会终止其他回调的执行，然后这个 hook 的 call 返回一个 false，可以被调用者接收到，表示出现了错误。
+
 ```js
 compiler.hooks.shouldEmit.tap("NoEmitOnErrorsPlugin", compilation => {
 	if (compilation.getStats().hasErrors()) return false;
@@ -2279,10 +2325,12 @@ if (this.hooks.shouldEmit.call(compilation) === false) {
 	...
 }
 ```
+
 - SyncWaterfallHook，就是将前一个回调的返回值传入后一个回调的参数使用
 - SyncLoopHook ，就是循环执行，直到所有回调都返回 undefined
 
-每个hook对应执行的call函数都可以换为callAsync函数，callAsync在webpack内部应用更广一些。callAsync需要接收一个回调函数作为参数，用于处理可能抛出的错误
+每个 hook 对应执行的 call 函数都可以换为 callAsync 函数，callAsync 在 webpack 内部应用更广一些。callAsync 需要接收一个回调函数作为参数，用于处理可能抛出的错误
+
 ```js
 this.hooks.sleep.callAsync(params, (err) => {
   if (err) {
@@ -2291,10 +2339,12 @@ this.hooks.sleep.callAsync(params, (err) => {
 });
 ```
 
-还有一些异步的hook，比如最基本的AsyncSeriesHook，其实就是SyncHook的异步版
-- AsyncSeriesHook，可以用tapAsync注册异步回调，或者用tapPromise注册promise。当异步回调执行完成，或返回的promise resolve之后，就会继续下一个回调。这些回调会依次顺序执行，一个执行完后才会执行下一个。
-这个hook其实就是**允许回调内添加异步任务**，适用于需要执行异步任务的plugin
-比如：
+还有一些异步的 hook，比如最基本的 AsyncSeriesHook，其实就是 SyncHook 的异步版
+
+- AsyncSeriesHook，可以用 tapAsync 注册异步回调，或者用 tapPromise 注册 promise。当异步回调执行完成，或返回的 promise resolve 之后，就会继续下一个回调。这些回调会依次顺序执行，一个执行完后才会执行下一个。
+  这个 hook 其实就是**允许回调内添加异步任务**，适用于需要执行异步任务的 plugin
+  比如：
+
 ```js
 const hook = new AsyncSeriesHook();
 
@@ -2322,8 +2372,6 @@ hook.tapAsync("test", () => {
   console.log("callback B");
 });
 
-
-
 hook.callAsync();
 // 运行结果：
 // callback A
@@ -2332,15 +2380,16 @@ hook.callAsync();
 // callback C 异步操作结束
 // callback B
 ```
-- AsyncParallelHook，就是并行执行所有的回调，而AsyncSeriesHook是串行执行的。
 
+- AsyncParallelHook，就是并行执行所有的回调，而 AsyncSeriesHook 是串行执行的。
 
-### hook的应用
+### hook 的应用
 
-hook最大的应用是在plugin内部。这个plugin不仅可以是用户编写的plugin，也可以是webpack内部的plugin。
-我们知道plugin类的apply方法会被传入一个compiler对象，那么plugin就可以借助这个compiler对象上的这些hook注册事件。之后在compile方法中，在不同的阶段执行这些事件，就实现了plugin在不同时期执行相应任务的效果。
+hook 最大的应用是在 plugin 内部。这个 plugin 不仅可以是用户编写的 plugin，也可以是 webpack 内部的 plugin。
+我们知道 plugin 类的 apply 方法会被传入一个 compiler 对象，那么 plugin 就可以借助这个 compiler 对象上的这些 hook 注册事件。之后在 compile 方法中，在不同的阶段执行这些事件，就实现了 plugin 在不同时期执行相应任务的效果。
 
-比如eslint-webpack-plugin，其内部简单代码为：
+比如 eslint-webpack-plugin，其内部简单代码为：
+
 ```js
 class ESLintWebpackPlugin {
   constructor(options = {}) {
@@ -2400,13 +2449,13 @@ class ESLintWebpackPlugin {
   }
 }
 ```
+
 这里就用到了如下 Hook：
 
 - `compiler.hooks.compilation`：Compiler 环境初始化完毕，创建出 compilation 对象，准备开始执行构建前触发；
-- `compilation.hooks.succeedModule`：Webpack 完成单个「模块」的读入、运行 Loader、AST 分析、依赖分析等操作后触发；这个最为关键，每当webpack完整解析一个模块后，就会去调用lint检查这个文件。
+- `compilation.hooks.succeedModule`：Webpack 完成单个「模块」的读入、运行 Loader、AST 分析、依赖分析等操作后触发；这个最为关键，每当 webpack 完整解析一个模块后，就会去调用 lint 检查这个文件。
 - `compilation.hooks.finishModules`：Webpack 完成「所有」模块的读入、运行 Loader、依赖分析等操作后触发；
 - `compilation.hooks.additionalAssets`：构建、打包完毕后触发，通常用于为编译创建附加资产。
-
 
 ## plugin
 
@@ -2425,14 +2474,16 @@ class BasicPlugin {
 }
 ```
 
-plugin可以通过Compiler上的各种hook，访问到编译周期的不同阶段的上下文。也可以获取到compilation对象，对make和seal阶段做更详细的控制
+plugin 可以通过 Compiler 上的各种 hook，访问到编译周期的不同阶段的上下文。也可以获取到 compilation 对象，对 make 和 seal 阶段做更详细的控制
 这两者的区别再总结一下：
-- compiler：实际上是编译器本身，compiler对象贯穿编译过程始终，包含各种hook和大量变异相关的方法，其中compiler.compile方法是整个编译过程的主要方法
-- compilation：是编译过程的一部分，即make和seal阶段，当初始化阶段完成后才创建，并且每次由watch等方式触发的重新编译都会重新创建compilation对象。相对来说compilation可控范围更细致，也更常用。
+
+- compiler：实际上是编译器本身，compiler 对象贯穿编译过程始终，包含各种 hook 和大量变异相关的方法，其中 compiler.compile 方法是整个编译过程的主要方法
+- compilation：是编译过程的一部分，即 make 和 seal 阶段，当初始化阶段完成后才创建，并且每次由 watch 等方式触发的重新编译都会重新创建 compilation 对象。相对来说 compilation 可控范围更细致，也更常用。
 
 除了这两个对象之外，还有 Module、Resolver、Parser、Generator 等关键类型，也都相应暴露了许多 Hook。
 
-还有一些常用的钩子，这些钩子及其回调才是编写plugins的核心。常用的Compiler钩子有：
+还有一些常用的钩子，这些钩子及其回调才是编写 plugins 的核心。常用的 Compiler 钩子有：
+
 - beforeRun：在 webpack 执行前调用；
 - run：在 webpack 执行时调用；
 - emit：在生成资源之前调用；
@@ -2446,21 +2497,23 @@ plugin可以通过Compiler上的各种hook，访问到编译周期的不同阶�
 - failed：当构建失败时调用；
 - invalid：在监听模式下，当某个文件被更新时调用。
 
-常用的Compilation钩子有：
+常用的 Compilation 钩子有：
+
 - buildModule：在模块构建开始之前触发，可以用来修改模块。
 - finishModules：异步钩子所有模块都完成构建并且没有错误时执行。
-- seal：seal阶段开始时
-- moduleAsset和chunkAsset：表示一个模块/一个chunk的asstet被添加到Compilation时调用。
+- seal：seal 阶段开始时
+- moduleAsset 和 chunkAsset：表示一个模块/一个 chunk 的 asstet 被添加到 Compilation 时调用。
 
-更多参考webpack api文档：https://webpack.docschina.org/api/
+更多参考 webpack api 文档：https://webpack.docschina.org/api/
 
+### plugin 编写示例：RemoveConsolePlugin
 
-### plugin编写示例：RemoveConsolePlugin
+这个插件用于去掉 js 文件中的 console.log 语句。主要功能逻辑如下：
 
-这个插件用于去掉js文件中的console.log语句。主要功能逻辑如下：
-1. 在compiler的emit hook中注册事件，获取compilation对象。compiler的大多数钩子的回调都可以获取compilation对象，而compilation对象其实是控制输出输入的核心。emit钩子会在webpack生成chunk之后、准备输入资源之前调用，可以在这个hook内对将要输出的chunk进行修改
+1. 在 compiler 的 emit hook 中注册事件，获取 compilation 对象。compiler 的大多数钩子的回调都可以获取 compilation 对象，而 compilation 对象其实是控制输出输入的核心。emit 钩子会在 webpack 生成 chunk 之后、准备输入资源之前调用，可以在这个 hook 内对将要输出的 chunk 进行修改
 
-chunk对象结构如下：
+chunk 对象结构如下：
+
 ```json
 {
   "entry": true, // 指定 webpack 运行时是否包含 chunk
@@ -2486,22 +2539,21 @@ chunk对象结构如下：
 }
 ```
 
-2. compilation.chunks可以获取已经生成的chunk列表，chunk.files获取chunk要输出的文件信息
-3. compilation.assets获取输出的资源列表，然后asset.source()获取输出的值。剩下的处理就和在loader中很像，通过正则处理字符串形式的asset即可。
-4. 通过compilation.emitAsset输出资源。
-
+2. compilation.chunks 可以获取已经生成的 chunk 列表，chunk.files 获取 chunk 要输出的文件信息
+3. compilation.assets 获取输出的资源列表，然后 asset.source()获取输出的值。剩下的处理就和在 loader 中很像，通过正则处理字符串形式的 asset 即可。
+4. 通过 compilation.emitAsset 输出资源。
 
 ```js
 class MyPlugin {
   apply(compiler) {
-    compiler.hooks.emit.tap('MyPlugin', (compilation) => {
+    compiler.hooks.emit.tap("MyPlugin", (compilation) => {
       compilation.chunks.forEach((chunk) => {
         chunk.files.forEach((filename) => {
-          if (filename.endsWith('.js')) {
+          if (filename.endsWith(".js")) {
             let asset = compilation.assets[filename];
             let source = asset.source();
-            source = source.replace(/console\.log\(.+?\);/g, '');
-            compilation.emitAsset(filename,source)
+            source = source.replace(/console\.log\(.+?\);/g, "");
+            compilation.emitAsset(filename, source);
           }
         });
       });
@@ -2509,9 +2561,8 @@ class MyPlugin {
   }
 }
 ```
+
 这个插件会在构建完成后遍历生成的资源，如果发现是 JS 文件，则会去掉其中的所有 console.log() 语句。在这个例子中，我们使用了 emit 钩子。
-
-
 
 ## 环境变量
 
@@ -2582,7 +2633,6 @@ devServer 采用的默认是第二种方法，可以配置为第三种（配置�
 
 ![](https://pic.imgdb.cn/item/61db12b62ab3f51d91244c5a.png)
 
-> `webpack-dev-server`服务于的是资源文件，即主要为核心代码所在的 js 文件，不会对`index.html`的修改做出反应
 
 ## HMR
 
@@ -2591,22 +2641,24 @@ devServer 采用的默认是第二种方法，可以配置为第三种（配置�
 在 HMR 之前，应用的加载、更新都是一种页面级别的原子操作，即使只是单个代码文件发生变更，都需要刷新整个页面，才能将最新代码映射到浏览器上，这会丢失之前在页面执行过的所有交互与状态，例如：
 
 对于复杂表单场景，这意味着你可能需要重新填充非常多字段信息；
+
 - 弹框消失，你必须重新执行交互动作才会重新弹出。
 - 再小的改动，例如更新字体大小，改变备注信息都会需要整个页面重新加载执行，整体开发效率偏低。而引入 HMR 后，虽然无法覆盖所有场景，但大多数小改动都可以通过模块热替换方式更新到页面上，从而确保连续、顺畅的开发调试体验，极大提升开发效率。
 
 ### 使用
 
-hmr的使用比较麻烦。和自动刷新不同，hmr需要手动指定怎么把模块替换成最新的代码。
+hmr 的使用比较麻烦。和自动刷新不同，hmr 需要手动指定怎么把模块替换成最新的代码。
 
 1. 设置 devServer.hot 属性为 true
+
 ```js
 // webpack.config.js
 module.exports = {
   // ...
   devServer: {
     // 必须设置 devServer.hot = true，启动 HMR 功能
-    hot: true
-  }
+    hot: true,
+  },
 };
 ```
 
@@ -2634,20 +2686,21 @@ if (module.hot) {
 
 ### 实际应用
 
-在实际项目中，以react项目为例，大多数时候使用的是两个hmr工具：react hot loader和react fast refresh，其中后者是当前版本更常用的方式。
+在实际项目中，以 react 项目为例，大多数时候使用的是两个 hmr 工具：react hot loader 和 react fast refresh，其中后者是当前版本更常用的方式。
 
-react hot loader是一种传统的实现方式，主要针对16.8之前的类组件。它利用的是webpack原生的hmr实现，比如module.hot.accept这样的api
-当文件触发更新时，它会对比新旧版本的模块，为模块创建一组“patching”（补丁），用以描述模块新旧版本的差异。这些补丁可以用于修改组件的方法、props、state等各方面，通过补丁的形式就可以更新组件树（当前组件及其后代组件），而不需要完全重新加载整个项目。
-同时它的缺陷也很明显，首先是当应用体积逐渐变大时，补丁对组件树造成的更新范围会越来越大，导致更新过程可能会越来越慢。其次相对于快速刷新更容易出现错误。最后，它可能需要更详细的配置去处理react特殊组件。
+react hot loader 是一种传统的实现方式，主要针对 16.8 之前的类组件。它利用的是 webpack 原生的 hmr 实现，比如 module.hot.accept 这样的 api
+当文件触发更新时，它会对比新旧版本的模块，为模块创建一组“patching”（补丁），用以描述模块新旧版本的差异。这些补丁可以用于修改组件的方法、props、state 等各方面，通过补丁的形式就可以更新组件树（当前组件及其后代组件），而不需要完全重新加载整个项目。
+同时它的缺陷也很明显，首先是当应用体积逐渐变大时，补丁对组件树造成的更新范围会越来越大，导致更新过程可能会越来越慢。其次相对于快速刷新更容易出现错误。最后，它可能需要更详细的配置去处理 react 特殊组件。
 
-react fast refresh是更新的实现方式，它采用webpack5提供的`HMRv2`，从react的调和过程出发，和hmr功能结合起来的实现。具体来说是调和过程的diff算法；它结合diff算法得知react更新了哪些部分，然后利用hmr更新这部分内容。这样就不需要重新加载整个组件，只是相当于调度了一次更新。
-fast refresh相对于hot reload，更新范围更小，只需要更新当前组件及其依赖，而不会影响到其他组件的内容。因此更新速度更快、更不易出错。
+react fast refresh 是更新的实现方式，它采用 webpack5 提供的`HMRv2`，从 react 的调和过程出发，和 hmr 功能结合起来的实现。具体来说是调和过程的 diff 算法；它结合 diff 算法得知 react 更新了哪些部分，然后利用 hmr 更新这部分内容。这样就不需要重新加载整个组件，只是相当于调度了一次更新。
+fast refresh 相对于 hot reload，更新范围更小，只需要更新当前组件及其依赖，而不会影响到其他组件的内容。因此更新速度更快、更不易出错。
 
-> HMR v2（不是这个名字，但大概意思是一个全新的版本）是webpack5提供的更新的一种hmr方式，无需刷新页面即可更新组件。另外它还借助了babel的一个plugin，可以注入代码帮助确定在hmr期间需要更新哪些组件并保留状态。
+> HMR v2（不是这个名字，但大概意思是一个全新的版本）是 webpack5 提供的更新的一种 hmr 方式，无需刷新页面即可更新组件。另外它还借助了 babel 的一个 plugin，可以注入代码帮助确定在 hmr 期间需要更新哪些组件并保留状态。
 
 ### 原理
 
 热更新流程可以分为以下几步：
+
 1. 使用 webpack-dev-server （后面简称 WDS）托管静态资源，同时以 Runtime 方式注入一段处理 HMR 逻辑的客户端代码；
 
 在 HMR 场景下，执行 npx webpack serve 命令后，webpack-dev-server 首先会调用 HotModuleReplacementPlugin 插件向应用的主 Chunk 注入一系列 HMR Runtime，包括：
@@ -2656,44 +2709,47 @@ fast refresh相对于hot reload，更新范围更小，只需要更新当前组�
 - 用于加载热更新资源的接口；
 - 用于处理模块更新策略的 module.hot.accept 接口
 
-经过 HotModuleReplacementPlugin 处理后，构建产物中即包含了所有运行 HMR 所需的客户端运行时与接口。相当于在输出的产物中包含了建立websocket连接、处理加载资源等的一段代码，这部分代码将帮助完成热更新流程。
-这些 HMR 运行时会在浏览器执行一套基于 WebSocket 消息的时序框架。当这部分内容运行时会和wds建立websocket连接，接收hash事件，获取manifest等操作。
+经过 HotModuleReplacementPlugin 处理后，构建产物中即包含了所有运行 HMR 所需的客户端运行时与接口。相当于在输出的产物中包含了建立 websocket 连接、处理加载资源等的一段代码，这部分代码将帮助完成热更新流程。
+这些 HMR 运行时会在浏览器执行一套基于 WebSocket 消息的时序框架。当这部分内容运行时会和 wds 建立 websocket 连接，接收 hash 事件，获取 manifest 等操作。
 ![](https://pic.imgdb.cn/item/63e34e4f4757feff3308c3b3.jpg)
 
 2. 浏览器加载页面后，与 WDS 建立 WebSocket 连接；
 3. Webpack 监听到文件变化后，增量构建发生变更的模块，并通过 WebSocket 发送 hash 事件；
 
-这一步依赖webpack提供的watch功能。当监视的文件发生变化时，webpack会重新执行make阶段对发生变化的文件重新编译，并生成：
+这一步依赖 webpack 提供的 watch 功能。当监视的文件发生变化时，webpack 会重新执行 make 阶段对发生变化的文件重新编译，并生成：
 
 - manifest 文件：JSON 格式文件，包含所有发生变更的模块列表，命名为 `[hash].hot-update.json`；
 - 模块变更文件：js 格式，包含编译后的模块代码，命名为 `[hash].hot-update.js`
 
-增量构建完毕后，Webpack 将触发 compilation.hooks.done 钩子，并传递本次构建的统计信息对象 stats。WDS 则监听 done 钩子，在回调中通过 WebSocket 发送模块更新消息，即hash事件
+增量构建完毕后，Webpack 将触发 compilation.hooks.done 钩子，并传递本次构建的统计信息对象 stats。WDS 则监听 done 钩子，在回调中通过 WebSocket 发送模块更新消息，即 hash 事件
 
 ```js
 {"type":"hash","data":"${stats.hash}"}
 ```
 
-4. 浏览器接收到 hash 事件后，请求 manifest 资源文件，确认本次热更新涉及的chunk
+4. 浏览器接收到 hash 事件后，请求 manifest 资源文件，确认本次热更新涉及的 chunk
 
-在webpack5之前，热更新的单位是模块，每个模块的热更新都会生成对应的热更新文件；当前的方式是每个包含热更新文件的chunk在更新之后都会生成当前chunk的更新文件，即一个名为`main.[hash].hot-update.js`的更新文件
+在 webpack5 之前，热更新的单位是模块，每个模块的热更新都会生成对应的热更新文件；当前的方式是每个包含热更新文件的 chunk 在更新之后都会生成当前 chunk 的更新文件，即一个名为`main.[hash].hot-update.js`的更新文件
 
 5. 浏览器加载发生变更的增量模块。
 6. Webpack 运行时触发变更模块的 module.hot.accept 回调，执行代码变更逻辑；到这一步时浏览器已经加载完了最新模块代码，执行回调内的逻辑其实就是相当于一段额外代码，会修改原有的逻辑。
 
 # 练习配置
 
-## 使用webpack.config.ts
+## 使用 webpack.config.ts
 
-config文件的配置常常因为不清楚配置项的名称而搞错，因此可以考虑采用ts类型的配置文件。
+config 文件的配置常常因为不清楚配置项的名称而搞错，因此可以考虑采用 ts 类型的配置文件。
 
 步骤：
+
 1. 首先需要安装：
+
 ```
 yarn add --dev typescript ts-node @types/node @types/webpack
 ```
 
-2. 生成tsconfig.json。
+2. 生成 tsconfig.json。
+
 ```
 tsc --init
 ```
@@ -2708,8 +2764,7 @@ tsc --init
 }
 ```
 
-3. 然后编写webpack.config.ts。
-
+3. 然后编写 webpack.config.ts。
 
 ```ts
 import * as webpack from "webpack";
@@ -2722,51 +2777,52 @@ const config: webpack.Configuration = {
 export default config;
 ```
 
-注意部分模块需要导入类型定义，比如devServer就需要额外安装@types/webpack-dev-server，然后在config中导入webpack-dev-server
+注意部分模块需要导入类型定义，比如 devServer 就需要额外安装@types/webpack-dev-server，然后在 config 中导入 webpack-dev-server
 
 ```ts
 import * as webpack from "webpack";
 import * as path from "path";
-import webpackDevServer from 'webpack-dev-server';
+import webpackDevServer from "webpack-dev-server";
 
 const config: webpack.Configuration = {
-  devServer:{
-    hot:true,
+  devServer: {
+    hot: true,
   },
 };
 
 export default config;
 ```
 
+## 配置 React 开发环境
 
-## 配置React开发环境
+### 基本 React
 
-### 基本React
+基本配置内容包括：React、babel 以及 typescript。
 
-基本配置内容包括：React、babel以及typescript。
+1. 安装 webpack 等一系列内容
 
-1. 安装webpack等一系列内容
 ```
 yarn add webpack webpack-cli webpack-dev-server -D
 yarn add css-loader babel-loader style-loader -D
 yarn add react react-dom
 yarn add html-webpack-plugin -D
 ```
-如果全局没有安装ts的话，还需要安装typescript
 
-2. 执行`npx webpack init`创建基本配置文件，以及`tsc --init`创建tsconfig.json。可以参考上面使用webpack.config.ts的配置，这样可以减少错误
+如果全局没有安装 ts 的话，还需要安装 typescript
+
+2. 执行`npx webpack init`创建基本配置文件，以及`tsc --init`创建 tsconfig.json。可以参考上面使用 webpack.config.ts 的配置，这样可以减少错误
 
 3. 编写配置文件，主要有以下内容：
 
-- entry：即React的入口文件index.tsx。
+- entry：即 React 的入口文件 index.tsx。
 - output：正常输出即可
-- module.rules：主要配置两个loader：
+- module.rules：主要配置两个 loader：
   - "style-loader"和"css-loader"
   - babel-loader
-    - `@babel/preset-react`，按照如下方式配置。如果开启runtime配置项，项目中jsx、tsx文件就不需要引入react
-    - `@babel/preset-typescript`，用于解析ts
-- resolve.extensions：注意配置tsx和ts，因为导入ts/tsx时不能添加后缀，因此必须添加ts和tsx后缀
-- plugins：HtmlWebpackPlugin，设置一个template，主要是要包含一个id为root的div，作为react的root element。
+    - `@babel/preset-react`，按照如下方式配置。如果开启 runtime 配置项，项目中 jsx、tsx 文件就不需要引入 react
+    - `@babel/preset-typescript`，用于解析 ts
+- resolve.extensions：注意配置 tsx 和 ts，因为导入 ts/tsx 时不能添加后缀，因此必须添加 ts 和 tsx 后缀
+- plugins：HtmlWebpackPlugin，设置一个 template，主要是要包含一个 id 为 root 的 div，作为 react 的 root element。
 
 ```ts
 const config: webpack.Configuration = {
@@ -2804,7 +2860,7 @@ const config: webpack.Configuration = {
     extensions: [".tsx", ".ts", ".jsx", ".js"],
   },
   devServer: {
-    hot:true
+    hot: true,
   },
   target: "web",
   plugins: [
@@ -2814,10 +2870,10 @@ const config: webpack.Configuration = {
   ],
   mode: "development",
 };
-
 ```
 
-4. 配置scripts：
+4. 配置 scripts：
+
 ```json
 "scripts": {
   "start": "webpack",
@@ -2825,17 +2881,19 @@ const config: webpack.Configuration = {
 },
 ```
 
-然后执行yarn serve就可以启动
+然后执行 yarn serve 就可以启动
 
-### 添加css预处理器和css-module
+### 添加 css 预处理器和 css-module
 
-以less为例：
+以 less 为例：
+
 1. 安装
+
 ```
 yarn add -D less less-loader
 ```
 
-2. 添加less-loader。注意这里的test也要修改成`/\.less$/`
+2. 添加 less-loader。注意这里的 test 也要修改成`/\.less$/`
 
 ```js
 {
@@ -2846,19 +2904,22 @@ yarn add -D less less-loader
 
 ---
 
-关于css module的配置，最简单的方式就是在cssloader的options开启`modules:true`即可，当然还有另外几个配置：
-- modules:用于配置是否启用cssmodule及其内部配置。如果不为false则为开启，还可以是一个配置对象，具体配置项参考https://github.com/webpack-contrib/css-loader#auto
+关于 css module 的配置，最简单的方式就是在 cssloader 的 options 开启`modules:true`即可，当然还有另外几个配置：
 
-  这里主要使用了localIdentName配置，用于修改经过css module处理的类名，推荐这种形式：
+- modules:用于配置是否启用 cssmodule 及其内部配置。如果不为 false 则为开启，还可以是一个配置对象，具体配置项参考https://github.com/webpack-contrib/css-loader#auto
+
+  这里主要使用了 localIdentName 配置，用于修改经过 css module 处理的类名，推荐这种形式：
+
   ```
   [local]_[hash:base64:5]
   ```
+
   - local：原本的样式名
-  - hash:base64:5：css module为了区分类名的hash值，必须要有，可以修改长度
+  - hash:base64:5：css module 为了区分类名的 hash 值，必须要有，可以修改长度
 
   其他可以设置的模板字符串参考https://github.com/webpack-contrib/css-loader#localidentname
 
-- importLoaders：表示在css-loader之前还有几个loader，即use数组中，在css-loader之后的loader个数，默认是0，需要修改成1。这里只有less-loader一个，如果配置了postcss，那就是两个
+- importLoaders：表示在 css-loader 之前还有几个 loader，即 use 数组中，在 css-loader 之后的 loader 个数，默认是 0，需要修改成 1。这里只有 less-loader 一个，如果配置了 postcss，那就是两个
 
 ```js
 {
@@ -2879,23 +2940,27 @@ yarn add -D less less-loader
 },
 ```
 
-另外还有个问题，ts中会对导入的css module文件报错`找不到模块 ./xxx.module.less 或其相应的类型声明`。这是因为modulecss文件没有类型声明。因此需要自己编写一个`.d.ts`文件为modulecss添加类型
+另外还有个问题，ts 中会对导入的 css module 文件报错`找不到模块 ./xxx.module.less 或其相应的类型声明`。这是因为 modulecss 文件没有类型声明。因此需要自己编写一个`.d.ts`文件为 modulecss 添加类型
 
 ```ts
-declare module '*.module.less' {
-  const classes: {[key:string]:string};
-  export default classes
+declare module "*.module.less" {
+  const classes: { [key: string]: string };
+  export default classes;
 }
 ```
-按照ts对声明文件的解析规则，这里是声明了一个module类型的模块，`.module.css`文件会导出一个包含classes对象类型的变量，即导入的style类型`{[key:string]:string}`
 
-@teamsupercell/typings-for-css-modules-loader库可以自动根据module.css文件生成对应的声明文件，并且可以根据css的类名添加具体的属性名到style对象上去，库说明参考https://github.com/TeamSupercell/typings-for-css-modules-loader
+按照 ts 对声明文件的解析规则，这里是声明了一个 module 类型的模块，`.module.css`文件会导出一个包含 classes 对象类型的变量，即导入的 style 类型`{[key:string]:string}`
+
+@teamsupercell/typings-for-css-modules-loader 库可以自动根据 module.css 文件生成对应的声明文件，并且可以根据 css 的类名添加具体的属性名到 style 对象上去，库说明参考https://github.com/TeamSupercell/typings-for-css-modules-loader
 
 首先安装：
+
 ```
 yarn add -D @teamsupercell/typings-for-css-modules-loader
 ```
-然后按照正常loader方式使用即可，注意要放在css-loader后面、style-loader前面
+
+然后按照正常 loader 方式使用即可，注意要放在 css-loader 后面、style-loader 前面
+
 ```js
 use:[
   "style-loader",
@@ -2912,16 +2977,20 @@ use:[
   "less-loader",
 ],
 ```
-对于每一个.module.css文件，都会生成对应的.d.ts声明文件。比如某个less文件为：
+
+对于每一个.module.css 文件，都会生成对应的.d.ts 声明文件。比如某个 less 文件为：
+
 ```less
-.container{
-    display: flex;
-    .title{
-        color: green;
-    }
+.container {
+  display: flex;
+  .title {
+    color: green;
+  }
 }
 ```
+
 生成对应的.d.ts
+
 ```ts
 declare namespace AppModuleLessNamespace {
   export interface IAppModuleLess {
@@ -2938,18 +3007,21 @@ declare const AppModuleLessModule: AppModuleLessNamespace.IAppModuleLess & {
 export = AppModuleLessModule;
 ```
 
-可以看到，具体的类名都已经声明完成了，在tsx文件中使用style可以看到类型
+可以看到，具体的类名都已经声明完成了，在 tsx 文件中使用 style 可以看到类型
 
-### 添加hmr
+### 添加 hmr
 
-由于webpack的hmr需要开发者自行确定更新范围，这对于react这种复杂的框架来说很麻烦。因此可以使用已有的hmr loader来简化这一过程。
+由于 webpack 的 hmr 需要开发者自行确定更新范围，这对于 react 这种复杂的框架来说很麻烦。因此可以使用已有的 hmr loader 来简化这一过程。
 
-react-hot-loader用于处理react的热更新，参考https://github.com/gaearon/react-hot-loader
+react-hot-loader 用于处理 react 的热更新，参考https://github.com/gaearon/react-hot-loader
+
 1. 安装
+
 ```
 npm install react-hot-loader
 ```
-2. 在babel中添加plugins：
+
+2. 在 babel 中添加 plugins：
 
 ```js
 {
@@ -2971,17 +3043,19 @@ npm install react-hot-loader
 },
 ```
 
-3. 修改entry为如下形式。这一步的目的是在react和react-dom之间添加react-hot-loader
+3. 修改 entry 为如下形式。这一步的目的是在 react 和 react-dom 之间添加 react-hot-loader
+
 ```js
 entry: ['react-hot-loader/patch', './src/index.tsx'],
 ```
 
-4. （非必须）添加@hot-loader/react-dom，然后在alias中修改react-dom的别名。用这个react-dom替换原react-dom的目的在于保证部分功能实现，比如useEffect的热更新。
-但是这个库没有对react18做出更新，因此不建议修改react-dom
+4. （非必须）添加@hot-loader/react-dom，然后在 alias 中修改 react-dom 的别名。用这个 react-dom 替换原 react-dom 的目的在于保证部分功能实现，比如 useEffect 的热更新。
+   但是这个库没有对 react18 做出更新，因此不建议修改 react-dom
 
 ```
 yarn add @hot-loader/react-dom
 ```
+
 ```js
 resolve: {
   extensions: [".tsx", ".ts", ".jsx", ".js"],
@@ -2991,7 +3065,8 @@ resolve: {
 },
 ```
 
-5. 在需要热更新的组件中，用hot函数包裹：
+5. 在需要热更新的组件中，用 hot 函数包裹：
+
 ```ts
 import {hot} from 'react-hot-loader/root'
 
@@ -3001,12 +3076,12 @@ function App() {
 export default hot(App)
 ```
 
-只有用hot包裹的组件才能处理热更新，其内部的子组件也需要hot包裹。这种形式很麻烦，因此现在一般不采用hmr，而是采用 fast refresh（快速刷新）
+只有用 hot 包裹的组件才能处理热更新，其内部的子组件也需要 hot 包裹。这种形式很麻烦，因此现在一般不采用 hmr，而是采用 fast refresh（快速刷新）
 
 ### 添加快速刷新
 
-快速刷新是目前更常用的、代替hmr的方式，包括cra在内的多种脚手架都采用的快速刷新。
-快速刷新针对的不止是react，甚至包括普通js文件。
+快速刷新是目前更常用的、代替 hmr 的方式，包括 cra 在内的多种脚手架都采用的快速刷新。
+快速刷新针对的不止是 react，甚至包括普通 js 文件。
 参考：https://github.com/pmmmwh/react-refresh-webpack-plugin/
 
 1.  安装
@@ -3015,7 +3090,8 @@ export default hot(App)
 yarn add -D @pmmmwh/react-refresh-webpack-plugin react-refresh
 ```
 
-2. 添加babel plugins和plugins
+2. 添加 babel plugins 和 plugins
+
 ```js
 {
   test: /\.tsx?$/,
@@ -3035,6 +3111,7 @@ yarn add -D @pmmmwh/react-refresh-webpack-plugin react-refresh
   },
 },
 ```
+
 ```js
 // 这个是总的plugins
 plugins: [
@@ -3042,19 +3119,16 @@ plugins: [
 ],
 ```
 
-3. 在文件中不需要任何额外添加的部分，直接可以实现hmr效果。
+3. 在文件中不需要任何额外添加的部分，直接可以实现 hmr 效果。
 
-另外，快速刷新仍然依赖于hmr，因此还是需要开启`devServer.hot = true`.
-
-
-
+另外，快速刷新仍然依赖于 hmr，因此还是需要开启`devServer.hot = true`.
 
 # 优化实录
 
 没有任何优化手段，默认打包：
 ![](https://pic.imgdb.cn/item/64049ac9f144a01007cb34c6.jpg)
 
-总打包大小约为5M
+总打包大小约为 5M
 ![](https://pic.imgdb.cn/item/6404a0d3f144a01007d52429.jpg)
 
 ## 打包速度优化
@@ -3066,36 +3140,34 @@ plugins: [
 
 2. 限制范围-loader：
 
-对于css相关的loder以及小一点的loader，几乎没有影响
-但是babel-loader必须通过include指定src内编译，不然就会非常恐怖
+对于 css 相关的 loder 以及小一点的 loader，几乎没有影响
+但是 babel-loader 必须通过 include 指定 src 内编译，不然就会非常恐怖
 
-3. 关闭部分优化项：即关闭诸如minimize这种减少体积的优化。
+3. 关闭部分优化项：即关闭诸如 minimize 这种减少体积的优化。
 
-关闭之前为10.24 关闭之后为9.9 略有优化
+关闭之前为 10.24 关闭之后为 9.9 略有优化
 
-4. noParse：不解析react，而直接采用react.development.js
+4. noParse：不解析 react，而直接采用 react.development.js
 
-有效果，主要体现在减少module打包时间上，减少约1秒以上；但是有点极端了，对于lodash这样的库尚可，对于react还是谨慎这么做
-
+有效果，主要体现在减少 module 打包时间上，减少约 1 秒以上；但是有点极端了，对于 lodash 这样的库尚可，对于 react 还是谨慎这么做
 
 ## 产物优化
 
-1. 开启production模式.
+1. 开启 production 模式.
 
-只需要把mode设为production，打包体积就从5.56MB骤降到1.19MB
+只需要把 mode 设为 production，打包体积就从 5.56MB 骤降到 1.19MB
 ![](https://pic.imgdb.cn/item/6404a920f144a01007e455ce.jpg)
 
 2. 压缩代码：
 
-js压缩和css压缩的效果都不是很明显，大致降低了5%左右。
-production模式下，本来就对js进行了压缩，因此再压缩的变化并不明显。但是可以看出产物进行了合并一行、去除空位等改变。
+js 压缩和 css 压缩的效果都不是很明显，大致降低了 5%左右。
+production 模式下，本来就对 js 进行了压缩，因此再压缩的变化并不明显。但是可以看出产物进行了合并一行、去除空位等改变。
 
 3. splitChunk
 
 如果只开启`chunks:"all"`的话，对单入口项目没有用。
-但是可以配置`splitChunks.cacheGroups`，就可以自定义分包对象。我们可以设置`node_modules`内的模块也为分包对象。这样减少了输出的index的大小，但是总体大小没有改变。
+但是可以配置`splitChunks.cacheGroups`，就可以自定义分包对象。我们可以设置`node_modules`内的模块也为分包对象。这样减少了输出的 index 的大小，但是总体大小没有改变。
 
-4. 动态导入：配合React.lazy，可以明显看到减少了一部分体积。如果把大多数组件都动态加载，那么打包的结果就会含有比较少的源代码
+4. 动态导入：配合 React.lazy，可以明显看到减少了一部分体积。如果把大多数组件都动态加载，那么打包的结果就会含有比较少的源代码
 
 5. tree-shaking：配置成功，但效果一般，猜测是项目中能被优化的部分不多，大多数导出还是被正常使用的。
-

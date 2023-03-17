@@ -2184,7 +2184,7 @@ useEffect(() => {
 
 flux 官方文档：https://facebook.github.io/flux/docs/
 
-flux 是一种理念，redux 和 mobx 都是基于 flux 的实现。
+flux 是一种理念，redux 是基于 flux 的实现。
 flux 的核心主要有四个：
 
 ![](https://pic.imgdb.cn/item/63da5ba9ac6ef860166eff72.jpg)
@@ -2203,61 +2203,325 @@ flux 的特点可以参考 redux 的特点（redux 是 flux 较为完善的实�
 
 ![](https://pic.imgdb.cn/item/63da613dac6ef860167ceea4.jpg)
 
-Mobx 也是 flux 理念的实现，但是 Mobx 更像是一个发布订阅模式
 
 ![](https://pic.imgdb.cn/item/63da6198ac6ef860167dd17d.jpg)
 
-MobX 的核心概念
+### 核心理念
 
-- State（observable）：驱动应用的数据
-- Derivation：派生。Mobx 分成两种 Derivation
-  - Computed values,总是可以通过纯函数从当前的可观测 State 中派生。
-  - Reactions, 当 State 改变时需要自动运行的副作用
-- Actions：动作，用于改变 State
+mobx 推崇一种响应式编程。虽然和 redux 同属 flux 架构，但 mobx 的实现和使用方式和 redux 差距很大。
 
-对 React 来说，需要用 observer 函数将组件包裹成为 Reactions，这样就可以响应 state 的改变，从而更新自己的状态
+- observable：即“被监听的”状态，通常用于定义一个状态。这个状态可以是任意类型，比如字符串、数字、对象、数组、map 等
+- action：用于修改状态的函数，只有被标记为 action 的函数内部修改的状态才会生效，在其内部采用直接修改 state 值的形式，而非 redux 那种复制形式
+- computed：一个 getter，相当于监听一个 observable 的函数，当 observable 变化时，computed 会执行并返回一个派生的状态。
 
-```tsx
-class TodoList {
+上面三个是主要的形式，通过 observable 创建一个 state，然后用 action 修改，再配合 computed 配合派生状态，就完成了一个状态管理的基本结构。
+
+下面是一个例子：
+这里我们在一个类中使用 makeObservable 标记属性和方法的类型，把 todos 标记为 observable，用于修改 todo 的函数标记为 action，根据 todo 变化而变化的状态标记为 computed
+
+```js
+import { makeObservable, observable, action } from "mobx";
+
+class TodoStore {
   todos = [];
-  get unfinishedTodoCount() {
-    return this.todos.filter((todo) => !todo.finished).length;
-  }
-  constructor(todos) {
+
+  constructor() {
     makeObservable(this, {
       todos: observable,
-      unfinishedTodoCount: computed,
+      addTodo: action,
+      removeTodo: action,
+      todoLen: computed,
     });
-    this.todos = todos;
+  }
+
+  addTodo(todo) {
+    this.todos.push(todo);
+  }
+
+  removeTodo(index) {
+    this.todos.splice(index, 1);
+  }
+
+  get todoLen() {
+    return this.todos.length;
   }
 }
 
-const store = new TodoList([
-  new Todo("Get Coffee"),
-  new Todo("Write simpler code"),
-]);
-
-const TodoListView = observer(({ todoList }) => (
-  <div>
-    <ul>
-      {todoList.todos.map((todo) => (
-        <TodoView todo={todo} key={todo.id} />
-      ))}
-    </ul>
-    Tasks left: {todoList.unfinishedTodoCount}
-  </div>
-));
-
-const TodoView = observer(({ todo }) => (
-  <li>
-    <input
-      type="checkbox"
-      checked={todo.finished}
-      onClick={() => todo.toggle()}
-    />
-    {todo.title}
-  </li>
-));
-
-render(<TodoListView todoList={store} />, document.getElementById("root"));
+// 注意这里返回的是store的实例，而非类本身
+export default new TodoStore();
 ```
+
+也可以使用 makeAutoObservable 自动将所有属性和方法变为 observable 或 action，把 getter 变为 computed
+
+```js
+class TodoStore {
+  todos = [];
+
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  addTodo(todo) {
+    this.todos.push(todo);
+  }
+
+  removeTodo(index) {
+    this.todos.splice(index, 1);
+  }
+
+  get todoLen() {
+    return this.todos.length;
+  }
+}
+```
+
+除了这三个之外，还有几个：
+
+- autorun：类似 watch 的功能，它接受一个函数，函数内引用的状态（即上面的 store 的实例）变化时，这个函数会自动执行
+
+```js
+class OrderLine {
+  price = 0;
+  amount = 1;
+  //...
+}
+
+const order = new OrderLine(0);
+
+// 修改order的值，这个函数就会继续执行
+const stop = autorun(() => {
+  console.log("Total: " + order.total);
+});
+```
+
+- reaction：类似于 autorun，但可以让你更加精细地控制要跟踪的可观察对象。
+
+```js
+class Animal {
+  name;
+  energyLevel;
+  // ...
+}
+
+const giraffe = new Animal("Gary");
+
+reaction(
+  () => giraffe.isHungry,
+  (isHungry) => {
+    if (isHungry) {
+      console.log("Now I'm hungry!");
+    } else {
+      console.log("I'm not hungry!");
+    }
+    console.log("Energy level:", giraffe.energyLevel);
+  }
+);
+```
+
+### 和React结合
+
+上面的例子讲了如何创建一个store。通过class的形式可以创建一个store，然后导出类的实例，直接访问实例的属性就可以获得状态的输出：
+```js
+class TodoList{
+  // ...
+}
+
+const todo = new TodoList()
+
+todo.todos
+todo.addTodo(...)
+```
+
+和react结合的话，最重要的是告知react mobx输出的状态是一个合法的react state，从而使得state改变时，react组件能够相应的更新。
+在redux中采用的方法是通过context下发状态，然后再通过useSelector订阅状态并强制更新。
+mobx采用了一种“响应式”的方式，用observer将函数包裹起来，当函数内使用的状态发生变化时，就相应地更新函数：
+
+```js
+export default class useMobxStore {
+
+  count: number = 0 // 初始化状态数据
+  
+  constructor() {
+    // 对初始化数据进行响应式处理
+    makeAutoObservable(this)
+  }
+
+  // 设置改变初始化数据方法
+  addCount = () => { 
+    this.count++
+    console.log(this.count)
+  }
+}
+
+// 函数组件
+import React from 'react'
+import { observer } from 'mobx-react-lite' // 从mobx-react-lite内部引入observer让mobx与react进行关联
+import UseMobxStore from '@/store'
+
+
+const useMobxStoreState = new UseMobxStore()
+const MobxDemo = () => {
+  return (
+    <div>
+      <h2>{useMobxStoreState.count}</h2>
+      <button onClick={useMobxStoreState.addCount}>+1</button>
+    </div>
+  )
+}
+
+export default observer(MobxDemo) 
+```
+
+实际使用过程中，由于一个store对应一部分state，项目中可能有很多store，因此我们可以采用类似combineReducer的方式，将多个store合并到一个RootStore中去，然后用context将其下发，在组件中使用useContext获取RootStore
+
+
+
+```js
+// store.ts
+
+class Store1{
+  constructor(rootStore:RootStore){
+    this.rootStore = rootStore
+    ...
+  }
+}
+
+class Store2{
+  constructor(rootStore:RootStore){
+    this.rootStore = rootStore
+    ...
+  }
+}
+
+class RootStore{
+  store1:Store1
+  store2:Store2
+  constructor(){
+    this.store1 = new Store1(this)
+    this.store2 = new Store2(this)
+  }
+}
+
+const RootStateContext = createContext(new RootStore())
+
+// some-component.tsx
+
+const SomeComponent = observer(()=>{
+  const {store1,store2} = useContext(RootStateContext)
+})
+```
+
+可以参考：![](https://pic.imgdb.cn/item/640f5ef7f144a010075c3e09.jpg)
+
+### 和redux比较
+
+相同点：
+- 两者都秉持视图的改变必须要通过state改变来实现的思想。而state也不能直接改变，需要通过action改变。如果直接修改state，将不会导致视图的更新
+- 单向数据流。虽然两者实现单向数据的方式不一样，并且mobx并没有很强调单向数据，即action -> state -> view -> action这种基本形式。
+
+不同点：
+1. Redux是FLUX编程思想，单向数据流。Mobx是TFRP编程思想，响应式编程。
+
+redux 是每次返回一个全新的状态，一般搭配实现对象 immutable 的库来用。
+mobx 每次都是修改的同一个状态对象，基于响应式代理，也就是 Object.defineProperty 代理 get、set 的处理，get 时把依赖收集起来，set 修改时通知所有的依赖做更新。
+
+关于mobx的基本原理，可以这样理解：
+当通过makeObservable处理类组件中的state之后，该state的getter和setter操作会被拦截。如果调用setter，那就会触发执行保存的依赖，即类似listeners。也就是说当更新state时，就会执行listeners，从而执行一些更新，比如对react组件使用forceUpdate。
+当在组件中使用state的getter时（即获取state），mobx就会顺带收集该组件到全局中，这样到执行更新时就知道该更新哪个组件了。
+
+2. redux推崇纯函数的函数式编程，而mobx是面向对象的思想
+
+3. mobx 的响应式能精准的通知依赖做更新，而 redux 只能全局通知，而且 mobx 只是修改同一个对象，不是每次创建新对象，性能会比 redux 更高。
+
+mobx的问题：
+1. mobx的编程思想和react不搭。mobx是类似vue的响应式编程，和react推崇的单向数据、函数式编程矛盾。如果把大量状态都使用mobx这种形式去修改的话，肯定不符合react的setState修改原则
+2. 调试困难，最大的问题是打印状态时打印的是一个proxy
+3. 对hooks支持一般
+
+
+## zustand
+
+zustand 是一个轻量级状态管理库，和 redux 一样都是基于不可变状态模型和单向数据流的，状态对象 state 不可被修改，只能被替换。
+
+```js
+import { create } from 'zustand'
+
+const useBearStore = create((set) => ({
+  bears: 0,
+  increasePopulation: () => set((state) => ({ bears: state.bears + 1 })),
+  removeAllBears: () => set({ bears: 0 }),
+}))
+
+function BearCounter() {
+  const bears = useBearStore((state) => state.bears)
+  return <h1>{bears} around here ...</h1>
+}
+
+function Controls() {
+  const increasePopulation = useBearStore((state) => state.increasePopulation)
+  return <button onClick={increasePopulation}>one up</button>
+}
+```
+
+zustand和其他状态管理库最大的一个差异在于它全局同例。也就是说它并没有采用context，而是在全局仅保存一个useStore，每次返回的是同一个实例。
+不过zustand也对此做了优化，它可以保证组件内每个函数的引用都是固定的，类似useMemo的效果，可以保证减少重复渲染。
+
+和其他状态管理库一样，zustand也有类似的action和selector，用于处理状态的派生和修改：
+
+```js
+import create from 'zustand';
+
+
+// 添加第一个入参 set 
+export const useStore = create((set) => ({
+  panelTabKey: 'antd',
+  iconList: ...,
+  antdIconList,
+
+  selectIcon: (icon) => {
+    set({ icon, open: false, filterKeywords: undefined });
+	},
+})
+
+// 展示用户会看到 icon list
+export const displayListSelector = (s: typeof useStore) => {
+  // ...
+};
+```
+
+## Jotai
+
+和recoil一样的追求原子性的库，使用起来也很简单，并且没有什么多余的api，一个useAtom就够了。
+和recoil相比还有一个特点是不需要一个独立的key值来用作表示atom，每个atom都是自然独立的：
+
+```js
+import { atom } from 'jotai'
+
+const countAtom = atom(0)
+const countryAtom = atom('Japan')
+const citiesAtom = atom(['Tokyo', 'Kyoto', 'Osaka'])
+const mangaAtom = atom({ 'Dragon Ball': 1984, 'One Piece': 1997, Naruto: 1999 })
+
+import { useAtom } from 'jotai'
+
+function Counter() {
+  const [count, setCount] = useAtom(countAtom)
+  return (
+    <h1>
+      {count}
+      <button onClick={() => setCount((c) => c + 1)}>one up</button>
+      ...
+```
+派生状态也很容易，是和recoil selector类似的写法，通过get函数捕获一个atom，然后返回新的状态。只不过这里并不需要额外的api，使用atom就好
+```js
+const doubledCountAtom = atom((get) => get(countAtom) * 2)
+
+function DoubleCounter() {
+  const [doubledCount] = useAtom(doubledCountAtom)
+  return <h2>{doubledCount}</h2>
+}
+```
+
+缺点可能就是比较小众的库，维护上不一定比得上recoil
+
+

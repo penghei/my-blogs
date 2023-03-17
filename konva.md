@@ -116,7 +116,7 @@ _pointerdown(evt: TouchEvent | MouseEvent | PointerEvent) {
     var triggeredOnShape = false;
     // 这里是鼠标点击坐标
     this._changedPointerPositions.forEach((pos) => {
-        // 这一步很重要，通过点击坐标找到对应的shape
+      // 这一步很重要，通过点击坐标找到对应的shape
       var shape = this.getIntersection(pos);
 
       // 检查这个位置的shape是不是有监听的事件

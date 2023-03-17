@@ -20,6 +20,8 @@ package.json 中的关键属性：
 - scripts：即可执行的命令。每个 scripts 都有自己的生命周期，
 - dependencies 和 devDependencies：详见下
 - engines：主要用于限制 node 和 npm 的版本。在 engines 字段中添加对 node 或 npm 版本的要求，如果用户的版本不符合，则会导致警告（npm）或报错（yarn）
+- peerDependencies: 可以避免类似的核心依赖库被重复下载的问题。即一个库中把某个库声明为peerDependencies时，当用户下载该库时，就会检查是否已经安装了该库，如果已经有的话就不会安装。
+比如，开发者开发了一个基于react的库，然后把react写入peerDependencies而不是dependies。这样在其他用户安装这个库时，npm 会自动检查是否已经安装了 React，如果已经安装了，则不会再次下载 React，否则会提示用户手动安装 React。如果版本不对或不兼容则会提示用户。
 
 ## npm scripts 的生命周期
 
@@ -162,7 +164,7 @@ npm run 能正常运行的原因如下：
 
 ![](https://pic.imgdb.cn/item/6277d2da094754312964b429.jpg)
 
-> 这里名为webpack的软链接有三个，即webpack/webpack.cmd/webpack.ps1，这三个不同版本是在不同操作系统上使用的不同脚本，windows一般执行.cmd，unix一般执行webpack，而ps指的是shell脚本，是一个通用的
+> 这里名为 webpack 的软链接有三个，即 webpack/webpack.cmd/webpack.ps1，这三个不同版本是在不同操作系统上使用的不同脚本，windows 一般执行.cmd，unix 一般执行 webpack，而 ps 指的是 shell 脚本，是一个通用的
 
 这个目录不是任何一个 npm 包。目录下的文件，表示这是一个个软链接（这些文件就叫做软链接），打开文件可以看到文件顶部写着 #!/bin/sh ，表示这是一个 shell 脚本。
 比如打开 webpack，里边是这样的：
@@ -182,11 +184,11 @@ else
 fi
 ```
 
-这些被称为软链接。当通过npm run执行`webpack`命令时，就相当于在`.bin`目录下找到名为webpack的软链接来执行。
+这些被称为软链接。当通过 npm run 执行`webpack`命令时，就相当于在`.bin`目录下找到名为 webpack 的软链接来执行。
 
 在 package-lock.json 中，可以查找到一个 bin 的配置项，这一项就是 npm 对于软链接的目标执行文件的配置，这一项的值就是要链接到的具体的文件，就像这样：
 
-这个配置是用于指明webpack这软链接指向的具体要执行的文件的目录（即/node_modules/webpack/bin/webpack.js）。这样执行软链接时就会找到对应的文件来执行。
+这个配置是用于指明 webpack 这软链接指向的具体要执行的文件的目录（即/node_modules/webpack/bin/webpack.js）。这样执行软链接时就会找到对应的文件来执行。
 
 ```json
 "bin":{
@@ -389,7 +391,7 @@ babel 的启动通常是通过命令行：
 
 ```
 "scripts": {
-    "build": "babel src --out-dir lib"
+  "build": "babel src --out-dir lib"
 },
 
 或者
@@ -407,22 +409,27 @@ npx babel src --out-dir lib
 
 > Vite 旨在利用生态系统中的新进展解决上述问题：浏览器开始原生支持 ES 模块，且越来越多 JavaScript 工具使用编译型语言编写。
 
-## 依赖和源码
+## vite 的特点
 
-Vite 通过在一开始将应用中的模块区分为**依赖**和**源码**两类，改进了开发服务器启动时间。
+1. 依赖预构建
 
-- `依赖`：大多为在开发时不会变动的纯 JavaScript。一些较大的依赖（例如有上百个模块的组件库）处理的代价也很高。依赖也通常会存在多种模块化格式（例如 ESM 或者 CommonJS）。
-  Vite 将会使用 `esbuild` 预构建依赖。Esbuild 使用 Go 编写，并且比以 JavaScript 编写的打包器预构建依赖快 10-100 倍。
-  不仅是依赖的预构建，传统的使用 js 编译的很多步骤都被用`esbuild`代替，比如`tsc`、`jsx`、`sass`等等。
+Vite 通过在一开始将应用中的模块区分为**依赖**和**源码**两类，改进了开发服务器启动时间。Vite 将会使用 `esbuild` 预构建依赖。Esbuild 使用 Go 编写，并且比以 JavaScript 编写的打包器预构建依赖快 10-100 倍。
 
-- `源码`：即用户代码，需要转换（例如 JSX，CSS 或者 Vue 组件），时常会被编辑。同时，并不是所有的源码都需要同时被加载，有可能是按照需要进行加载。
+所谓“预构建”指的是在开发模式下，把一些模块转化成 vite 需要的形式，比如：
 
-Vite 使用 es6 Module 加载源码；因为 ESModule 是静态的、并且大多数时候是浏览器主要进行解析工作，再加上根据情景动态导入代码，要比先将代码打包成 bundle 再发送给浏览器的形式快很多。
+- 把非 esm 模块打包成 esm 形式
+- 把很多文件的库合并到一个或者几个文件中，类似 webpack 打包过程。比如 lodash-es 模块数量非常多，预构建过程会将其打包到一个文件中。
 
-## 热更新
+> esbuild 执行的是开发模式下的依赖构建以及源码编译工作，并不是完成生产模式打包的工具。
 
-从热更新上，Vite 同时利用 HTTP 头来加速整个页面的重新加载，即利用到了协商缓存（源码）和强缓存（依赖），一旦被缓存将不需要再次请求。
-并且 vite 利用 ES Module 来帮助进行热更新，又是大大提升了构建速度。
+2. 源码的直接引入
+
+对于用户源码，在开发模式下，vite 不需要像 webpack 一样把代码打包成 bundle 再给浏览器执行，而是直接利用浏览器对模块的支持特性，配合上类似 devserver 的内置服务端，可以实现直接在用户浏览器中运行源代码。这个过程导致 vite 开发模式下的编译过程比 webpack 快了非常多
+
+3. 缓存
+
+Vite 会将预构建的依赖缓存到 node_modules/.vite，而解析后的依赖请求会以 HTTP 头 max-age=31536000,immutable 强缓存，一旦被缓存，这些请求将永远不会再到达开发服务器。
+而源码通常采用协商缓存，这样同时也有利于 hmr。
 
 ## 主要功能
 
@@ -448,15 +455,6 @@ export default defineConfig({
 社区可用的插件可以见 https://github.com/vitejs/awesome-vite#plugins
 官方提供的插件只有基本的几个：https://cn.vitejs.dev/plugins/
 或者在这里搜素：https://www.npmjs.com/search?q=vite-plugin&ranking=popularity
-
-## 依赖预构建
-
-通常在模块被安装后的首次运行，vite 会预构建依赖。主要目的如下：
-
-1. 将作为 CommonJS 或 UMD 发布的依赖项转换为 ESModule。
-2. 将有许多内部模块的 ESModule 依赖关系转换（合并）为单个模块，以提高后续页面加载性能。
-
-在服务器已经启动之后，如果遇到一个新的依赖关系导入，而这个依赖关系还没有在缓存中，Vite 将重新运行依赖构建进程并重新加载页面。
 
 # ESlint
 
@@ -1046,11 +1044,13 @@ To github.com:michaelliao/learngit.git
 ### 拉取远程分支
 
 这是一个比较常用的操作，即远程分支进行了更新，需要拉取远程以更新本地分支。
-实现这一目的的方法有两种：git fetch和git pull。两者的区别在于：
-- git fetch只会下载远程库，但不会修改文件，需要自己去合并更新。即，当通过git fetch拉取了远程分支之后，会在本地创建一个远程分支的副本，然后我们需要使用`git merge origin/<branch name>`合并到当前分支上去
-- git pull会直接拉取分支并合并，相当于直接修改了文件。也就是说，`git pull = git fetch + git merge`。如果远程分支的最新提交和本地出现冲突，就可能导致冲突，需要手动解决冲突才能合并。
+实现这一目的的方法有两种：git fetch 和 git pull。两者的区别在于：
+
+- git fetch 只会下载远程库，但不会修改文件，需要自己去合并更新。即，当通过 git fetch 拉取了远程分支之后，会在本地创建一个远程分支的副本，然后我们需要使用`git merge origin/<branch name>`合并到当前分支上去
+- git pull 会直接拉取分支并合并，相当于直接修改了文件。也就是说，`git pull = git fetch + git merge`。如果远程分支的最新提交和本地出现冲突，就可能导致冲突，需要手动解决冲突才能合并。
 
 因此大多数情况下拉取远程分支的命令是：
+
 ```
 git pull origin <branch name>
 
@@ -1061,21 +1061,26 @@ git merge origin/<branch name>
 
 ## 标签
 
-Git的标签是版本库的快照，其实它就是指向某个commit的指针（分支可以移动，标签不能移动）
-标签的主要目的是方便commit的标记。相比于哈希值id，tag明显更方便识别
+Git 的标签是版本库的快照，其实它就是指向某个 commit 的指针（分支可以移动，标签不能移动）
+标签的主要目的是方便 commit 的标记。相比于哈希值 id，tag 明显更方便识别
 
 命令：
+
 ```
 $ git tag v1.0
 ```
-默认标签是打在最新提交的commit上的。如果在后面加上指定的commit id，可以向指定id上添加标签
+
+默认标签是打在最新提交的 commit 上的。如果在后面加上指定的 commit id，可以向指定 id 上添加标签
+
 ```
 $ git tag v0.9 f52c633
 ```
-标签可以作为commit的代指。可以像使用commit一样使用tag
+
+标签可以作为 commit 的代指。可以像使用 commit 一样使用 tag
 
 创建的标签都只存储在本地，不会自动推送到远程。
 如果要推送某个标签到远程，使用命令`git push origin <tagname>`,或者，一次性推送全部尚未推送到远程的本地标签：
+
 ```
 $ git push origin v1.0
 Total 0 (delta 0), reused 0 (delta 0)
@@ -1087,3 +1092,23 @@ Total 0 (delta 0), reused 0 (delta 0)
 To github.com:michaelliao/learngit.git
  * [new tag]         v0.9 -> v0.9
 ```
+
+# Rollup
+
+rollup 是一个和 webpack 功能类似的打包工具以及模块化构建工具。
+
+## 特点（和 webpack 的区别）
+
+1. 对 es 模块更好的支持。
+
+相对于 webpack，像 rollup 这样现代化的构建工具一般对 esm 的支持都会更友好。rollup 的打包结果默认是 es 模式的，相对于通过 cjs 引入全部模块的方式，部分导入的 es 模块构建结果更小、更轻量。因此 rollup 也更适合打包一些小型的项目和库
+
+2. 更好的 tree-shaking
+
+rollup 相对于 webpack 将会有更好的 tree-shaking 效果，同时它对 tree-shaking 的支持也比 webpack 更早。
+
+3. 对静态资源的处理不是很好
+
+相对于 webpack，rollup 对图片、css 等静态资源并不能处理。rollup 是一个纯处理 js 的打包工具，因此它更偏向于打包一些 js 的库；但它也可以通过插件来实现类似 webpack 的静态资源打包能力。
+
+也就是说，rollup 其实更适合于打包一个 js 库，而非启动一个完整的项目。

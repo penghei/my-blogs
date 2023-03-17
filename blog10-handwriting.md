@@ -23,7 +23,7 @@ function _new(fn) {
 
 1. 创建一个对象，将来作为实例
 1. 将实例的`__proto__`属性指向构造函数的`prototype`属性，即`let obj; obj.__proto__ = fn.prototype`
-1. 调用构造函数并绑定 this 到 obj 上 
+1. 调用构造函数并绑定 this 到 obj 上
 1. 返回调用结果
 
 因此手写 new 按照类似的原理创建：
@@ -1139,7 +1139,7 @@ const MyPromiseMap = (promises, limit) => {
 >   add 函数已实现，模拟异步请求后端返回一个相加后的值
 > */
 > function add(a, b) {
->   	return Promise.resolve(a + b);
+>   return Promise.resolve(a + b);
 > }
 >
 > function sum(arr) {}
@@ -1339,8 +1339,6 @@ function Instanceof(parent, child) {
   return false;
 }
 ```
-
-
 
 ## 手写 sleep/delay
 
@@ -1553,20 +1551,22 @@ function nested(obj) {
 }
 ```
 
-## 手写虚拟dom转化为真实dom
+## 手写虚拟 dom 转化为真实 dom
 
-虚拟dom的大致结构如下：
+虚拟 dom 的大致结构如下：
 
 ![](https://pic.imgdb.cn/item/637cf98116f2c2beb1f0c0fc.jpg)
 
-需要转化为真实dom，其实也就是递归遍历虚拟dom对象，然后利用几个创建dom对象和插入dom的api实现。
-要用到的api包括：
-- `document.createElement(type)`，其中type设置为tag即可，但对于tag为非dom元素节点需要特殊处理
+需要转化为真实 dom，其实也就是递归遍历虚拟 dom 对象，然后利用几个创建 dom 对象和插入 dom 的 api 实现。
+要用到的 api 包括：
+
+- `document.createElement(type)`，其中 type 设置为 tag 即可，但对于 tag 为非 dom 元素节点需要特殊处理
 - `document.createTextNode(value)`，创建文本节点，对于类型为非对象而是字符串的元素可以创建文本节点
 - `node.setAttribute(attr,value)`，为节点设置属性
-- `node.appendChild(node)`，插入创建的dom节点
+- `node.appendChild(node)`，插入创建的 dom 节点
 
 代码如下：
+
 ```js
 function render(vnode, container) {
   let node = null;
@@ -1590,15 +1590,16 @@ function render(vnode, container) {
 }
 ```
 
-vnode的类型可能有多种。在React中一共有七种vnode类型；除去不好处理的Fragment类型，其他的类型还包括：
+vnode 的类型可能有多种。在 React 中一共有七种 vnode 类型；除去不好处理的 Fragment 类型，其他的类型还包括：
+
 - 数组
 - 组件，包括函数组件和类组件
 - 三元运算
 - 函数执行
 
-后两个其实在jsx解析过程中就转化为了具体的变量，因此需要额外考虑的也只有组件和数组两种情况。
-如果vnode是数组，那就再递归一次，但container不改变
-如果vnode是函数，就执行，得到的返回值作为新的vnode操作即可。
+后两个其实在 jsx 解析过程中就转化为了具体的变量，因此需要额外考虑的也只有组件和数组两种情况。
+如果 vnode 是数组，那就再递归一次，但 container 不改变
+如果 vnode 是函数，就执行，得到的返回值作为新的 vnode 操作即可。
 
 ```js
 function render(vnode, container) {
@@ -1620,20 +1621,19 @@ function render(vnode, container) {
       }
     }
   } else if (type === "Array") {
-    console.log(container)
+    console.log(container);
     for (const val of vnode) {
       render(val, container);
     }
-    return
+    return;
   } else if (type === "Function") {
     const res = vnode();
     render(res, container);
-    return
+    return;
   }
   container.appendChild(node);
 }
 ```
-
 
 ## 手写 JSON.stringify
 
@@ -2025,12 +2025,13 @@ const batcher = (f) => {
 
 ## 手写超时取消请求
 
-即实现axios中配置的timeout效果，当请求超时时报错并终止请求。也就是说，相当于实现了一个Promise的“中断”；
-Promise一旦改变状态就不能再更改。利用这一点，可以采用“抢跑”的方法，通过在异步任务之前reject，阻止后面的resolve或reject的执行。
+即实现 axios 中配置的 timeout 效果，当请求超时时报错并终止请求。也就是说，相当于实现了一个 Promise 的“中断”；
+Promise 一旦改变状态就不能再更改。利用这一点，可以采用“抢跑”的方法，通过在异步任务之前 reject，阻止后面的 resolve 或 reject 的执行。
 
 就像这样：
+
 ```js
-let cancelFn = null
+let cancelFn = null;
 const uploadFn = (val) => {
   return new Promise((resolve, reject) => {
     cancelFn = () => reject("cancel");
@@ -2041,11 +2042,12 @@ const uploadFn = (val) => {
   });
 };
 ```
-如果在外部执行cancelFn，这个Promise就会被“中断”，resolve的值就不会传出来。
-利用这个方法，我们可以同时开启这个upload任务和一个定时器。当定时器到时时执行cancel，就可以中断任务的执行
+
+如果在外部执行 cancelFn，这个 Promise 就会被“中断”，resolve 的值就不会传出来。
+利用这个方法，我们可以同时开启这个 upload 任务和一个定时器。当定时器到时时执行 cancel，就可以中断任务的执行
 
 ```js
-let cancelFn = null
+let cancelFn = null;
 const uploadFn = (val) => {
   return new Promise((resolve, reject) => {
     cancelFn = () => reject("cancel");
@@ -2057,20 +2059,20 @@ const uploadFn = (val) => {
 };
 
 const countDown = (time) => {
-  setTimeout(cancelFn, time)
-}
+  setTimeout(cancelFn, time);
+};
 
-uploadFn().then(console.log)
-countDown(5000)
+uploadFn().then(console.log);
+countDown(5000);
 ```
 
-更好的方式是利用Promise.race。因为race在一个Promise状态改变之后，另一个Promise的返回值会被忽略，即使另一个已经完成也不会再接受；因此可以让upload和倒计时任务在Promise.race中开启，这样如果倒计时完成并reject，upload就相当于被“中断”。
+更好的方式是利用 Promise.race。因为 race 在一个 Promise 状态改变之后，另一个 Promise 的返回值会被忽略，即使另一个已经完成也不会再接受；因此可以让 upload 和倒计时任务在 Promise.race 中开启，这样如果倒计时完成并 reject，upload 就相当于被“中断”。
 
 ```js
-let cancelFn = null
+let cancelFn = null;
 const uploadFn = (val) => {
   return new Promise((resolve, reject) => {
-    cancelFn = () => reject('timeout')
+    cancelFn = () => reject("timeout");
     setTimeout(() => {
       resolve("success");
     }, 5000);
@@ -2081,7 +2083,7 @@ const uploadTimeLimit = (limit) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       reject("timeout");
-      if(cancelFn) cancelFn()
+      if (cancelFn) cancelFn();
     }, limit);
   });
 };
@@ -2095,13 +2097,10 @@ const upload = (val, timout) => {
 upload("hello world", 3000);
 ```
 
-
-
-
 # 随机数相关问题
 
 随机数的核心是利用`Math.random()`。
-如果要取`[0, n)`上的数，就可以利用`Math.floor(Math.random() * n)`。注意random生成的范围不包括1，所以很多情况下要取[1,n]，应该是`Math.floor(Math.random() * n +)`
+如果要取`[0, n)`上的数，就可以利用`Math.floor(Math.random() * n)`。注意 random 生成的范围不包括 1，所以很多情况下要取[1,n]，应该是`Math.floor(Math.random() * n +)`
 
 ## 从数组中随机取一个元素
 
@@ -2154,13 +2153,13 @@ function generateAcsii() {
   let a = Math.floor(Math.random() * 62); // [0,62]
   if (a < 26) {
     //  返回 大写字母 的 ASCII
-    return a + 'A'.charCodeAt();
+    return a + "A".charCodeAt();
   } else if (a >= 26 && a < 52) {
     //  返回 小写字母 的 ASCII
-    return a - 26 + 'a'.charCodeAt();
+    return a - 26 + "a".charCodeAt();
   } else {
     //  返回 数字 的 ASCII
-    return a - 52 + '0'.charCodeAt();
+    return a - 52 + "0".charCodeAt();
   }
 }
 ```
@@ -2654,34 +2653,38 @@ Promise.reject(1)
 
 注意`reject`会直接跳到 `catch`，忽略过程中的 `then`；而 `catch` 如果有返回值，则还会递交给下一个 `then`，并不会彻底结束。
 
-如果没有抛出错误，则catch中的代码不会被执行，catch的返回值不会传递给后序的then
+如果没有抛出错误，则 catch 中的代码不会被执行，catch 的返回值不会传递给后序的 then
+
 ```js
 Promise.resolve(1)
-  .then(res => {
+  .then((res) => {
     console.log(res); // 1
     return 2; // 这个2传递给下一个then
   })
-  .catch(err => {
+  .catch((err) => {
     return 3; // 这部分代码不执行
   })
-  .then(res => {
+  .then((res) => {
     console.log(res); // 2
   });
 ```
 
 ---
 
-另外，Promise对于错误的验证机制是由throw手动或自动抛出的语句。如果直接在then中返回自己new的一个Error，或者resolve一个，都被视作是普通对象而非错误。
-```js
-Promise.resolve().then(() => {
-  return new Error('error!!!')
-}).then(res => {
-  console.log("then: ", res) // "then: " "Error: error!!!"
-}).catch(err => {
-  console.log("catch: ", err) // 不会输出
-})
-```
+另外，Promise 对于错误的验证机制是由 throw 手动或自动抛出的语句。如果直接在 then 中返回自己 new 的一个 Error，或者 resolve 一个，都被视作是普通对象而非错误。
 
+```js
+Promise.resolve()
+  .then(() => {
+    return new Error("error!!!");
+  })
+  .then((res) => {
+    console.log("then: ", res); // "then: " "Error: error!!!"
+  })
+  .catch((err) => {
+    console.log("catch: ", err); // 不会输出
+  });
+```
 
 ## 3.
 
@@ -2728,7 +2731,8 @@ then(onFulfilled, onRejected) {
 
 ---
 
-另外，即使发生返回值穿透，这些then、catch等还会被算作是一个微任务。也就是说这道题里，resolve的1还需要经历2个微任务，在第三个时才会传入最后一个then
+另外，即使发生返回值穿透，这些 then、catch 等还会被算作是一个微任务。也就是说这道题里，resolve 的 1 还需要经历 2 个微任务，在第三个时才会传入最后一个 then
+
 ```js
 new Promise((resolve) => resolve(1))
   .then(console.log) // 1
@@ -2743,6 +2747,7 @@ Promise.resolve(1)
 ```
 
 上面的打印顺序是：
+
 ```
 1
 undefined
@@ -2750,6 +2755,7 @@ undefined
 undefined
 2
 ```
+
 注意看上面的序号，表示第几个被放入微任务队列的任务
 
 ## 5.
@@ -3039,7 +3045,7 @@ step();
 
 # 输出题
 
-## 1. args和arguments的类型
+## 1. args 和 arguments 的类型
 
 ```js
 function getAge(...args) {
@@ -3068,42 +3074,43 @@ function test() {
 }
 test(111); // [object Arguments]
 ```
-Arguments类型可以类比类数组对象。它的构造函数并不是Array，因此不能直接调用数组方法，但是可以转为数组后使用。
 
+Arguments 类型可以类比类数组对象。它的构造函数并不是 Array，因此不能直接调用数组方法，但是可以转为数组后使用。
 
-## 2. 关于对象中嵌套函数的this绑定
+## 2. 关于对象中嵌套函数的 this 绑定
 
 ### 普通对象
 
 代码如下，求输出：
+
 ```js
-var name = 'window'
+var name = "window";
 const person1 = {
-  name:'person1',
-  foo(){
-    return function (){
-      console.log(this.name)
-    }
+  name: "person1",
+  foo() {
+    return function () {
+      console.log(this.name);
+    };
   },
-  bar(){
+  bar() {
     return () => {
-      console.log(this.name)
-    }
-  }
-}
+      console.log(this.name);
+    };
+  },
+};
 
-const person2 = {name:'person2'}
+const person2 = { name: "person2" };
 
-person1.foo()()
-person1.foo().call(person2)
-person1.foo.call(person2)()
+person1.foo()();
+person1.foo().call(person2);
+person1.foo.call(person2)();
 
-person1.bar().call(person2)
-person1.bar.call(person2)()
+person1.bar().call(person2);
+person1.bar.call(person2)();
 ```
 
-
 输出：
+
 ```
 window
 person2
@@ -3114,19 +3121,21 @@ person2
 ```
 
 解释：
-首先，如果闭包是非箭头函数，则闭包和外部函数的执行上下文是不同的。也就是说我们可以通过分别对这两个函数调用call，可以得到内外不同的this环境。
-上面的输出按顺序1-5标号：
-1. 输出window，因为相当于直接调用的内部的这个匿名函数，这个函数是一个非箭头函数，并且没有显式绑定，因此默认绑定为window
-2. 输出person2，因为给内部的这个闭包绑定到了person2对象上
-3. 输出window，因为没有给闭包指定this，但是把foo函数的上下文设置到了person2上；类比下面的输出5，箭头函数用到的this是外部的，这个“外部”恰好就是外层函数；而外层函数bar又被绑定到了person2，因此这个闭包里的this就是person2.
-4. 输出person1，即bar内部的this，指代person1，因为对箭头函数调用call无效，不能改变其内部this指向
-5. 输出person2，原因上面输出2解释过
+首先，如果闭包是非箭头函数，则闭包和外部函数的执行上下文是不同的。也就是说我们可以通过分别对这两个函数调用 call，可以得到内外不同的 this 环境。
+上面的输出按顺序 1-5 标号：
+
+1. 输出 window，因为相当于直接调用的内部的这个匿名函数，这个函数是一个非箭头函数，并且没有显式绑定，因此默认绑定为 window
+2. 输出 person2，因为给内部的这个闭包绑定到了 person2 对象上
+3. 输出 window，因为没有给闭包指定 this，但是把 foo 函数的上下文设置到了 person2 上；类比下面的输出 5，箭头函数用到的 this 是外部的，这个“外部”恰好就是外层函数；而外层函数 bar 又被绑定到了 person2，因此这个闭包里的 this 就是 person2.
+4. 输出 person1，即 bar 内部的 this，指代 person1，因为对箭头函数调用 call 无效，不能改变其内部 this 指向
+5. 输出 person2，原因上面输出 2 解释过
 
 ### 构造函数
 
 ![](https://pic1.imgdb.cn/item/63625c5116f2c2beb1f1a20b.jpg)
 
 输出：
+
 ```
 person1
 person2
@@ -3143,7 +3152,8 @@ person2
 person1
 ```
 
-对构造函数来说，当构造函数完成构造之后，就和new绑定什么关系了。也就是说person1就相当于是一个普通的对象，后面的操作就是在person1这个对象上执行的，上下文都是person1
+对构造函数来说，当构造函数完成构造之后，就和 new 绑定什么关系了。也就是说 person1 就相当于是一个普通的对象，后面的操作就是在 person1 这个对象上执行的，上下文都是 person1
+
 ```js
 const person1 = {
   name:'person1',
@@ -3153,26 +3163,85 @@ const person1 = {
   ...
 }
 ```
-之前说过new绑定优先级高于显式绑定，但是这句话的前提是针对构造函数的；也就是说，只有在new作用于构造函数时，并且构造函数用于构造时才会出现new优先级压过显式绑定。如果构造完成，new就不会对实例中的this产生影响
-即，即使有一个通过bind绑定的函数用new构造，那么函数中的this还是指向实例，而非绑定的值。
+
+之前说过 new 绑定优先级高于显式绑定，但是这句话的前提是针对构造函数的；也就是说，只有在 new 作用于构造函数时，并且构造函数用于构造时才会出现 new 优先级压过显式绑定。如果构造完成，new 就不会对实例中的 this 产生影响
+即，即使有一个通过 bind 绑定的函数用 new 构造，那么函数中的 this 还是指向实例，而非绑定的值。
 
 ```js
-const obj = {name:'obj0'}
-const Person1 = Person.bind(obj)
-Person1('obj1') // Person1的操作是把this.name修改，如果显式绑定上，那么this就是obj，调用这个函数就是修改obj.name
-console.log(obj) // obj1  说明Person1中的this是obj，改变了obj的name属性
-const person1 = new Person1('obj2')
-person1.name // obj2  
-console.log(obj) // obj1  new的调用并没有改变this，说明Person1中的this根本就不是之前绑定的obj，而是新实例person1
+const obj = { name: "obj0" };
+const Person1 = Person.bind(obj);
+Person1("obj1"); // Person1的操作是把this.name修改，如果显式绑定上，那么this就是obj，调用这个函数就是修改obj.name
+console.log(obj); // obj1  说明Person1中的this是obj，改变了obj的name属性
+const person1 = new Person1("obj2");
+person1.name; // obj2
+console.log(obj); // obj1  new的调用并没有改变this，说明Person1中的this根本就不是之前绑定的obj，而是新实例person1
 ```
 
-如果new影响的不是构造函数，就不存在new绑定高于显式绑定的情况了。
-因此在这个输出中，实际上就是对person1这个对象操作，和上一道题是一样的，**person1的这几个方法中的this并不会被强制绑定到person1上，仍然可以被call改变指向**，只有Person构造函数里的几个this才是始终指向person1
-
+如果 new 影响的不是构造函数，就不存在 new 绑定高于显式绑定的情况了。
+因此在这个输出中，实际上就是对 person1 这个对象操作，和上一道题是一样的，**person1 的这几个方法中的 this 并不会被强制绑定到 person1 上，仍然可以被 call 改变指向**，只有 Person 构造函数里的几个 this 才是始终指向 person1
 
 ### 构造函数创建对象
 
 ![](https://pic1.imgdb.cn/item/6362611e16f2c2beb1fba29d.jpg)
 
-这道题其实和第一题是一样的。其实就是创建了一个对象，是person的一个属性；直接调用obj和person.obj是一样的
+这道题其实和第一题是一样的。其实就是创建了一个对象，是 person 的一个属性；直接调用 obj 和 person.obj 是一样的
 
+# 计算机基础题
+
+## 设计模式
+
+1. 对象间存在一对多关系，当一个对象被修改时，则会自动通知它的依赖对象：这是观察者模式，不是代理模式
+
+## 计网
+
+各协议端口、作用
+![](https://pic.imgdb.cn/item/64142ddfa682492fcc78e926.jpg)
+
+网络接口卡是局域网组网需要的基本部件。网卡一端连接局域网中的计算机，另一端连接局域网的**传输介质**
+
+SMTP 是简单邮件传输协议，没有认证功能，并且只传输 7 位的 ACII 码，不能传送二进制文件。SMTP 协议只能支持从用户代理向邮件服务器发送邮件，反过来不行
+pop3 和 IMAP 协议是用于客户端接收邮件。
+pop3 协议从服务器上单向下载邮件，不会有邮件读取反馈。
+IMAP 协议是双向传输信息，客户端信息会反馈到服务器端。
+
+常用的信道复用技术：频分复用 FDM、时分复用 TDM、码分复用 CDM、波分复用 WDM。
+
+传输延迟与分组长度 L 和链路带宽 R 有关，T=L/R
+传播延迟与物理链路长度 D 和信号传播速度 S 有关，T=D/S
+
+全双工是指交换机在发送数据的同时也能够接收数据，两者同步进行。TCP 连接、UDP 连接、电话通信都是全双工的
+半双工数据传输允许数据在两个方向上传输，但是，在某一时刻，只允许数据在一个方向上传输，它实际上是一种切换方向的单工通信。
+单工数据传输只支持数据在一个方向上传输。
+
+IEEE（美国电子电气工程师协会）制定了以 802 开头的标准，目前共有 11 个与局域网有关的标准。
+IEEE 802.1—概述、体系结构和网络互连，以及网络管理和性能测量。  
+IEEE 802.2—逻辑链路控制 LLC。最高层协议与任何一种局域网 MAC 子层的接口。  
+IEEE 802.3—CSMA/CD 网络，定义 CSMA/CD 总线网的 MAC 子层和物理层的规范，**以太网**的技术原形
+IEEE 802.4—令牌总线网。定义令牌传递总线网的 MAC 子层和物理层的规范。  
+IEEE 802.5—令牌环形网。定义令牌传递环形网的 MAC 子层和物理层的规范。  
+IEEE 802.6—城域网。  
+IEEE 802.7—宽带技术。  
+IEEE 802.8—光纤技术。  
+IEEE 802.9—综合话音数据局域网。  
+IEEE 802.10—可互操作的局域网的安全。  
+IEEE 802.11—无线局域网。  
+IEEE 802.12—优先高速局域网(100Mb/s)。  
+IEEE 802.13—有线电视(Cable-TV)。
+
+链路层的多路划分协议：
+目的：解决多个接受节点和多个发送节点在一个共享广播信道上的访问问题。（即多个占一条线，怎么协调）
+三个基本方式
+信道划分协议
+TDM、FDM、CDMA（码分多址）
+随机接入协议
+时隙 ALOHA
+ALOHA
+CSMA
+CSMA/CD
+发送前空闲检测，只有信道空闲才发送数据
+发送过程中冲突检测，若有冲突发生则需避让
+冲突发生后，立即停止发送，随机避让。
+不存在优先级
+轮流协议
+
+承载信息量的基本信号单位是**码元**

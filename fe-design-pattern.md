@@ -41,79 +41,126 @@ cover:
 
 ## 简单工厂模式
 
-定义：工厂模式就是**将创建对象的过程单独封装**。
+定义：工厂模式就是**将创建对象的过程单独封装**。简单/静态工厂模式是在工厂方法模式上缩减，抽象工厂模式是在工厂方法模式上再增强。
 
-这里的封装是彻底的封装，可以通过函数或者类的形式，但是封装的结果一定是可以**无脑传参**的。也就是说我们完全不用关心内部如何实现，以及参数的相互依赖关系，而只用传参就好，工厂模式封装的内部负责这些。
+简单工厂模式和工厂模式的主要区别在于：
+- 简单工厂模式使用一个工厂类中的一个方法来根据参数创建所有类型的对象。这种方式容易理解，但当需要添加新类型的对象时，需要修改工厂类的代码，违反了开闭原则（对扩展开放，对修改封闭）。
+- 工厂模式使用不同的工厂类来创建不同类型的对象。当需要添加新类型的对象时，只需创建一个新的工厂类，不需要修改现有的工厂类代码。这样更复符合开闭原则
 
-工厂模式依赖于基本的构造器模式，即构造函数创建对象的形式。构造器模式很简单就不再赘述。工厂模式是对构造函数的进一步封装，以满足一些更复杂的情况。
+简单工厂模式将对象创建的复杂性隐藏在一个工厂类中，该类包含一个方法来创建所有类型的对象。这种方法在对象类型较少且不太可能发生变化的情况下比较实用。但是，当对象类型较多或者需要经常添加新类型时，简单工厂模式可能会导致工厂类过于庞大且难以维护。
 
-比如现在有一个 user 类：
+工厂模式通过使用一组工厂类来处理对象创建的复杂性，每个工厂类负责创建一个特定类型的对象。这种方法在对象类型较多或者需要经常添加新类型时更为实用，因为它将创建逻辑分散到各个工厂类中，使得代码更易于扩展和维护。
+
+举个例子
 
 ```js
-class User {
-  constructor(name, age, career) {
+// 简单工厂模式
+class Animal {
+  constructor(name) {
     this.name = name;
-    this.age = age;
-    this.career = career;
+  }
+
+  speak() {
+    console.log(`${this.name} makes a noise.`);
   }
 }
-```
 
-如果现在还要添加一个字段，即 work 字段，要求这个字段根据 career 的不同做出变化。比如 career 是'保安'，那 work 就应该是'看大门'。
-那么就可以这样：
-
-```js
-function getUser(name,age,career){
-  let work
-  switch(career) {
-    case 'coder':
-        work =  ['写代码','写系分', '修Bug']
-        break
-    case 'product manager':
-        work = ['订会议室', '写PRD', '催更']
-        break
-    case 'boss':
-        work = ['喝茶', '看报', '见客户']
-    case 'xxx':
-        // 其它工种的职责分配
-        ...
-    return new User(name, age, career, work)
+class Dog extends Animal {
+  speak() {
+    console.log(`${this.name} barks.`);
   }
 }
+
+class Cat extends Animal {
+  speak() {
+    console.log(`${this.name} meows.`);
+  }
+}
+
+class AnimalFactory {
+  static createAnimal(type, name) {
+    switch (type) {
+      case 'dog':
+        return new Dog(name);
+      case 'cat':
+        return new Cat(name);
+      default:
+        return new Animal(name);
+    }
+  }
+}
+
+const dog = AnimalFactory.createAnimal('dog', 'Buddy');
+dog.speak(); // 输出: Buddy barks.
+
+const cat = AnimalFactory.createAnimal('cat', 'Whiskers');
+cat.speak(); // 输出: Whiskers meows.
 ```
 
-或者在 work 字段设置一个函数，根据 career 的不同得到不同的结果：
+简单工厂模式中，AnimalFactory 类有一个静态方法 createAnimal，根据传入的 type 参数来创建不同类型的动物对象。这个方法可以根据需要创建更多类型的动物。
+简单工厂模式有几个问题：
+1. 需要大量的ifelse、switchcase。工厂模式就是为了解决这样的条件判断而生的。
+2. 如果需要新增对象，则需要修改原工厂。比如如果想新增一个'cow'，那么除了创建Cow类之外，还需要修改AnimalFactory内部的代码。
 
 ```js
-class User {
-  constructor(name, age, career) {
+// 工厂模式
+
+class Animal {
+  constructor(name) {
     this.name = name;
-    this.age = age;
-    this.career = career;
-    this.work = getWork(career);
+  }
+
+  speak() {
+    console.log(`${this.name} makes a noise.`);
   }
 }
 
-function getWork(career) {
-  let work = null;
-  switch (career) {
-    case "coder":
-      work = ["写代码", "写系分", "修Bug"];
-      break;
-    case "product manager":
-      work = ["订会议室", "写PRD", "催更"];
-      break;
-    case "boss":
-      work = ["喝茶", "看报", "见客户"];
-    case "xxx":
-      work = [];
-    // 其它工种的职责分配
+class Dog extends Animal {
+  speak() {
+    console.log(`${this.name} barks.`);
   }
-  return work;
 }
+
+class Cat extends Animal {
+  speak() {
+    console.log(`${this.name} meows.`);
+  }
+}
+
+class AnimalFactory {
+  createAnimal(name) {
+    return new Animal(name);
+  }
+}
+
+class DogFactory extends AnimalFactory {
+  createAnimal(name) {
+    return new Dog(name);
+  }
+}
+
+class CatFactory extends AnimalFactory {
+  createAnimal(name) {
+    return new Cat(name);
+  }
+}
+
+const dogFactory = new DogFactory();
+const dog = dogFactory.createAnimal('Buddy');
+dog.speak(); // 输出: Buddy barks.
+
+const catFactory = new CatFactory();
+const cat = catFactory.createAnimal('Whiskers');
+cat.speak(); // 输出: Whiskers meows.
 ```
 
-以上两种都是对整个创建过程做了封装。不管内部如何实现，我们只需要调用函数并传入参数即可。
+在工厂模式中，我们有一个基类 AnimalFactory，它有一个 createAnimal 方法。我们还有两个子类 DogFactory 和 CatFactory，分别用于创建 Dog 和 Cat 类的实例。我们使用具体的工厂类来创建所需的对象。
+
+工厂模式相对的改进有：
+1. 不需要大量的条件语句来判断。如果我们想创建猫、狗或者其他更多，只需要修改createAnimal的调用实例即可
+2. 便于新增
+
+
 
 ## 抽象工厂
 

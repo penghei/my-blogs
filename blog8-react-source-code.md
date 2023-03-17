@@ -624,7 +624,12 @@ function extractEvents(
 }
 ```
 
+注意这里是怎么找到事件触发的那个fiber：
+react在创建真实dom时向dom添加了一个随机的internalInstanceKey，指向当前dom对应的fiber对象。fiber和真实dom对应关系如图：
+![](https://pic.imgdb.cn/item/640db4d3f144a0100762ecf9.jpg)
+
 accumulateSinglePhaseListeners 函数，会获取存储在 Fiber 上的 Props 的对应事件，然后通过一个循环收集事件，也就是我们说的收集事件的环节：
+
 ```ts
 export function accumulateSinglePhaseListeners(
   targetFiber: Fiber | null,
@@ -1847,23 +1852,80 @@ function placeChild(
 }
 ```
 
-
-在beginWork阶段，react并不会直接删除fiber元素，即使已经通过diff算法判断该fiber应该被删除，而只是打上flags。真正的fiber的删除工作会留到commit阶段。插入和移动操作也是同理、
-
 这里 flags，就是将在后面 completeUnitOfWork 中执行的任务，以及 commit 中进行对真实 dom 的操作。
 标记也被称作是“副作用”，注意不同于 useEffect 的那个副作用，而是指 fiber 的副作用。
 
-在 beginWork 阶段，可能的标记一共有三种：
+在 beginWork 阶段，可能的标记一共有2种：
 
-- Deletcion 删除
-- Instertion 插入
+- ChildDeletion 删除（子fiber）
 - Placement 移动
 
-在后面的任务中，就会对被打上这些标记的 fiber 执行相应的操作，即实现更新对实际元素的的增、删、改操作。
+在后面的任务中，就会对被打上这些标记的 fiber 执行相应的操作，即实现更新对实际元素的的删除和移动操作。
 并且只有在 reconcileChildFibers 函数内才会标记，即 shouldTrackSideEffects 的值为 true。
 如果选择不标记，那么该 fiber 将不会被打上 Placement 的标记，在后面的 commit 中就不会把该元素执行“插入到页面上”的任务。
 
 另外，还有一种标记是 Update 更新，将会在 completeWork 时被标记；
+
+#### 打标记和真实操作
+
+在beginWork阶段，react并不会直接删除fiber对应的dom元素，也不会执行组件类型fiber的销毁流程，而只是打上flags。所有具体dom的操作都是在commit阶段完成的。
+也就是说，标记和真实操作是两个部分完成的，不要混淆。
+
+我们以删除为例，可以看到react在调和阶段判断一个元素被删除时会在其父fiber打上deletion标记以及添加一个deletions数组：
+
+```ts
+function deleteChild(returnFiber: Fiber, childToDelete: Fiber): void {
+    if (!shouldTrackSideEffects) {
+      // Noop.
+      return;
+    }
+    const deletions = returnFiber.deletions;
+    if (deletions === null) {
+      returnFiber.deletions = [childToDelete];
+      returnFiber.flags |= ChildDeletion;
+    } else {
+      deletions.push(childToDelete);
+    }
+  }
+```
+
+这个数组会在什么时候使用呢？在commit的mutation_begin阶段：
+
+```ts
+const deletions = parentFiber.deletions;
+  if (deletions !== null) {
+    for (let i = 0; i < deletions.length; i++) {
+      const childToDelete = deletions[i];
+      try {
+        commitDeletionEffects(root, parentFiber, childToDelete);
+      } catch (error) {
+        captureCommitPhaseError(childToDelete, parentFiber, error);
+      }
+    }
+  }
+```
+
+commitDeletionEffects是一个负责删除的函数。这个函数内部的逻辑是：
+- 如果deletions[i]是一个hostComponent或hostTextNode，就删除这个对应的dom元素，同时置空上面的ref
+- 如果deletions[i]是一个其他类型的fiber，比如组件会调用销毁组件的函数或生命周期
+
+这个过程中，没有真正的fiber节点被“删除”，在render阶段被删除的fiber可以看做是“没有从current树中复用”。
+
+比如更新前后的结构：
+```js
+<ul>
+  <li key="1"/>
+  <li key="2"/>
+</ul>
+
+// 更新后：
+<ul>
+  <li key="1" />
+</ul>
+```
+在diff算法中，会比较得知current树上的`<li key="1"/>`这个对应的fiber是可以复用的，那么就会复用它，而对其他的节点不再进行复用。相当于就是，只复用了一个fiber，其他fiber不做复制，也就相当于删除了fiber。
+然后，diff算法为ul元素的fiber.deletions数组添加`<li key="2"/>`的fiber，表示这个fiber对应的dom元素应该被删除。于是在commit阶段就会执行删除dom元素的操作。
+
 
 ### completeWork
 
@@ -1874,8 +1936,8 @@ completeUnitOfWork 总体分为两个步骤：
 
 1. 创建或更新真实 dom 元素。具体来说是：
 
-- 创建：对于类型为 dom 元素的 fiber，创建成为真实 dom 元素，然后把它的子孙 dom 元素插入它，并给 dom 元素添加属性（比如 styles、部分事件等）。等到 completeWork 执行完成后，已经形成了一颗完成的真实 dom 树
-- 更新：主要是更新 dom 元素的属性，并打上 update 的 flag。之前在 beginWork 中已经打上了删除、插入和移动，现在加上更新标记，就完成了所有标记。
+- 创建：在整个组件树的mount阶段创建dom元素。对于类型为 dom 元素的 fiber，创建成为真实 dom 元素，然后把它的子孙 dom 元素插入它，并给 dom 元素添加属性（比如 styles、部分事件等）。等到 completeWork 执行完成后，已经形成了一颗完成的真实 dom 树
+- 更新：在组件树的update阶段主要是更新 HostComponent 的属性，并打上 update 的 flag。所有的HostComponent的更新都会存在对应的fiber.updateQueue中，比如style值变化、className值变化等等。
 
 2. flags 冒泡
 
@@ -1901,7 +1963,11 @@ completeWork.subtreeFlags |= subtreeFlags; // 附加在当前遍历到的fiber�
 
 ---
 
-在这种方式之前，React 采用的是 EffectList，即副作用链表的形式，将有副作用的 fiber 形成链表挂载在 FiberRoot 上。在 completeWork 阶段会检查每个 fiber 上是否有副作用，如果有就连接到 EffectList 上
+在这种方式之前，React 采用的是 EffectList，即副作用链表的形式，将有副作用的 fiber 形成链表挂载在 FiberRoot 上。在 completeWork 阶段会检查每个 fiber 上是否有副作用，如果有就连接到 EffectList 上。在commit阶段直接执行所有的effectList上的节点即可。
+
+在completeWork阶段产生了fiber上的subtreeFlags属性，在commit阶段执行具体操作时也会用到。commit阶段会遍历每个fiber节点，检查subtreeFlags，判断是否需要处理。
+
+实际上，effectList是一种更有效的方式。但react18需要兼容suspense
 
 #### completeWork
 
@@ -3799,7 +3865,7 @@ const performWorkUntilDeadline = () => {
 };
 ```
 
-scheduledHostCallback 在 requestHostCallback 中被设为是 flushWork，这个要记好，后面会多次出现；
+scheduledHostCallback 在 requestHostCallback 中就是 flushWork，这个要记好，后面会多次出现；
 performWorkUntilDeadline 函数的主要作用就是调用 flushWork，从 flushWork 中获取一个返回值 hasMoreWork，表示是否还有剩余未完成的工作。(这个返回值其实来自于 workLoop，下面会说到)
 **如果 hasMoreWork 为 true，也就是 taskQueue 中还有未完成的任务，就会再调用一次 schedulePerformWorkUntilDeadline，也就是用 MessageChannel 等到下一个浏览器空闲时，再执行剩下未完成的任务。**
 这一步也就是当 taskQueue 的任务执行时间超过 schduler 的时间分片（通常是 5ms）时，就再注册一个 MessageChannel，等到下一次有时间再执行。
@@ -3879,6 +3945,7 @@ workLoop执行的单位是在scheduleCallback中创建的task。实际上是task
 > 这个函数既用于调度阶段的workLoop，也用于concurrent模式下的调和阶段的workLoopConcurrent的中断。
 
 这个函数是用于判断什么时候中断的，当返回true时说明要中断了。简化代码如下：
+
 ```ts
 function shouldYieldToHost(): boolean {
   // 当前任务已经执行的时间
@@ -3929,6 +3996,7 @@ isInputPending，参考https://developer.chrome.com/articles/isinputpending/
 在不传入任何参数的情况下，将会检测所有类型的输入事件，包括按键、鼠标、滚轮触控等DOM UI事件，也可以手动传入一个包含事件类型的数组参数。
 
 也就是说，当浏览器检测到用户输入时，这个函数会实时返回true。比如我们将其放入一个循环中，如果用户触发事件，这个循环就会中断：
+
 ```js
 while (workQueue.length > 0) {
   if (navigator.scheduling.isInputPending()) {
@@ -3938,6 +4006,7 @@ while (workQueue.length > 0) {
   job.execute();
 }
 ```
+
 这种方式可以更灵活地检测用户输入，从而保证不会阻塞用户的输入。
 
 # Hooks 原理
@@ -6190,7 +6259,7 @@ React 的优先级：
 export const DiscreteEventPriority: EventPriority = SyncLane; // 离散事件优先级，比如click
 export const ContinuousEventPriority: EventPriority = InputContinuousLane; // 连续事件优先级，比如move
 export const DefaultEventPriority: EventPriority = DefaultLane; // 默认事件优先级，比如定时器
-export const IdleEventPriority: EventPriority = IdleLane; // 空闲优先级
+export const  : EventPriority = IdleLane; // 空闲优先级
 
 let currentUpdatePriority: EventPriority = NoLane;
 ```

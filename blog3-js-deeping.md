@@ -443,8 +443,10 @@ console.log({} instanceof Object); // true
 ![](https://pic.imgdb.cn/item/62260d3e5baa1a80ab8d563f.jpg)
 
 > 原始数据类型是由这些构造函数构造出来的，但是这些并不是对象，**如果我们试图访问它们的属性，那么临时包装器对象将会通过内建的构造器 String、Number 和 Boolean 被创建。它们提供给我们操作字符串、数字和布尔值的方法然后消失。**这些对象的方法也驻留在它们的 `prototype` 中，可以通过 `String.prototype`、`Number.prototype` 和 `Boolean.prototype` 进行获取。
-> 控制台输出可以看到，数组是有对应的构造函数`Array()`的`prototype`；原始数据类型的构造函数 prototype 不能被显式查看，但是依旧可以访问。
-> ![](https://pic.imgdb.cn/item/62260e895baa1a80ab8e2745.jpg)
+> 具体来说，主要有以下特点：
+> 1. 和正常的构造函数类似，也可以像prototype上添加方法和属性，并且可以通过原始值访问。
+> 2. 不能通过new的形式创建。通过new形式返回的是一个对象，和对应的原始数据类型不严格相等；但可以直接调用，比如`String('aaa')返回的就是'aaa'这个string类型的数据`
+> ![](https://pic.imgdb.cn/item/640b97f9f144a01007efce3c.jpg)
 > 另外，null 和 undefined 是特例，不能访问其构造函数的 prototype。
 
 ### constructor
@@ -2028,8 +2030,6 @@ MyObject.prototype.getMessage = function () {
 3. 闭包产生的泄露问题：
 4. 减少使用闭包
 5. 如果是嵌套函数闭包：
-
-
     - 在闭包内部，当闭包执行完成后将引用的变量置空
     - 当闭包被使用完毕时，应该清除闭包的引用。比如：
     ```js
@@ -2044,8 +2044,7 @@ MyObject.prototype.getMessage = function () {
     // ...调用cachedAdd
     cacheAdd = null // 清除闭包
     ```
-
-3. 如果是回调函数闭包，比如 addEventListener，就要及时清除监听器。如果是自己编写的回调函数，则可以通过置空的方式。
+6. 如果是回调函数闭包，比如 addEventListener，就要及时清除监听器。如果是自己编写的回调函数，则可以通过置空的方式。
 
 ### 闭包的出现场景
 

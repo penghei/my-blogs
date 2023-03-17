@@ -1,553 +1,380 @@
-# 主要工具回顾
+# 项目
 
-## Sass
+## 超管项目
 
-Sass 是一款强化 CSS 的辅助工具，它在 CSS 语法的基础上增加了变量 (variables)、嵌套 (nested rules)、混合 (mixins)、导入 (inline imports) 等高级功能，这些拓展令 CSS 更加强大与优雅。使用 Sass 以及 Sass 的样式库（如 Compass）有助于更好地组织管理样式文件，以及更高效地开发项目。
+遇到问题：
+- 代码问题
+  - 写好注释
+  - 充分实现和利用代码复用性，使用工具库，自己编写工具函数、自定义 hooks
+  - 分割组件，提高组件复用性
+  - 代码规范，变量、函数名，eslint
+- 需求问题
+  - 部分功能实现困难，比如 canvas 地图的点位和比例计算：理清思路，多做推理和演算
+  - canvas 绘制复杂，很难处理事件：采用 konva
+  - 组件多，数据杂，context 不合适：先使用 redux，但类型不好且冗余代码过多：recoil
+  - 数据量大，数据流杂乱，采用画数据流图的方式理清思路？
 
-Sass 有两种语法格式：
+项目重点：
+- 技术选型，即
+  - konva和其他canvas框架的技术选型，以及canvas本身的api、性能优化相关
+  - recoil和其他状态管理库的技术选型（可以说的：redux、mobx、zustand、joita等），从哪些方面考虑，这些状态管理库的通用特点有哪些。（可以参考那篇飞书文档）
+- 框架相关问题，即
+  - nextjs的ssr导致的使用问题，比如某些浏览器api不适用的情况
+- 项目规范
+  - 代码可读性、规范性、复用性各方面
 
-- Sass：使用缩进而没有大括号、分号；这种形式的文件以.sass 为后缀
-- SCSS：和 css 格式几乎完全相同，支持所有 css 写法，文件以.scss 为后缀
+### 遇到问题
 
-### 使用
+#### 代码问题
 
-sass 可以通过命令行启用，类似 babel 等工具的编译方式处理 sass 文件
+##### 写好注释
 
-```
-sass input.scss output.css
-```
+- 组件注明作用和功能
+- 组件的 props，在 type 上注释重点 props 的含义
+- 重点类型 type 也要写注释，表明是用于什么的类型，重点属性
+- useState 和 useRef 能用名称区分的就用名称，比如 xxxVisible；不能用的一些聚合数据，就写好意义，用好类型
+- 函数：注释功能。重点步骤也要注释
+- TODO 注释：前一天没写完的地方放一个 TODO，第二天知道从哪里继续写。
 
-通常不这样使用；在 webpack 中安装 sass-loader 并放在 css-loader 后面即可翻译 scss 文件。
-Vite 内置支持 scss 文件的编译，只需要安装 sass 就可以，并不需要手动配置插件。
+##### 代码复用性
 
-### 常用语法
+- 拆分函数。做到“一个函数只负责一个功能”。比如说某个点击事件的回调，可能包括网络请求、改变状态、整理数据等多步，就把这几个不同的功能分别拆到不同的函数中。
+- 自定义工具函数。
+  - 对于可能重复使用的处理一段数据的代码，比如一个数组数据的 map、filter，抽象成一个函数
+  - 判断函数，比如 isXXX 类型的函数，用于代替条件判断
+  - 构造对象的函数，比如构造出的对象是某个函数的参数，或者是修改 state 的，将其抽象为一个函数甚至构造函数的函数。比如 xxxAction 和 createXXXAction
+  - 举例：深比较、深格式化数据、计算地图和真实点位对应
+- 自定义 hook：代码编写时，注意到某些 useState、useRef 以及 useEffect 的组合貌似是固定的，就将其抽出来成为一个自定义 hook。尤其是 useEffect。
 
-1. **嵌套**：嵌套功能避免了重复输入父选择器，而且令复杂的 CSS 结构更易于管理。同时媒体查询的嵌套可以避免在媒体查询内部写入对应的样式。
-2. **父选择器**：常用于伪类的添加
-3. **属性嵌套**：指的是这种形式：
+  - useMap：用于接收一个地图 id，调用一个外部 api，然后返回地图 url：
 
-```css
-font: {
-  family: fantasy;
-  size: 30em;
-  weight: bold;
-}
-```
+  ```ts
+  export const loadMap = (fileId: string): Promise<string> => {
+    return new Promise(async (resolve, reject) => {
+      // ...
+      resolve(imageUrl);
+      // ...
+    });
+  };
 
-4. **双斜杠注释**
-5. **变量**：变量用$开头；sass 中的变量基本使用和在 js 等编程语言类似，通常可以替代大多数尺寸、颜色等以及他们的组合。好处在于方便统一和管理，比如一个颜色在多处使用时，使用变量可以统一这个样式，方便统一修改。
-
-变量通过插值语法可以在属性名或选择器中使用，比如这样：
-
-```scss
-$name: foo;
-$attr: border;
-p.#{$name} {
-  #{$attr}-color: blue;
-}
-
-// 相当于
-p.foo {
-  border-color: blue;
-}
-```
-
-6. **运算**：sass 可以直接进行一些属性的运算，比如不同单位之间的尺寸、颜色等，相当于 css 中的`calc()`，但是可以直接写出来。
-
-7. **控制指令**，即以`@`开头的一些指令，主要包括：
-
-   1. @import：允许导入 SCSS 或 Sass 文件。被导入的文件将合并编译到同一个 CSS 文件中，被导入的文件中所包含的变量或者混合指令 (mixin) 都可以在导入的文件中使用。如果在文件名前添加下划线，可以使 sass 不编译该文件。这样可以仅在书写的时候使用其他文件的变量、混入等，而并不需要真正编译；
-
-   2. @extend：将一个选择器下的所有样式继承给另一个选择器
-
-   ```scss
-   .error {
-     border: 1px #f00;
-     background-color: #fdd;
-   }
-   .seriousError {
-     @extend .error;
-     border-width: 3px;
-   }
-   ```
-
-   3. @if/@else/@else if：和在 js 中使用类似
-
-   ```scss
-   $type: monster;
-   p {
-     @if $type == ocean {
-       color: blue;
-     } @else if $type == matador {
-       color: red;
-     } @else if $type == monster {
-       color: green;
-     } @else {
-       color: black;
-     }
-   }
-   ```
-
-8. **混入@mixin**：可以封装一部分样式。在@mixin 之后写上变量名和一组属性值，可以通过@include 导入并引用：
-
-```scss
-@mixin large-text {
-  font: {
-    family: Arial;
-    size: 20px;
-    weight: bold;
+  export function useMapUrl(tenantId: string, mapId: string) {
+    const [mapUrl, setMapUrl] = useState("");
+    useEffect(() => {
+      if (mapId && mapId !== "0") {
+        getMapDetail(mapId, tenantId, false)
+          .then((map) => loadMap(map.png_file_id))
+          .then(setMapUrl);
+      }
+    }, [mapId, tenantId]);
+    return mapUrl;
   }
-  color: #ff0000;
-}
-.page-title {
-  @include large-text;
-  padding: 4px;
-  margin-top: 10px;
-}
-```
+  ```
 
-和变量类似，可以把一组通用的样式封装起来，然后提到单独的文件中去，使用的时候再去引用即可。
+  - usePolling：轮询，虽然有现成的，但是自定义的原因是为了实现当 deps 变为 false 就停止轮询这个功能。
 
-@mixin 还支持参数和默认值，相当于 js 中的函数：
+  ```ts
+  export const usePolling = (
+    callback,
+    time: number,
+    pollingDep?: boolean,
+    isImmidiate = true
+  ) => {
+    const deps = pollingDep != null ? [pollingDep] : [];
+    useEffect(() => {
+      let interval = null;
+      if (pollingDep === false) {
+        clearInterval(interval);
+        return;
+      }
+      if (isImmidiate) callback();
+      interval = setInterval(() => {
+        callback();
+      }, time);
+      return () => clearInterval(interval);
+    }, deps);
+  };
+  ```
 
-```scss
-@mixin sexy-border($color, $width: 1px) {
-  border: {
-    color: $color;
-    width: $width;
-    style: dashed;
+  - useImage：将 file 格式图片转为 base64，这个也很简单，在 useEffect 中调用 fr 即可：
+
+  ```ts
+  export function useImgBase64Url(img: File) {
+    const [url, setUrl] = useState<string>("");
+    useEffect(() => {
+      if (img) {
+        const fr = new FileReader();
+        fr.readAsDataURL(img);
+        fr.onload = () => {
+          setUrl(fr.result as string);
+        };
+      }
+    }, [img]);
+    return url;
   }
-}
+  ```
 
-p {
-  @include sexy-border(blue, 1in);
-}
-```
+- 分割组件
 
-9. **函数**：sass 支持很多内置函数，比如 max、min、random 等数字处理函数，或者 join、index、append 等数组处理函数（一组逗号隔开的简写样式被看作一个 list）。还可以自定义函数。
-
-## Less
-
-Less 总体的语法和 sass 相近，只有少数功能和语法不同，比如 less 的变量用@开头。
-
-Less 的内置函数多于 sass，同样有着和 sass 类似的 if、else 等逻辑语句。
-
-## React-Router
-
-React-Router 的最新版本是 v6，相对于以前的版本做了很大改动。项目中使用的都是 v5，也是最常用的一个版本。
-
-React-Router 负责路由分发、页面跳转，是用于提供给 React 的单页面应用的路由库。
-
-### 单页面应用
-
-用 React 或者 Vue 构建的应用都是单页面应用，单页面应用是使用一个 html 前提下，一次性加载 js ， css 等资源，所有页面都在一个容器页面下，**页面切换实质是组件的切换**。
-
-### 基本使用
-
-首先安装
-
-```
-yarn add react-router-dom
-```
-
-这里有一个区别：react-router 和 react-router-dom：在 react 复习那一块我们讲过后者包含前者，并且增加了两个 Link 和两个 Router。因此前者内部的组件后者都有，所以理论上只需要安装后者即可
-
-#### 常用组件
-
-1. BrowserRouter、HashRouter：两种路由根组件，是所有路由组件的根组件，所有路由组件都必须要在这个组件的包裹下才能使用。两个的区别可以参考 react 复习，简单来说就是使用不同的原理来实现路由的（hash 值和 history api）
-
-2. Route：Route 组件是 React Router 中最重要的组件，最基本的职责是在其路径与当前 URL 匹配时呈现 UI。即**匹配路由**和**渲染组件**
-
-3. Switch：通常用于包裹在多个 Route 组件外部，作用是匹配唯一正确的路由并渲染；如果不通过 swicth 包裹，页面上可能会出现多个 route 组件。
-   注意 Swicth 会渲染第一个匹配的路径，因此需要尽可能把长的 path 写在前面。
-
-4. Link 和 NavLink：相当于一个跳转路由的`<a>`标签。后者可以用于配置标签的 active 样式。
-
-### 项目使用
-
-#### 手动跳转
-
-有两种方式：withRouter 包裹组件和使用 hooks
-
-前者实际上是一个高阶组件，包裹之后给组件的 props 增加了三个对象：match, location, history。
-
-hooks 主要有四个：useHistory、useLocation、useParams 和 useRouteMatch。前两个 hooks 都是调用会返回一个 history 和 location 对象。后两个主要用于路由动态参数。
-
-#### 路由配置
-
-使用 react-router-config 可以实现在外配置路由并导入
-
-使用方式：https://juejin.cn/post/6911497890822029326
-
-#### 路由鉴权
-
-React 的路由鉴权主要通过外部判断权限，然后选择渲染 Route 组件还是重定向到其他位置。即这种形式：
-
-```js
-return isMatch ? <Route {...props} /> : <Redirect to={"/NoPermission"} />;
-```
-
-可以将其封装成一个组件，判断是否有权限的状态 isMatch 可以从全局状态中获取。
-
-### 使用问题
-
-## Recoil
-
-Recoil 是一个状态管理库。不同于 Redux 这样的外部状态，Recoil 使用的是 React 自己的状态管理的改进。
-Recoil 定义了一个有向图 (directed graph)，正交同时又天然连结于你的 React 树上。状态的变化从该图的顶点（我们称之为 atom）开始，流经纯函数 (我们称之为 selector) 再传入组件。
-Recoil 的特点就是简单，并且使用上类似于 React 原生的 context；它通过 atom 定义并保存一个顶层状态，然后在需要该状态的组件中引入该状态，使用这个顶层状态的方法就像用 useState 一样。
-
-- Atom 是组件可以订阅的 state 单位。
-- selector 可以同步或异步改变此 state。
-
-# 项目 1
-
-关键点：
-
-- Audio 元素和 api，即音乐播放器，分几个点来说：
-  - 音乐从哪里来（网易云音乐 Nodejs api）
-  - 怎么插入歌曲（src 属性）
-  - 怎么播放暂停音乐（play、pause）
-  - 进度条和歌曲进度控制（timeupdate、currentTime、duration）
-  - 怎么自动播放下一首（动态 src 和 load()）
-  - 怎么控制歌词滚动（）
-- 了解了浏览器获取摄像头视频流并捕获照片的方法。
-  - Navigator.mediaDevices api 用法
-  - video 元素播放摄像头获取的视频流
-  - imageCapture 捕获图片并转化格式
-- scss 使用，样式统一
-
-## 音乐播放器
-
-### Audio 元素 api
-
-Audio 元素是指 HTML5 提供的新元素以及其携带的新 api。`<audio>` 元素可以包含一个或多个音频资源， 这些音频资源可以使用 src 属性或者`<source>` 元素来进行描述
-
-audio 元素的属性很多，项目中用到的属性主要有：
-
-- currentTime：返回一个双精度浮点值，用以标明以秒为单位的当前音频的播放位置。该值可读可写，改变该值时会改变当前音频的播放进度
-- duration：只读，返回当前音频的持续时间秒数
-- loop：单曲循环
-- muted：是否静音
-- src：插入音频。当元素加载时向 src 赋予值就相当于插入了音频；同时替换歌曲也是修改 src 属性。
-
-以及一些事件：
-
-- ended：判断歌曲播放完毕，播放下一首
-- play：播放歌曲。通过`audio.play()`调用时会返回一个 promise，可以用来捕获错误。如果 play 期间被 load 方法阻止了，则会报一个被中断的错误
-- pause：暂停，可以通过`audio.pause()`触发，媒体的 pause 变成 true，并且只能触发一次；恢复需要通过 play()
-- load：当 audio 元素的 src 属性被更改后，需要调用 audio.load()重新加载歌曲。
-- timeupdate：当 currentTime 更新时会触发 timeupdate 事件，浏览器保证每秒触发 4-66 次；监听这个事件，当事件被触发时说明播放时间更改，可以用于修改进度条等功能。
-
-### 具体功能写法
-
-1. 播放音乐：在组件中放入 audio 元素，其上只有 src 属性；通过动态修改 src 属性实现歌曲的添加和更换。
-2. 上一首/下一首：同样是动态更新 src 属性并调用 load()方法；组件中会获取一个播放列表的数组，当点击上一首/下一首时会判断超出/过头等情况并避免。
-3. 进度条：通过 audio 元素的 timeupdate 事件监听，实时获取 currentTime 值，和 duration 相除得到进度，然后动态修改进度条的长度即可。
-4. 歌词滚动：
-   1. 首先获取歌词文件，歌词文件的每句话前面都会带上该句歌词的播放时间。
-   1. 获取这个时间并和每句歌词绑定成一个对象
-   1. 获取当前播放时间，取整之后和歌词时间匹配；如果没有匹配到就保持刚才渲染的不变。
-   1. 动态渲染匹配的歌词（字体突出）以及其前面的后面的 n 个歌词
-
-## 摄像头视频和拍照
-
-### 主要 api 和功能实现
-
-#### navigator.mediaDevices
-
-获取用户摄像头使用的是`navigator.mediaDevices`api，这个属性上的`getUserMedia()`方法会申请获取打开用户摄像头的权限
-
-```js
-navigator.mediaDevices
-  .getUserMedia(constraints)
-  .then((MediaStream) => {})
-  .catch((err) => {});
-```
-
-- constraints ：配置对象，详见https://developer.mozilla.org/zh-CN/docs/Web/API/MediaDevices/getUserMedia。大概来说包括获取音频还是视频、获取多少像素、获取前置还是后置等选项。项目中的配置为：
-
-```js
-{
-  video: {
-    facingMode: "user";
-  }
-}
-```
-
-即获取用户前置摄像头。
-
-- MediaStream ： `getUserMedia`函数返回一个 promise。如果用户同意并且摄像头正常，该函数会 resolve 一个媒体流(MediaStream)对象
-
-#### MediaStream
-
-详见：https://developer.mozilla.org/zh-CN/docs/Web/API/MediaStream
-
-MediaStream 接口是一个媒体内容的流。一个流包含几个轨道，比如视频和音频轨道。
-
-项目中使用该对象赋值给 video 元素的`srcObject`属性。这个对象提供了一个与 HTMLMediaElement 关联的媒体源，源对象通常是 `MediaStream` ；直接把`MediaStream`赋值给该属性就可以将摄像头捕获的画面实时显示到 video 元素中。
-
-> srcObject相当于video元素的src的URLObject形式。也就是说它的值可以直接是流、Blob等二进制对象，即这两个相等：
-> ```js
-> video.src = URL.createObjectUrl(MediaStream)
-> video.srcObject = MediaStream
-> ```
-
-设置完成后并不会主动播放，也就是说video元素获取到了视频源，但需要手动播放。因此可以监听其canplay事件（addEventlistener或OnCanplay都可以）并调用`video.play()`自动播放。直接设置video元素的autoplay也可以。
-```js
-video.addEventListener('canplay',()=>video.play().catch(err=>console.log(err)))  
-```
-
-另外还需要把 MediaStream 的轨道存起来以便下一步使用。方法是调用`MediaStream.getVideoTracks()[0]`，会返回视频轨道
-
-#### imageCapture
-
-详见https://developer.mozilla.org/en-US/docs/Web/API/ImageCapture
-
-imageCapture 可以用于捕获视频轨道并生成图片。
-当用户点击拍照时，通过向 ImageCapture 构造函数传入视频轨道，可以获取一个 imageCapture 对象；然后调用其上的`takePhoto`方法可以返回一个 Blob，再转化成 base64 即可。
-
-```js
-const imageCapture = new ImageCapture(StreamTrack.current);
-const res = await imageCapture.takePhoto();
-```
-
-注意此时为了给用户呈现拍照效果，可以通过`video.pause()`暂停视频，此时效果就是拍照那一刻的图片。
-
-接下来就是上传、获取结果、匹配并播放的过程。
-
----
-
-另外一种方法是采用canvas的drawImage方法。https://developer.mozilla.org/zh-CN/docs/Web/API/CanvasRenderingContext2D/drawImage
-给这个方法传入video元素的dom对象，执行时就可以绘制当前帧图片。然后再通过`canvas.toDataURL`方法就可以获取当前图片的Base64格式
-
-```js
-// 首先得有一个canvas元素，但是可以隐藏掉
-const ctx = canvas.getContext('2d')
-ctx.drawImage(video,0,0)
-img.src = canvas.toDataURL() // 这个方法是直接在canvas对象上的
-```
-
-
-## 样式的统一
-
-SCSS 文件把样式写在顶层的其他文件中，然后通过@import 引入。
-
-当文件名为下划线开头时，scss 不会解析为 css，而是直接引入其中的变量
-
-这些文件使用变量、mixin 等集成了一些颜色、尺寸等样式
-
-# 项目 2
-
-- 采用请求响应拦截器、封装 axios 等方法，以解决请求数量大、并且需要统一处理的情况。
-  - 怎么封装的 axios
-  - 封装了哪些内容，做了哪些处理
-  - 怎么处理错误的
-- React 的一些优化方法，使用 React.lazy、useMemo 等 hooks 进行了初步的优化。
-
-## 封装 axios
-
-axios 本身就是请求的封装；但是当项目中的请求多起来的时候，需要一次性集中配置 axios，让配置适应项目的大部分场景。使用自定义配置新建一个 axios 实例，然后对实例进行基本配置，在请求前(请求体处理)，请求后(返回的结果处理)等这些阶段添加一些我们需要的处理，然后将其导出使用。
-
-封装的总结：
-
-1. `axios.create`创建 axios 实例
-
-- 实例内部可以有配置，比如超时、baseURL、通用请求头等
-- 通常实例只需要一个就好了，但是有几个接口不需要 jwt，就再创建一个单独的实例处理这些
-
-2. 请求拦截器
-
-- 添加 jwt 头
-- 过滤空字段
-
-3. 响应拦截器
-
-- 解构响应，按照约定的处理方式返回值
-  - 如果值正常，状态正常，直接返回值
-  - 如果状态正常，但是值有问题（比如密码错误），根据和后端约定的 code 字段做不同的处理
-- 处理响应错误
-  - 响应错误的三种情况，根据状态码处理
-  - 最后返回一个 reject
-
-4. 封装请求函数，把请求函数单独归类写在文件中，使用时直接调用函数即可。这些单独处理的函数可能还要执行一些提醒功能，比如 antd 的`message`/`Modal`等。
-
-### 封装方法
-
-1. axios.create ：创建自定义 axios 实例，传入一个对象用于配置：
-
-```js
-const PostRequest = axios.create({
-  baseURL: "http://localhost:8000/glimmer-bank/platform/",
-  timeout: 5000,
-  headers: {
-    post: {
-      "Content-Type": "application/json",
-    },
-  },
-});
-```
-
-根据请求的不同，instance 在项目中创建了多个实例，分别对应不同组的请求形式。
-
-2. 请求拦截器
-
-通过`instance.interceptors.request.use()`传入请求拦截器参数；参数是两个函数，分别对应发送请求前和请求失败时的处理。
-项目需要 jwt，因此在请求前从缓存中获取 jwt，并插入到请求头中
-还可以配置一个清除请求体中空值的函数，比如过滤请求参数中的 null undefined ''
-
-```js
-service.interceptors.request.use((config) => {
-  config.headers["Authorization"] = `${getStorage("jwt")}` || `Bearer `;
-  cleanObject(config?.data);
-  return config;
-});
-```
-
-3. 响应拦截器
-
-主要功能：
-
-- **处理成功返回的数据**
-
-比如后端返回的 data 数据可能嵌套了很多层，你可以直接返回你需要的 data 数据，这样业务代码就可以直接拿到最终的数据，而不用每次去解构。
-
-由于每个 Get 请求的返回格式统一，因此在响应拦截器中就对其解构
-
-```js
-// 只有res.status为2xx才会调用第一个参数，只要不是2开头的都会调用第二个处理错误的函数
-service.interceptors.response.use((response) => {
-  const { res: data, status } = response; // 解构响应
-  const { success, message, data, code } = res; // 根据实际情况解构
-  // 下面是约定的处理方式
-  if (success && message.includes("成功")) {
-    // 成功直接返回data
-    return data;
-  } else {
-    // 如果请求成功，但内部有一些问题，那么约定好message是处理字段返回即可
-    return message;
-  }
-  if (!success && code === 401) {
-    // jwt过期
-    message.error("登录过期,请重新登录");
-  }
+  - 将具有自己独立状态的组件分割。比如一个 modal 内的表单，一个 drawer 内的 table 等，尽量让组件自己维护一些状态，不要全提升到父组件中
+  - 要复用的组件，比如四个 Modal，这四个 modal 虽然内部不一样，但是他们需要的外部数据基本一致（visible,robotData），内部结构也大体一致（都是一个 Alert + 一个表单），因此把表单抽成四个组件，Modal 就使用一个组件。
   
-  // 默认返回response
+  如下所示，Modal 组件用 React.cloneElement 给子组件注入 props，这样子组件始终含有 robotData 等关键数据。子组件通过修改父组件 ref 的形式控制 modal 点击确定时提交表单（这里应该有更好的方式）
+
+  ```tsx
+  export function MyModal({
+    robotData,
+    visible,
+    setVisible,
+    children,
+  }: ModalPropsType) {
+    const onOk = useRef<(e?: MouseEvent) => Promise<any>>(async () => {
+      setVisible(false);
+    });
+    return (
+      <Modal
+        visible={visible}
+        onCancel={() => setVisible(false)}
+        onOk={onOk.current}
+      >
+        {React.cloneElement(children, {
+          // 注入props
+          onOk,
+          robotData,
+          setVisible,
+        })}
+      </Modal>
+    );
+  }
+
+  // MyModal不改变，只改变CreateUserForm即可。
+  export function CreateUserForm({
+    onOk,
+    robotData,
+    setVisible,
+  }: CreateUserFormPropsType) {
+    const [form] = Form.useForm();
+    useEffect(() => {
+      onOk.current = async () => {
+        const res = await form.validate().catch(console.error);
+        console.log(res);
+        setVisible(false);
+      };
+    }, []);
+
+    return (
+      <>
+        <Alert type="warning" content={`${robotData.basic.device_name}`} />
+        <Form form={form}>
+          <Form.Item field="username">
+            <Input type="text" max={20} />
+          </Form.Item>
+        </Form>
+      </>
+    );
+  }
+  ```
+
+- 代码规范：变量命名规范、函数命名规范、类型命名规范、导入语句、组件名、组件文件名等。
+  - eslint 限制代码规范：默认的 extends 和 plugin，比如 react、babel、@typescript-eslint 等
+  - 自定义 rules：
+    - 禁用魔法数字
+    - camelCase 强制变量名和对象属性为小驼峰
+    - eqeqeq，配置`{"null": "ignore"}`
+  - eslint-plugin-filenames 可以限制文件名和目录名。比如：
+  ```json
+  {
+    "plugins": ["filenames"],
+    "rules": {
+      "filenames/match-regex": ["error", "^[a-z]+(-[a-z]+)*$", true] // 限制文件名为kebab-case形式
+    }
+  }
+  ```
+
+#### 需求问题
+
+##### canvas 问题
+
+首先是计算地图坐标和 canvas 坐标，相互转化
+主要有以下几点：
+
+1. 地图是一张图片，通过 drawImage 绘制到 canvas 上。这个过程中，绘制的大小，即传入的绘制宽高会导致图片放缩。所以要记录比例 scale
+2. 接口给出了地图的真实宽高、真实坐标原点的 xy 值，以及真实点位的坐标 xy 值。从真实坐标计算到 canvas 坐标就是`(真实点位x - 真实点位原点x)/比例尺 * 缩放比例`。
+
+这个地方比较抽象，不容易想到
+
+还有就是获取 canvas 上鼠标点击事件的坐标，基本方法是用到了 getBoundingClientRect
+
+```js
+const canvas = document.getElementById("myCanvas");
+const ctx = canvas.getContext("2d");
+function handleClick(event) {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  console.log(`Clicked at (${x}, ${y})`);
+}
+canvas.addEventListener("click", handleClick);
+```
+
+##### konva
+
+- 为什么选用？
+  - 减少 canvans 代码，直接用命令式绘制，或者使用 react-konva，直接采用组件的形式，像写 html 一样
+  - 解决事件问题。这也是不选用其他库的一个原因，konva 有独特的事件系统。
+    其他选项有：
+    - Fabric：和 konva 类似，也有事件系统，但他和 react 的结合不如 konva 这种组件形式。
+    - react-canvas：这个库非常老，已经没有人维护了
+- 怎么用？
+- 什么原理
+
+##### recoil 和 redux
+
+- 为什么用：组件拆分，零碎组件多，不用的话状态难以共享，context 太复杂
+- redux：框架自带。主要有一些问题：
+  - reducer 代码庞大。一个 reducer 只能维护一个状态，因此很多零散的状态就需要很多 reducer。如果把他们合并到一个 reducer，看起来很乱，并且会导致无谓的更新
+  - 组件内很难用。dispatch 传入的 action 不能得到类型，需要不停地返回去查看 action.type 名称；后来封装了创建 action 的函数，但是导致了更多的代码
+- recoil：自行选择。主要目的：
+  - 代码简洁
+  - 解决状态零碎问题，atom 本来就是推崇零碎状态。
+
+### 学到知识
+
+- konva、recoil 的使用
+- canvas
+- 自定义 hooks 的编写，代码复用性提升
+
+## 秒杀平台项目
+
+遇到问题：
+- 请求数量大，请求需要添加jwt，不能每次请求都配置一次；并且请求部分代码多，影响代码质量
+- 首屏加载速度很慢，第一次加载可能等数秒才显示内容
+- 代码质量不高，初始采用js，当代码量逐渐增大时难以维护。（替换ts）
+
+项目重点：
+- 需要符合秒杀系统的应用场景，在前端做出优化。具体优化方向为减轻服务器负担，比如降低资源大小、减少请求次数等。
+- 关于技术选型相关的，比如为什么采用原生webpack而不是cra，cra相比手动配优势在哪里，cra做了哪些配置？
+- 项目中jwt的使用，可能有刷新token的机制？
+
+### 遇到问题
+
+#### 请求数量大：请求封装
+
+参考超管项目的封装
+
+```tsx
+// 先创建实例
+const service = axios.create({
+  // 添加jwt头
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${api_cfg.token}`,
+  },
+  timeout: 10000,
+  baseURL: api_cfg.apiUrl,
+});
+
+// 添加响应拦截器
+service.interceptors.response.use(function (response) {
+  // 进行状态码判断
+  const { code, data = {} } = response?.data;
+  if (code === 10001) {
+    Message.error("你的token已失效，请重新登录!");
+    setTimeout(() => {
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }, 1000);
+  }
+
   return response;
 });
+
+// 封装请求方法request
+// 接收泛型作为返回值类型
+export default function request<T = unknown>(
+  opts: AxiosRequestConfig, // 请求对象，即url、method、data、params等属性
+  notify = true
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const reqFn = async () => {
+      try {
+        const res = await service(opts);
+        // 这里是service正常resolve的处理，即收到了响应，但可能有误
+        const { code, data = {} } = res?.data;
+        // 这里只处理了部分类型的结果
+        if (res.status === 200 && code === 0) {
+          return resolve(data);
+        } else if (code === 71002) {
+          // 约定：如，服务端错误
+          return reject(res?.data);
+          // 还可以加几个，比如状态码404，403的处理，或者约定的code的处理
+        } else {
+          // 其他情况统一reject
+          // 通过message组件全局提醒报错
+          return reject(res?.data?.msg);
+        }
+      } catch (err) {
+        // service执行错误，即根本没收到响应，比如跨域、网络中断、400/500等错误
+        // 通过message组件全局提醒报错
+        console.error(err);
+        return reject(err);
+      }
+    };
+    reqFn();
+  });
+}
 ```
 
-- **统一处理失败后的异常报错**
+然后具体到每个请求，具体封装：
 
-错误返回的 error 对象有三种情况
-
-- 返回 error.response:请求收到返回，但返回码不是 2xx 开头的
-- 返回 error.request：请求未收到返回,可能是网络问题等
-- 其他情况：请求触发器出错
-
-封装时应当分别处理这三种情况：
-
-```js
-service.interceptors.response.use(_, (error) => {
-  const { response, request } = error;
-  if (response) {
-    const { status, headers } = response;
-    // 这里定义一个对象,内部是处理函数,根据状态码处理
-    statusDict(status)();
-  } else if (request) {
-    if (!window.navigator.onLine) {
-      message.warning("网络异常，请检查网络是否正常连接");
-    }
-  } else {
-    message.warning("服务器异常，请联系管理员");
-  }
-  // 不管怎么处理都会返回一个reject对象
-  return Promise.reject(error);
-});
+```ts
+// 定义类型：请求体类型，响应data类型
+export const getBuildingInfo = (building_id: string) =>
+  request<DtoGetBuildingInfoResp>({
+    url: "/admin/api/v1/admin/building",
+    method: "get",
+    params: { building_id },
+  });
 ```
 
-最后不论中间如何处理，结果都要返回一个 Promise.reject。
+有一个缺点是 request 函数还是会 reject，也就是具体函数还是要具体处理错误。
+其实这样更好，因为不同上下文调用的函数可能错误处理不同，如果请求出错不是预设错误的话，就应该直接 reject。
 
-4. 封装请求
+#### 白屏时间长：优化
 
-除了拦截器，还可以把对应的接口和特殊处理方式单独封装成一个函数放入文件中，按照分类放入不同的文件。
-比如项目中的用户相关接口，统一放在 user.js 文件中，里边是一些封装好的请求函数
+针对白屏时间的优化
 
-```js
-// user.js
-import service from "./interceptors";
+1. 代码分割。核心就是减少入口代码的大小；
 
-const getUserLoginState = async () => {
-  const userInfo = await service.get("/customer/detail");
-  if(typeof userInfo = 'string'){
-    message.warn(message) return {}
-  }else return userInfo
-};
-```
+由于js的执行一定会阻塞页面的渲染，因此减少首页白屏渲染时间最有效的方法就是减少首次加载的代码的大小。可以采取的方法有：
+- 动态加载部分库。比如lodash、pubsubjs等
+- 分出来的包也要减小大小，比如antd按需加载
+- 路由组件使用React.lazy动态加载
 
-这些函数一般只是请求并返回值，同时做一些特殊的处理（比如返回 message 的时候只弹出提醒不返回 data）
+2. 代码优化：
+- 生产模式优化
+- tree-shaking
+- 压缩js、提取压缩css
 
-因为已经统一处理了错误，所以不需要 trycatch 捕获；虽然会抛出错误，但是有用的错误信息都已经被处理，因此也就没必要捕获了。
+3. 骨架屏
+4. 图片压缩、webp格式、预加载，其他图片prefetch
+5. 缓存，利用好hash保证第二次加载速度更快
 
-### 其他处理
+#### 其他优化
 
-#### 自动重试
-
-安装一个库 axios-retry
-
-```js
-import axios from "axios";
-import axiosRetry from "axios-retry";
-
-const instance = axios.create({
-  // 你的配置
-});
-
-axiosRetry(client, { retries: 3 });
-
-// 只有3次失败后才真正失败
-const data = request("http://example.com/test");
-```
-
-## React 优化
-
-优化方式参考 reactreview 里边说的 react 方法。
-
-项目中使用的优化：
-
-### 1. React.lazy
-
-主要在路由中使用，因为路由组件内部还包含了大量的组件，第一次渲染的时候会很慢。
-处理方式：
-
-1. 用 React.lazy 包裹动态导入的路由组件，返回一个处理之后的组件
-2. Route 的 component 组件改为处理后的
-3. 用 Suspense 组件包裹所有处理后的组件，并添加 fallback 属性，这个属性可以是一个组件，在 loading 时渲染。
-
-> 实现懒加载优化时，不仅要考虑加载态，还需要对加载失败进行容错处理。
-> 方法就是使用错误边界，对加载失败的组件包裹一层，降级处理
-
-### 2. React.memo
-
-> 父组件的每次状态更新，都会导致子组件重新渲染，即使传入子组件的状态没有变化，为了减少重复渲染，我们可以使用 React.memo 来缓存组件，这样只有当传入组件的状态值发生变化时才会重新渲染。如果传入相同的值，则返回缓存的组件。
-
-简单来说就是把负载大的子组件包裹，防止父组件更新带着子组件进行一些不必要的更新。
-项目中使用（举几个例子）：几乎每个大一点的组件都用到了 memo，小的布局组件不需要。
-
-### 3. useMemo/useCallback
-
-项目中使用：
-
-1. 给子组件的 props 是对象时，每次都是新的引用，因此用 useMemo 包裹变化频繁的父组件（表单、倒计时等）要传给子组件的 props，用 useCallback 包裹传入的回调。（比如用户信息的展示表单，父组件要把一个用户信息对象传入，这时可以用 useMemo 包裹，依赖数组就是全局的状态；当全局状态不改变时就不变值）
-2. 减少计算：在最后的支付界面会计算用户余额和商品价格等，这个价格因为要计算折扣、利率和其他一些数字，并且要到小数点后很多位，因此计算开销很大；用 useMemo 包裹，只有用户余额、商品价格变化才重新计算。
-
-### 4. 用样式更改代替组件卸载
-
-### 在哪里看到优化效果
-
-https://juejin.cn/post/6844903869378641933
-
-1. 肉眼感知
-2. 更新高亮框
-3. React devtools 的 Profiler，选择 Ranked 视图可以看到组件的渲染时间
-
+- webpack 优化：详见优化实录
+  - 构建速度优化
+    - 缓存（最明显）
+    - include（babel 最明显）
+    - thread-loader（不减反增）
+    - noParse（1s 左右，太极端）
+  - 打包体积优化
+    - production
+    - 压缩代码，js 压缩看见了但是效果一般
+    - 去掉了 bootstrap，因为其 css 占用体积过大（取舍和更换一些模块）
+    - splitChunk：单入口效果一般，采用 cacheGroup 对 node_modules 分包，减少 index 体积
+    - treeshaking，不是很明显
+    - 分包。分包手段主要是动态导入，动态导入路由组件、lodash/antv 等大型库；采用 prefetch 预加载图片
+    - 图片：webp-webpack-plugin 改图片为 webp 格式，image-minimizer-webpack-plugin 压缩图片
+- 编写 loader：详见 webpack 编写 loader 部分
+- React 优化：详见 React 八股

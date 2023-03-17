@@ -496,8 +496,8 @@ css 的相对像素和物理像素的比值可以通过`window.devicePixelRato`�
 - em:
   - 在 `font-size` 中使用是相对于父元素中的字体的字体大小（不是父元素本身，是父元素中的字体），如果父元素没设置就是默认 16px
   - 在其他属性中使用是相对于自身内部文本元素的字体大小, 如果该元素内部没有也是默认 16px
-- rem：相对于 HTML 根元素的字体大小（即`<html>`元素）, 没设置就是默认 16px
-- `%`：依赖的是直接父元素的大小
+- rem：相对于 HTML 根元素的字体大小（即`<html>`元素），可以通过手动设置 html 元素的 font-size 来修改, 没设置就是默认 16px
+- `%`：用于元素是父元素宽度的百分比，用于字体是父元素字体大小的百分比
 - lh：元素的`line-height`
 - vmin/vmax 视窗较小尺寸的 1%/视图大尺寸的 1%。即 vh 和 vw 比较较大/较小的值，比如一般情况下`vw > vh`，因此 vmin 即 vh，vmax 即 vw；如果把网页拉成长条，就会相反。
 - rpx：可以根据屏幕宽度进行自适应。规定屏幕宽为`750rpx`。
@@ -1269,6 +1269,22 @@ css 可以像 scss 等预处理工具一样，声明变量并使用。
 
 通过这个特点，可以实现简单的主题切换。即在`document.body`上添加删除一个类，里边修改这些变量值即可。
 
+并且，css 变量相对于 less、sass 等的变量，其更方便在 js 中修改：
+
+```js
+// 设置变量
+document
+  .getElementsByClassName("container")
+  .style.setPropertyValue("--color", "pink");
+// 读取变量
+doucment
+  .getElementsByClassName("container")
+  .style.getPropertyValue("--color")
+  .trim(); //pink
+// 删除变量
+document.getElementsByClassName("container").style.removeProperty("--color");
+```
+
 # 常用属性
 
 ## 设置滚动条样式
@@ -1896,11 +1912,9 @@ flex 有一个主轴和交叉轴的概念。
 }
 ```
 
-
 ### 元素属性
 
 flex-grow/flex-shrink/flex-basis
-
 
 这三个属性都是作用于具体元素的，即父元素设置了 flex 属性之后的子元素。
 
@@ -1949,7 +1963,10 @@ CSS flex-shrink 属性指定了 flex 元素的收缩规则。flex 元素**仅在
 每个元素默认的 flex-shrink 都是 1，即如果宽度超出容器大小，则会按照每个元素等分的形式收缩每个元素。shrink 值越大表示收缩的比例越大
 情况：
 
-1. 元素有定宽，同时设置 flex-shrink：如果宽度和超过容器宽度，会无视定宽限制收缩。除非把 shrink 设置为 0，相当于无论什么情况都不会收缩
+1. 元素有定宽，同时设置 flex-shrink：如果宽度和超过容器宽度，会无视定宽强制收缩，除非把 shrink 设置为 0，相当于无论什么情况都不会收缩
+
+> 如果元素设置了 min-width，那就不会收缩小于 min-width 的大小。其他属性都会强制收缩到 content 大小
+
 2. 对行内元素设置 shrink：和 grow 相同，行内元素也会发生收缩，不会保持其定宽。
 
 #### flex-basis
@@ -1960,7 +1977,8 @@ CSS flex-shrink 属性指定了 flex 元素的收缩规则。flex 元素**仅在
 
 basis 设置的是不考虑任何 grow 或 shrink 的情况下的基本大小，和设置 width 或 height 的效果是一样的
 
-flex-basis的取值有：
+flex-basis 的取值有：
+
 ```css
 /* 指定<'width'> */
 flex-basis: 10em;
@@ -1980,12 +1998,11 @@ flex-basis: content;
 flex-basis: inherit;
 flex-basis: initial;
 flex-basis: unset;
-
 ```
 
 basis 有两个特殊的值：0 和 auto
 
-- 如果一个元素的 basis 值被设置为 0，那么flex会把这个元素视作尽可能小。正常排列时差别不大，但如果有grow或shrink就会出现差异
+- 如果一个元素的 basis 值被设置为 0，那么 flex 会把这个元素视作尽可能小。正常排列时差别不大，但如果有 grow 或 shrink 就会出现差异
 
 可以理解为，为 0 时这个元素在主轴上占用的空间被视为 0。
 当 flex-grow 和 flex-shrink 计算剩余空间大小时，该元素会被视为不占大小。
@@ -2000,20 +2017,19 @@ basis 有两个特殊的值：0 和 auto
 </div>
 ```
 
-上面这个例子中，第二个元素的flex-basis为50，第一个的basis为0。
-首先（不设置任何grow和shrink，空间足够）第一个元素会缩小到content的大小，即自己的最小值。这里a的宽度收缩到了内容的宽度，而b的宽度为50px
+上面这个例子中，第二个元素的 flex-basis 为 50，第一个的 basis 为 0。
+首先（不设置任何 grow 和 shrink，空间足够）第一个元素会缩小到 content 的大小，即自己的最小值。这里 a 的宽度收缩到了内容的宽度，而 b 的宽度为 50px
 ![](https://pic.imgdb.cn/item/63ea357f4757feff33e89be9.jpg)
-其次，如果两个都设置flex-grow: 1，那么b会比a大50px
+其次，如果两个都设置 flex-grow: 1，那么 b 会比 a 大 50px
 ![](https://pic.imgdb.cn/item/63ea35f44757feff33ebc4ac.jpg)
-最后，如果触发shrink，那么第一个元素不会再缩小，而第二个元素也会缩小到content大小之后，不再会缩小。
+最后，如果触发 shrink，那么第一个元素不会再缩小，而第二个元素也会缩小到 content 大小之后，不再会缩小。
 ![](https://pic.imgdb.cn/item/63ea363e4757feff33edada4.jpg)
 
-总结：设置了`basis: 0`的元素会缩小到最小大小，即content的大小，如果通过flex-grow让其伸展，也会从0开始计算。
-
+总结：设置了`basis: 0`的元素会缩小到最小大小，即 content 的大小，如果通过 flex-grow 让其伸展，也会从 0 开始计算。
 
 - 如果元素的 basis 设置为 auto，那就是它的默认大小，和 width：auto 类似。即如果元素设置了宽度那就是它的宽度，如果没设置就是其内容的宽度
 
-即，如果元素设置了width或height那就和正常一样，如果没设置就和上面`basis: 0`的情况一样。
+即，如果元素设置了 width 或 height 那就和正常一样，如果没设置就和上面`basis: 0`的情况一样。
 
 ## grid
 
@@ -2062,8 +2078,8 @@ basis 有两个特殊的值：0 和 auto
 - minmax：参数是范围的最大最小值；一般是一个相对单位和一个绝对单位，或者是两个相对单位，函数产生一个长度范围，表示长度就在这个范围之中，表示当前设定的栏大小不小于最小值，不大于最大值，在这个范围内根据容器宽度变化自动伸缩。
 
 2. `grid-template-areas`：这个属性提供了一种自己创建格子的方法，可以将网格中的一些单元格组合成一个区域（area），并为该区域指定一个自定义名称。对于每个容器内的元素，只需要通过`grid-area`属性指定自己属于哪个格子，就可以自动布局到设计好的属性中。
-  具体写法是按照行划分的字符串，每个字符串中间留空
-  比如：
+   具体写法是按照行划分的字符串，每个字符串中间留空
+   比如：
 
 ```css
 .container {
@@ -2215,10 +2231,12 @@ CSS Sprites 并不能明显减小图片的总体积，甚至还会增加；但�
 对于 css 来说，查询的对象绝大多数情况都是 screen，常用的查询参数有：
 
 - width/height：查询**视窗的宽高**。
+
   - max-width：当媒体查询值为 true 的最大宽度，也就是说当宽度小于 max-width 指定的值时，查询的值为 true，触发内部的样式。相当于`width <= xxx`
   - min-width：max-width 的反向，相当于`width >= xxx`
-  
+
   另外，新增的语法可以直接这样写：
+
   ```css
   @media (width <= 30em) {
     ...;
@@ -2227,6 +2245,7 @@ CSS Sprites 并不能明显减小图片的总体积，甚至还会增加；但�
     ...;
   }
   ```
+
 - color：和屏幕的色彩相关
 
 ## 判断元素是否进入可视区域
@@ -2325,11 +2344,11 @@ console.log(clientRect);
 
 ![](https://pic.imgdb.cn/item/6243edbc27f86abb2a8af251.jpg)
 当页面发生滚动的时候，top 与 left 属性值都会随之改变，可能会有四种情况：
-- 元素在页面上方（的不可视区域内）：top和bottom都为负数。这时如果bottom由负转正，就说明移动到了可视区域
-- 元素在页面下方：top的值大于等于可视区域高度，即`top <= window.innerHeight`时进入可视区域
-- 元素在页面左边：right的值为负数
-- 元素在页面右边：left的值大于等于可视区域宽度
 
+- 元素在页面上方（的不可视区域内）：top 和 bottom 都为负数。这时如果 bottom 由负转正，就说明移动到了可视区域
+- 元素在页面下方：top 的值大于等于可视区域高度，即`top <= window.innerHeight`时进入可视区域
+- 元素在页面左边：right 的值为负数
+- 元素在页面右边：left 的值大于等于可视区域宽度
 
 因此可以通过判断这四个条件是否满足，来确定是否在窗口内
 
@@ -2342,8 +2361,8 @@ function isInViewPort(element) {
 
   return {
     isVerticalVisible: top >= 0 && top <= viewHeight && bottom >= 0,
-    isHorizontalVisible: left >= 0 && right >= 0 && left <= viewWidth
-  }
+    isHorizontalVisible: left >= 0 && right >= 0 && left <= viewWidth,
+  };
 }
 ```
 
@@ -2596,6 +2615,87 @@ display 必须为 inline-block 或者 block，否则不起作用。
 }
 ```
 
+## 暗黑模式
+
+css 对于暗黑模式的处理大体分为两种思路
+
+1. 页面滤镜。这种方法比较简单粗暴，通过 filter 等方式给页面加滤镜，从而达到反转颜色的效果
+2. 变量适配。即以 css 的 prefers-color-scheme 媒体查询为核心，通过对每个元素的变量修改来实现
+
+第一种方法可以参考：https://segmentfault.com/a/1190000023598551
+
+具体来说，第二种方法还有几个具体的实现：
+
+1. css 变量，比如
+
+```css
+:root {
+  --text-color: #000;
+  --dark-text-color: #fff;
+}
+
+.text {
+  color: var(--text-color); // 亮色模式下字体为黑色
+}
+
+@media (prefers-color-scheme: dark) {
+  .text {
+    color: var(--dark-text-color); // 暗黑模式下字体为白色
+  }
+}
+```
+
+2. less/sass 变量
+
+```less
+@text-color: #000;
+@dark-text-color: #fff;
+
+.text {
+  color: @text-color; // 亮色模式下字体为黑色
+}
+
+@media (prefers-color-scheme: dark) {
+  .text {
+    color: @dark-text-color; // 暗黑模式下字体为白色
+  }
+}
+```
+
+这两种方式都有一个致命问题，就是需要手写很多的媒体查询代码。
+这个过程可以通过 postCss 插件来自动化实现：
+
+```less
+// 这部分为原代码
+@text-color: #000;
+@dark-text-color: #fff;
+
+.text {
+  color: @text-color; // 亮色模式下字体为黑色
+}
+
+// 这部分根据映射规则自动生成
+@media (prefers-color-scheme: dark) {
+  .text {
+    color: @dark-text-color; // 暗黑模式下字体为白色
+  }
+}
+```
+
+但是还有缺陷，就是每个原本的样式都要用到变量，而且每个样式的黑色和白色样式需要自己编写，并且像 canvas、svg 这样的元素还得自己写样式。
+
+3. darkReader：一个 npm 包，提供了自动化解决方案。这是比较工程化的解决方案。
+
+在页面开启转换时，DarkReader 从三个地方获取页面的样式规则：
+
+1. style 标签，element.sheet.cssRules
+2. link 标签，element.sheet.cssRules
+3. 行内样式，HTML style 属性
+
+使用 MutationObserver API 监听 DOM 变更，当上述元素发生变化时，去获取最新的样式规则。
+
+获取到样式规则后，DarkReader 通过一定的色值计算，将色值反转为暗黑模式下的色值。最后将新的规则插入到页面中。这里并没有直接覆盖原来的值，而是新生成 style 标签，对原有样式进行覆盖；行内样式则是通过新增 CSS Variable 进行覆盖。
+
 # CSS 布局
 
 ## 圣杯布局
@@ -2832,7 +2932,7 @@ display 必须为 inline-block 或者 block，否则不起作用。
 
 适用于任何**行内元素**，包括非文本行内块和行内元素，比如文本 text、图像 img、按钮超链接等。
 
-具体来说，这种方式只适用于形成ifc的场合，即一个块级元素内部只包含inline或inline-block元素时，其内部的水平排列可以用text-align控制
+具体来说，这种方式只适用于形成 ifc 的场合，即一个块级元素内部只包含 inline 或 inline-block 元素时，其内部的水平排列可以用 text-align 控制
 
 对于子元素是块级元素的情况，也可以设置为`display: inline-block`，然后继续使用这种方法。
 
@@ -3009,7 +3109,7 @@ display 必须为 inline-block 或者 block，否则不起作用。
 ```
 
 注意这个值不能是 100% 或者 1，因此必须明确知道父元素高度。
-line-height本质上作用于行内元素，将其放在块级元素上实际上是继承到后代的行内元素上起作用的。因此如果要居中的是块级元素就没有效果，只有inline/inline-block以及单行文本元素才可以被居中。
+这种方式只能居中单行文本元素，如果想要居中 inline-block 就需要 vertical-align
 
 #### 4. `vertical-align`
 
@@ -3125,6 +3225,18 @@ line-height本质上作用于行内元素，将其放在块级元素上实际上
 ```
 
 同时这个方法也适用于任何大小的固定宽高比元素，只需要改动 padding-bottom 值和宽度即可。
+
+---
+
+现代的解决方案是 aspect-ratio 属性 参考https://developer.mozilla.org/zh-CN/docs/Web/CSS/aspect-ratio
+
+```css
+.block {
+  aspect-ratio: 1 / 2;
+  width: auto;
+  margin: 0 10px;
+}
+```
 
 ## 响应式布局（八股）
 

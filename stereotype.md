@@ -174,6 +174,7 @@
         - minisize
         - useExports
       - cache
+      - devtools
 - 生产环境
     - 构建产物
       - 压缩代码

@@ -169,7 +169,7 @@
       - 和 srcset 配合
     - picture 和 source
       - 两者的性质，功能，类似于 video、audio
-      - 配置方式
+      - 配置方式 source 上的 media
 - **flex 怎么用，有哪些属性**
   - 基本概念
     - 弹性盒子
@@ -382,7 +382,6 @@
       - 默认
     - 优先级：如上顺序
 - new 的执行过程？
--
 - **原型链是什么**
   - 原型：
     - 定义：两个方面
@@ -456,394 +455,598 @@
 
 # 网络
 
-URL 和 URI 是什么
-同源策略，跨域解决方案
-    什么是跨域        
-    什么是同源策略
-        概念
-        同源条件
-        不同源的限制
-    为什么有跨域限制
-        安全考虑
-    怎么解决跨域
-        CORS
-            概念
-            请求分类
-                简单请求
-                    定义
-                    处理方式：
-                        origin
-                        access-allow
-                复杂请求
-                    定义
-                    处理方式
-                        预检
-                        access-allow
-        JSONP
-            原理：script跨域请求
-            实现
-        代理
-            原理
-            实现：http-proxy-middleware
-                devServer
-OSI7 层网络模型、TCP/IP4 层模型，5 层模型
-session、token、cookie 是什么，有什么特点和区别
-    cookie
-        概念：一小段数据
-        作用：获取用户身份信息
-        属性
-            httponly
-            samesite
-                跨站的概念
-                三个取值及效果
-                    lax
-                    strict
-                    none
-                举例
-                    第三方cookie
-                    csrf攻击
-            domain
-            secure
-            expires
-        跨域问题
-            cors控制是否发送cookie
-            xhr和fetch也可以控制
-        js读写cookie
-    session
-        概念
-        和cookie的区别
-    token
-        概念
-        jwt
-            本质：base64格式的json对象
-            优缺点
-            使用方式
-HTTP 的基本特点
-    无状态
-    一收一发
-    基于tcp
-    数据类型丰富
-HTTP 的请求和响应报文结构
-HTTP 的常见字段
-    四类字段
-        请求
-        响应
-        通用
-        实体
-HTTP 的方法有哪些
-    get head post put delete options
-**HTTP 状态码**
-    100 101
-    200
-    301 302 304
-    400 401 403 404 405 408 413 414 429
-    500 502 504 503
-HTTPS 是什么，怎么保证安全，**握手过程**？
-    https概念
-        增加tls层
-        增加tls握手
-        数字证书
-    https安全依据
-        非对称和对称结合的加密算法
-        数字证书
-    https握手
-        步骤
-            client hello
-            server hello
-            发送证书
-            取出公钥并生成密钥发给服务端
-            解析得到密钥
-            server done
-            client done
-**HTTP1.0 1.1 2.0 3.0 都有哪些变化**
-    1.0
-        基本头
-        基本缓存
-        状态码
-        问题：短连接
-    1.1
-        长连接
-        并发tcp连接
-        更多缓存头
-        新增请求方法
-        问题：队头阻塞
-    2.0
-        二进制协议
-        帧和流
-        多路复用
-        请求优先级
-        服务端推送
-        头部压缩
-        一个tcp连接
-        问题：依赖tcp，tcp的队头阻塞
-    3.0 
-        解决http2的问题：tcp队头阻塞
-        基于udp连接
-        quic协议
-        连接更快
-        连接迁移不中断
-        独立数据流
-HTTP 缓存，有哪些字段，缓存存放在本地的位置
-    概念：根据一些头信息保存指定资源
-    分类
-        强缓存
-        协商缓存
-    控制字段
-        Cache-Control
-            max-age
-            no-cache
-            public、private
-        Last Modified & If-Modified-Since
-        Etag & If-None-Match
-DNS 是啥，怎么查询的
-CDN 是啥，有什么用
-UDP 协议的特点、应用、报文结构，和 TCP 的区别
-    特点
-        无连接
-        一对多、多对一、多对多
-        不可靠
-        高效
-    应用
-        时效性强的连接
-    报文结构
-        源端口、目标端口
-        报文长度
-        检验和
-        报文体
-TCP 的特点
-    面向连接
-    一对一传输
-    字节流
-    可靠传输
-    拥塞控制
-TCP 的报文段结构
-    seq和ack
-    接收窗口
-    标志字段
-        FIN ACK SYN
-    报文体
-**TCP 的三次握手四次挥手**
-    三次握手
-        全过程
-        为什么三次，不是两次
-    四次挥手
-        全过程
-        为什么四次
-        为什么等待2个MSL
-TCP 的可靠数据传输实现
-    重传机制
-        超时重传
-        快速重传
-            为什么是3个冗余ack
-TCP 的流量控制实现
-    滑动窗口
-        发送方：四个部分
-        接收方：三个部分
-    流量控制的流程
-        基本流程：收发
-        收缩的流程：接收窗口变小，通知发送窗口变小
-TCP 的拥塞控制
-    概念：
-        处理丢包、超时等行为
-        和流量控制的异同
-            同：都是控制发送速度，cwnd和rwnd
-            异：主要控制重传
-    单位：MSS/RTT ，即一次收发时间内发送多少个最大报文段长度
-    处理方式
-        慢启动
-        超时->拥塞避免
-        冗余ack->快速恢复
-IP 协议中的子网掩码和前缀是什么
-特殊的 IP 地址
-链路层有什么作用
-**从浏览器输入 url 到显示页面的过程**
-    url解析
-    检查缓存
-    dns解析
-    获取mac地址
-    从上到下封装报文
-    发送到服务器
-    建立tcp连接
-    https握手
-    发送httpget请求
-    响应html
-    浏览器网络进程交给渲染进程
-    解析html
-    构建dom树、cssom
-    构建布局树
-    layer
-    paint
-    栅格化
-    合成
-    显示
-CSP 是什么，怎么开启
-XSS 攻击和防范
-    概念
-    基本原理：执行脚本窃取数据
-    三种类型
-        反射型
-        dom型
-        存储型
-    防范
-        httponly
-        不信任用户输入
-        不使用拼接字符串形成html
-CSRF 攻击和防范
-    概念
-    基本原理：模拟用户发起请求
+- URL 和 URI 是什么
+- 同源策略，跨域解决方案
+  - 什么是跨域
+  - 什么是同源策略
+    - 概念
+    - 同源条件
+    - 不同源的限制
+  - 为什么有跨域限制
+    - 安全考虑
+  - 怎么解决跨域
+    - CORS
+      - 概念
+      - 请求分类
+        - 简单请求
+          - 定义
+          - 处理方式：
+            - origin
+            - access-allow
+        - 复杂请求
+          - 定义
+          - 处理方式
+            - 预检
+            - access-allow
+    - JSONP
+      - 原理：script 跨域请求
+      - 实现
+    - 代理
+      - 原理
+      - 实现：
+        - http-proxy-middleware
+        - devServer
+- OSI7 层网络模型、TCP/IP4 层模型，5 层模型
+- session、token、cookie 是什么，有什么特点和区别
+  - cookie
+    - 概念：一小段数据
+    - 作用：获取用户身份信息
+    - 属性
+      - httponly
+      - samesite
+        - 跨站的概念
+        - 三个取值及效果
+          - lax
+          - strict
+          - none
+        - 举例
+          - 第三方 cookie
+          - csrf 攻击
+      - domain
+      - secure
+      - expires
+    - 跨域问题
+      - cors 控制是否发送 cookie
+      - xhr 和 fetch 也可以控制
+    - js 读写 cookie
+  - session
+    - 概念
+    - 和 cookie 的区别
+  - token
+    - 概念
+    - jwt
+      - 本质：base64 格式的 json 对象
+      - 优缺点
+      - 使用方式
+- HTTP 的基本特点
+  - 无状态
+  - 一收一发
+  - 基于 tcp
+  - 数据类型丰富
+- HTTP 的请求和响应报文结构
+- HTTP 的常见字段
+  - 四类字段
+    - 请求
+    - 响应
+    - 通用
+    - 实体
+- HTTP 的方法有哪些
+  - get head post put delete options
+- **HTTP 状态码**
+  - 100 101
+  - 200
+  - 301 302 304
+  - 400 401 403 404 405 408 413 414 429
+  - 500 502 504 503
+- HTTPS 是什么，怎么保证安全，**握手过程**？
+  - https 概念
+    - 增加 tls 层
+    - 增加 tls 握手
+    - 数字证书
+  - https 安全依据
+    - 非对称和对称结合的加密算法
+    - 数字证书
+  - https 握手
+    - 步骤
+      - client hello
+      - server hello
+      - 发送证书
+      - 取出公钥并生成密钥发给服务端
+      - 解析得到密钥
+      - server done
+      - client done
+- **HTTP1.0 1.1 2.0 3.0 都有哪些变化**
+  - 1.0
+    - 基本头
+    - 基本缓存
+    - 状态码
+    - 问题：短连接
+  - 1.1
+    - 长连接
+    - 并发 tcp 连接
+    - 更多缓存头
+    - 新增请求方法
+    - 问题：队头阻塞
+  - 2.0
+    - 二进制协议
+    - 帧和流
+    - 多路复用
+    - 请求优先级
+    - 服务端推送
+    - 头部压缩
+    - 一个 tcp 连接
+    - 问题：依赖 tcp，tcp 的队头阻塞
+  - 3.0
+    - 解决 http2 的问题：tcp 队头阻塞
+    - 基于 udp 连接
+    - quic 协议
+    - 连接更快
+    - 连接迁移不中断
+    - 独立数据流
+- HTTP 缓存，有哪些字段，缓存存放在本地的位置
+  - 概念：根据一些头信息保存指定资源
+  - 分类
+    - 强缓存
+    - 协商缓存
+  - 控制字段
+    - Cache-Control
+      - max-age
+      - no-cache
+      - public、private
+    - Last Modified & If-Modified-Since
+    - Etag & If-None-Match
+- DNS 是啥，怎么查询的
+- CDN 是啥，有什么用
+- UDP 协议的特点、应用、报文结构，和 TCP 的区别
+  - 特点
+    - 无连接
+    - 一对多、多对一、多对多
+    - 不可靠
+    - 高效
+  - 应用
+    - 时效性强的连接
+  - 报文结构
+    - 源端口、目标端口
+    - 报文长度
+    - 检验和
+    - 报文体
+- TCP 的特点
+  - 面向连接
+  - 一对一传输
+  - 字节流
+  - 可靠传输
+  - 拥塞控制
+- TCP 的报文段结构
+  - seq 和 ack
+  - 接收窗口
+  - 标志字段
+    - FIN ACK SYN
+  - 报文体
+- **TCP 的三次握手四次挥手**
+  - 三次握手
+    - 全过程
+    - 为什么三次，不是两次
+  - 四次挥手
+    - 全过程
+    - 为什么四次
+    - 为什么等待 2 个 MSL
+- TCP 的可靠数据传输实现
+  - 重传机制
+    - 超时重传
+    - 快速重传
+      - 为什么是 3 个冗余 ack
+- TCP 的流量控制实现
+  - 滑动窗口
+    - 发送方：四个部分
+    - 接收方：三个部分
+  - 流量控制的流程
+    - 基本流程：收发
+    - 收缩的流程：接收窗口变小，通知发送窗口变小
+- TCP 的拥塞控制
+  - 概念：
+    - 处理丢包、超时等行为
+    - 和流量控制的异同
+      - 同：都是控制发送速度，cwnd 和 rwnd
+      - 异：主要控制重传
+  - 单位：MSS/RTT ，即一次收发时间内发送多少个最大报文段长度
+  - 处理方式
+    - 慢启动
+    - 超时->拥塞避免
+    - 冗余 ack->快速恢复
+- IP 协议中的子网掩码和前缀是什么
+- 特殊的 IP 地址
+- 链路层有什么作用
+- **从浏览器输入 url 到显示页面的过程**
+  - url 解析
+  - 检查缓存
+  - dns 解析
+  - 获取 mac 地址
+  - 从上到下封装报文
+  - 发送到服务器
+  - 建立 tcp 连接
+  - https 握手
+  - 发送 httpget 请求
+  - 响应 html
+  - 浏览器网络进程交给渲染进程
+  - 解析 html
+  - 构建 dom 树、cssom
+  - 构建布局树
+  - layer
+  - paint
+  - 栅格化
+  - 合成
+  - 显示
+- CSP 是什么，怎么开启
+- XSS 攻击和防范
+  - 概念
+  - 基本原理：执行脚本窃取数据
+  - 三种类型
+    - 反射型
+    - dom 型
+    - 存储型
+  - 防范
+    - httponly
+    - 不信任用户输入
+    - 不使用拼接字符串形成 html
+- CSRF 攻击和防范
+  - 概念
+  - 基本原理：模拟用户发起请求
 
 # 浏览器
 
-浏览器中的主要进程和线程有哪些
-    进程：
-        渲染进程
-            gui渲染线程
-            js线程
-            定时器
-            异步任务
-            事件处理
-        网络进程
-        主进程
-        插件进程
-        gpu进程
-    新式架构
-        多进程+服务，把ui、storage、file等放到各个服务内
-**浏览器渲染页面的过程**
-gpu加速的原理
-**重绘重排，触发原因，优化**
-解释和编译型语言
-v8 怎么执行一段 js 代码的
-    过程
-        词法分析（分词）
-        语法分析（创建AST）
-        生成字节码
-        生成机器码
-        执行机器码
-    工具
-        解释器：ast->字节码
-        编译器：字节码->机器码
-        即时编译：部分热点代码提前编译
+- 浏览器中的主要进程和线程有哪些
+  - 进程：
+    - 渲染进程
+      - gui 渲染线程
+      - js 线程
+      - 定时器
+      - 异步任务
+      - 事件处理
+    - 网络进程
+    - 主进程
+    - 插件进程
+    - gpu 进程
+  - 新式架构
+    - 多进程+服务，把 ui、storage、file 等放到各个服务内
+- **浏览器渲染页面的过程**
+- gpu 加速的原理
+- **重绘重排，触发原因，优化**
+- 解释和编译型语言
+- v8 怎么执行一段 js 代码的
+  - 过程
+    - 词法分析（分词）
+    - 语法分析（创建 AST）
+    - 生成字节码
+    - 生成机器码
+    - 执行机器码
+  - 工具
+    - 解释器：ast->字节码
+    - 编译器：字节码->机器码
+    - 即时编译：部分热点代码提前编译
 
-# react源码
+# webpack
 
-函数组件和类组件的区别
-  组件本质（函数和类）
-  保存数据的方式
-  生命周期
-  React element的获取
-类组件的生命周期
-  挂载
-    constructor -> getDerivedStateFromProps -> render -> componentDidMount
-  更新
-    gdsf -> shouleComponentUpdate -> render ->  getSnapshotBeforeUpdate -> commit -> componentDidUpdate
-  废弃的声明周期，为什么？
-React事件系统
-  概念：
-    React自己创建的
-    为什么？磨平浏览器差异，配合虚拟dom，模拟事件
-  三个部分
-    事件合成
-      概念：事件对象是自己合成的
-      事件插件
-        概念
-        功能
-          注册事件，保存当前类型事件的合成的dom事件列表
-          当事件触发时：合成事件对象，创建listener放入执行队列
-    事件绑定
-      createRoot绑定所有事件
-      绑定的listener实际上是不同事件优先级的dispatchEvent
-    事件触发
-      事件触发
-        根dom捕获
-        dispatchEvent
-        通过事件插件合成事件对象和listener对象、dispatchQueue
-      事件收集
-        找到事件触发的那个fiber
-        从下向上收集事件，获取每个fiber上的事件props，收集同名事件
-      事件执行
-        根据事件类型确定顺序
-          如果是捕获就倒序
-          如果是冒泡就正序
-React fiber
-  概念：虚拟dom
-  引入原因
-    方便控制
-    减小阻塞，中断渲染
-    双缓冲树 复用
-  fiber结构
-    属性
-      React element相关属性
-      fiber树的连接属性
-      组件属性
-      副作用相关
-      优先级
-      alternate
-  双缓冲树
-React 异步调度
-  目的：解决阻塞
-  方式
-    异步调度
-      通过messageChannel将任务放到空闲时间执行
-    时间分片
-      scheduler
-      五个优先级
-      taskQueue和timerQueue
-      任务被拆散到每个时间片空闲执行
-      使用messageChannel调度workLoop
-      workLoop 中断重新注册任务到下个时间片
-      中断条件
-        isInputPending
-        任务已经执行时间 >= 一帧剩余时间
-    渲染中断
-      render workLoopConcurrent
-React 调和过程
-  render
-    beginwork
-      功能
-      Reconciler
-      diff算法
-        单节点
-        多节点（数组类型）
-          两轮遍历
-    completeWork
-      功能
-  commit
-    每个阶段及其功能
-  flags机制
-    标记时机
-    subtreeFlags
-    消费时机
-    代替EffectList
-React 更新流程
-React hooks原理
-  hook和fiber的关系
-    fiber.memoizedState保存hook链表
-  hook对象
-    创建hook
-      mountHook
-      hook.memorizedState：核心存储位置
-      hook.next：核心链表
-    更新hook
-      updateHook
-      取hook.next复用
-  useState
-    update：更新对象
-      updateQueue:update链表
-      baseQueue：低优先级更新
-    mountState：初始化updateQueue和dispatch
-    updateState：执行updateQueue和baseQueue
-  useEffect
-    执行时机：before mutation异步启动
-    effect链表
-React 并发渲染
-  createRoot（FiberRoot）
-  scheduler
-  可中断render
-React 优先级机制
-  事件优先级
-    DiscreteEventPriority ContinuousEventPriority DefaultEventPriority IdleEventPriority
-  lane优先级
-    SyncLane InputContinuousLane DefaultLane IdleLane
-  scheduler优先级  
-    ImmediateSchedulerPriority UserBlockingSchedulerPriority NormalSchedulerPriority IdleSchedulerPriority
+概述，功能，为什么需要 webpack
+核心概念
 
+- chunk
+  - 三种chunk
+  - hash
+- module
+- bundle
+- dependence
+- plugin
+- loader
+
+配置：
+
+- 配置文件
+  - 导出的值的不同：
+    - 对象
+    - 函数
+    - 数组
+  - 多个配置文件
+    - webpack.common.js/webpack.development.js/webpack.production.js
+    - merge函数合并配置
+    - webpack --config选定配置文件
+- 基本配置项及其配置方式，比如 entry 的多种配置方式及其效果
+  - entry
+    - 四种形式
+      - 对象
+        - 配置项：import、dependOn、runtime、filename
+      - 数组
+      - 函数：make阶段调用
+      - 字符串
+  - output
+    - 输出hash和缓存
+  - module
+    - rules配置loader
+  - resolve
+  - plugins
+  - devServer
+  - 其他：optimitize、target、cache
+
+优化：
+
+- 开发环境
+    - 构建速度
+      - 减小解析范围
+        - loader
+        - resolve
+        - 极端：noParse/externals
+      - 多进程
+        - thread-loader
+        - 压缩过程的并行
+      - 关闭某些生产环境的优化
+        - splitChunk
+        - minisize
+        - useExports
+      - cache
+      - devtools
+- 生产环境
+    - 构建产物
+      - 压缩代码
+        - terserwebpackplugin-压缩js
+        - MiniCssExtractPlugin-分离并压缩css
+      - tree-shaking
+        - 效果和目的
+        - 开启方式
+        - 基本原理
+        - 注意事项
+          - 减少导入赋值
+          - 使用es6的库
+          - 禁止babel编译import
+      - 代码分割
+        - 三种方式
+          - 多入口手动分离
+          - 动态导入
+          - splitChunk
+            - `'all'`配置在所有chunk之间共享模块
+            - maxSize和minSize
+            - cacheGroup
+- 其他
+  - http缓存
+    - contenthash
+    - 利用splitChunk对不经常变动的模块分包
+      - runtime
+      - 第三方库单独打包
+
+原理：
+
+- 一些核心概念，比如 module、chunk、compiler、compilation、hook、dependencies、chunkGraph、moduleGraph
+- 基本工作流程，三步的具体工作内容
+  - 初始化
+    - 收集参数
+    - 创建compiler对象
+    - 启动编译流程
+  - 构建
+    - 从入口进入
+    - 调用loader翻译模块，生成模块ast
+    - 解析导入导出，递归生成module
+  - 生成
+    - 创建chunkgraph
+    - 从入口开始递归生成各个chunk
+    - 生成代码，输出文件
+- hook 机制，hook 是什么，怎么用 hook，webpack 是怎么用 hook 的，有什么用，我们能用到什么
+- loader：原理，以及自己编写的 loader 的原理，使用了哪些 api 和上下文
+- plugin：原理，自己编写 plugin 的原理，使用了哪些 hook 和 api
+- hmr
+  - 概念，用处
+  - 使用：hot，module.hot.accept
+  - fast refresh 两者区别
+    - 使用上的区别
+    - 原理上的区别
+  - 原理
+    - 注入runtime
+    - 建立 浏览器-devserver ws连接
+    - 文件变化 -> hash事件 -> 浏览器请求manifest
+    - devserver返回manifest -> 浏览器请求对应的更新文件 -> express返回该文件
+    - 执行module.hot.accept更新
+
+使用经验：
+
+- 如何配置 react 脚手架
+- webpack.config.ts
+- babel 配置，解析 ts 和 react
+- 引入 hmr 和 fastrefresh
+- 配置 css module
+
+# 优化
+
+- 优化方式
+  - **网络优化**
+    - 网络请求优化
+      - http优化
+        - 1.1版本优化
+          - 减少资源数量
+          - 减少请求数量
+          - 充分利用缓存
+          - 减小请求大小
+        - 2.0版本优化
+          - 减小请求大小
+          - 增大请求数量
+      - 使用http2.0/3.0
+      - dns预解析
+      - 预连接
+      - cdn
+      - http报文体压缩
+      - js请求的防抖节流
+    - http缓存优化
+      - webpack配置缓存的方式
+      - 服务端配置合理的缓存
+  - **静态资源优化**
+    - 预加载
+      - 手动添加preload、prefetch库
+      - webpack动态导入
+      - js预加载
+      - react-loadable/React.lazy
+    - 懒加载
+      - 判断进入可视区域
+      - 列表懒加载
+    - 图片
+      - 小图合并
+      - 图片压缩
+      - 采用webp格式
+      - 媒体查询、响应式图片采用低分辨率
+  - **运行时优化（代码优化）**
+    - js
+      - 减少dom操作、集中dom操作
+      - script标签位置
+      - 代码质量优化
+    - css
+      - 不使用@import
+      - css代码性能
+        - 减少缩写
+        - 少用浮动、绝对定位
+        - 减少重绘重排
+      - css选择器性能
+        - 少用低性能选择器
+        - 少用通配符
+    - 减少重绘重排
+      - 不用table布局，用弹性布局
+      - 改变class而不是style
+      - css动画
+      - gpu加速
+      - 减少影响文档流
+      - 操作dom集中
+    - webpack优化
+    - react优化
+- 性能指标
+  - RAIL性能模型
+  - web用户指标
+    - FP
+    - FCP
+    - FMP
+    - **LCP**
+    - TTI
+    - **FID**
+    - **CLS**
+  - 检测方式
+    - PerformanceEntry
+    - web-vitals库
+- 性能检测工具
+  - lighthouse
+  - chrome devtools
+
+# react 源码
+
+- 函数组件和类组件的区别
+  - 组件本质（函数和类）
+  - 保存数据的方式
+  - 生命周期
+  - React element 的获取
+- 类组件的生命周期
+  - 挂载
+    - constructor -> getDerivedStateFromProps -> render -> componentDidMount
+  - 更新
+    - gdsf -> shouleComponentUpdate -> render -> getSnapshotBeforeUpdate -> commit -> componentDidUpdate
+  - 废弃的声明周期，为什么？
+- React 事件系统
+  - 概念：
+    - React 自己创建的
+    - 为什么？磨平浏览器差异，配合虚拟 dom，模拟事件
+  - 三个部分
+    - 事件合成
+      - 概念：事件对象是自己合成的
+      - 事件插件
+        - 概念
+        - 功能
+          - 注册事件，保存当前类型事件的合成的 dom 事件列表
+          - 当事件触发时：合成事件对象，创建 listener 放入执行队列
+    - 事件绑定
+      - createRoot 绑定所有事件
+      - 绑定的 listener 实际上是不同事件优先级的 dispatchEvent
+    - 事件触发
+      - 事件触发
+        - 根 dom 捕获
+        - dispatchEvent
+        - 通过事件插件合成事件对象和 listener 对象、dispatchQueue
+      - 事件收集
+        - 找到事件触发的那个 fiber
+        - 从下向上收集事件，获取每个 fiber 上的事件 props，收集同名事件
+      - 事件执行
+        - 根据事件类型确定顺序
+          - 如果是捕获就倒序
+          - 如果是冒泡就正序
+- React fiber
+  - 概念：虚拟 dom
+  - 引入原因
+    - 方便控制
+    - 减小阻塞，中断渲染
+    - 双缓冲树 复用
+  - fiber 结构
+    - 属性
+      - React element 相关属性
+      - fiber 树的连接属性
+      - 组件属性
+      - 副作用相关
+      - 优先级
+      - alternate
+  - 双缓冲树
+- React 异步调度
+  - 目的：解决阻塞
+  - 方式
+    - 异步调度
+      - 通过 messageChannel 将任务放到空闲时间执行
+    - 时间分片
+      - scheduler
+      - 五个优先级
+      - taskQueue 和 timerQueue
+      - 任务被拆散到每个时间片空闲执行
+      - 使用 messageChannel 调度 workLoop
+      - workLoop 中断重新注册任务到下个时间片
+      - 中断条件
+        - isInputPending
+        - 任务已经执行时间 >= 一帧剩余时间
+    - 渲染中断
+      - render workLoopConcurrent
+- React 调和过程
+  - render
+    - beginwork
+      - 功能
+      - Reconciler
+      - diff 算法
+        - 单节点
+        - 多节点（数组类型）
+          - 两轮遍历
+    - completeWork
+      - 功能
+  - commit
+    - 每个阶段及其功能
+  - flags 机制
+    - 标记时机
+    - subtreeFlags
+    - 消费时机
+    - 代替 EffectList
+- React 更新流程
+- React hooks 原理
+  - hook 和 fiber 的关系
+    - fiber.memoizedState 保存 hook 链表
+  - hook 对象
+    - 创建 hook
+      - mountHook
+      - hook.memorizedState：核心存储位置
+      - hook.next：核心链表
+    - 更新 hook
+      - updateHook
+      - 取 hook.next 复用
+  - useState
+    - update：更新对象
+      - updateQueue:update 链表
+      - baseQueue：低优先级更新
+    - mountState：初始化 updateQueue 和 dispatch
+    - updateState：执行 updateQueue 和 baseQueue
+  - useEffect
+    - 执行时机：before mutation 异步启动
+    - effect 链表
+- React 并发渲染
+  - createRoot（FiberRoot）
+  - scheduler
+  - 可中断 render
+- React 优先级机制
+  - 事件优先级
+    - DiscreteEventPriority ContinuousEventPriority DefaultEventPriority IdleEventPriority
+  - lane 优先级
+    - SyncLane InputContinuousLane DefaultLane IdleLane
+  - scheduler 优先级
+    - ImmediateSchedulerPriority UserBlockingSchedulerPriority NormalSchedulerPriority IdleSchedulerPriority

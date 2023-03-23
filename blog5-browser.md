@@ -374,7 +374,6 @@ GPU加速的原理：浏览器的GPU加速功能是将需要进行加速的元�
 - 具有 `will-change` 属性
 - 对 `opacity`、`transform`、`fliter` 应用了 `animation` 或者 `transition`；
 
-
 提升为合成层的好处主要有以下几点：
 - 合成层的位图，会交由 GPU 合成，比 CPU 处理要快
 - 当需要 repaint 时，只需要 repaint 本身，不会影响到其他的层

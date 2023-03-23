@@ -1,6 +1,4 @@
-# 项目
-
-## 超管项目
+# 超管项目
 
 遇到问题：
 - 代码问题
@@ -23,20 +21,197 @@
 - 项目规范
   - 代码可读性、规范性、复用性各方面
 
-### 遇到问题
+## 遇到问题
 
-#### 代码问题
+### 代码规范
 
-##### 写好注释
+规范主要有四类规范：
 
-- 组件注明作用和功能
-- 组件的 props，在 type 上注释重点 props 的含义
-- 重点类型 type 也要写注释，表明是用于什么的类型，重点属性
-- useState 和 useRef 能用名称区分的就用名称，比如 xxxVisible；不能用的一些聚合数据，就写好意义，用好类型
-- 函数：注释功能。重点步骤也要注释
-- TODO 注释：前一天没写完的地方放一个 TODO，第二天知道从哪里继续写。
+- （文件）命名规范
+- ts规范
+- React规范
+- git规范
 
-##### 代码复用性
+规范来源：
+- 部门规范
+- 公司内规范
+- 个人建议/自用规范
+
+#### 命名规范
+
+1. 文件名、目录：
+
+- kebab-case形式。语义要明确，比如modal组件的文件名称都叫modal-xxx
+- 不要简写
+- 目录要对于复数结构采取复数形式。
+
+#### ts规范
+
+1. 类的私有方法前要加private和下划线
+2. 接口PascalCase，前面要加I
+3. 枚举PascalCase
+4. 常量使用 UPPER_CASE ，禁用魔法数字和魔法字符串
+5. 注释：
+
+需要为以下内容添加注释
+- class
+  - 需要在 class 的顶部添加注释，说明该类的主要作用，比如为 React class/hooks component 添加注释
+  - 需要为 class 中的每个成员变量添加注释说明字段含义，无论是 public、protected、private
+  - 需要为 class 中的每个函数添加注释，具体参见下方 function
+- enum
+  - 需要为枚举添加注释，以及为枚举中的每个成员添加注释说明
+- interface
+  - 需要为 interface 添加注释，并为其中的字段添加注释说明，如果该 interface 对应了后台接口，还需要链接相关接口文档
+- function
+  - 需要注释说明函数的作用，每个入参的含义并给出相关示例，说明返回值含义及给出示例，对于复杂的逻辑，需要给出该函数实现的核心逻辑思想
+  ```ts
+  /**
+   * 返回两个数的平均值 ---- 函数作用
+   *
+   * @param x 第一个数，例如 1
+   * @param y 第二个数，例如 2
+   * @returns “x”和“y”的算数平均值
+   */
+  function getAverage(x: number, y: number): number {
+    return (x + y) / 2.0;
+  }
+  ```
+- 全局 let/const
+  - 需要为 class 或 function 外部的 let/const 变量添加注释
+
+格式遵循TSDoc
+
+6. 尽量不使用any，可以用unknown代替
+7. 字符串拼接统一使用模版字符串
+8. 使用 interface 定义对象结构体，而不是使用 type，对于interface接口名前要有I
+9. 使用 async/await 代替 Promise，并且避免 async/await 与 Promise 混用
+10. 使用统一的 import 顺序，按 内置库 → 外部库 → 内部模块 的顺序进行 import。
+
+
+#### react项目规范
+
+1. useCallback、useMemo、React.memo 一起结合使用才能减少不必要的子组件渲染，分工如下：
+- 父组件：在父组件中应该使用 useCallback() 和 useMemo() 尽量确保相应的 fn 或 value 不变，这样才能确保传递给子组件的 prop 不变。
+- 子组件：在子组件中应该使用 React.memo() 包裹原始的子函数组件，从而可以通过利用浅比较 props 的方式尽量使得子组件在 prop没有发生变化时不进行渲染。
+
+2. 不要在 JSX 中写 JavaScript/TypeScript
+在 JSX 中写代码，会让调试变得困难。(这个可以详细说一下)
+
+```js
+// Bad
+
+return (
+  <>
+    {users.map((user) => (
+      <a onClick={event => {
+        console.log(event.target); //bad
+        }} key={user.id}>{user.name}
+      </a>
+    ))}
+  </>
+);
+
+// Good
+
+const onClickHandler = (event) => {
+  console.log(event.target);
+}
+
+const userLinks = users.map((user) => (
+  <a onClick={onClickHandler} key={user.id}> {user.name} </a>
+));
+
+return (
+  <>
+    {userLinks}
+  </>
+);
+```
+
+3. husky：确保在提交代码时也能够运行 lint 检查
+
+#### git规范
+
+按照git工作流的形式，主要是四个分支
+
+![](https://pic.imgdb.cn/item/641835e4a682492fcc153b12.jpg)
+
+- master：
+  - 所有线上的发布都必须基于 master 分支，不能基于 release、feature、hotfix 分支
+  - 无论是 release 还是 hotfix 合并到 master，在 master 分支合并后，需要基于 package.json 中的 version 对 master 打 tag，注意只能对 master 分支打 tag，不能对 release、feature、hotfix 分支打 tag
+  - 如果在某一时刻同时有 release1 和 release2 两个分支在开发，当 release1 测试通过并 merge 到 master 后，需要将 master 再 merge 回 release2，确保 release2 最新
+- Release：
+  - 从 master checkout 创建
+  - 创建后更改 package.json 的 version，version 的组成形式为 majorVersion.minorVersion.patchVersion，创建 release 分支时应该更改 minor version，比如从 0.5.1 改为 0.6.0
+  - release 分支是受保护分支，严禁直接提交代码到 release 分支，只能通过 MR 对 release 代码进行变更
+  - 当 feature 分支完成一块相对独立的功能时，就可以从 feature 分支 发起 merge request 到 release 分支
+  - 提测前需要确保所有 feature 分支的代码已经合并进 release 分支，然后将 release 分支部署到 boe 环境
+  - 发布到线上前将 release 分支 merge 到 master，此处的 code reveiw 只需要大体过一下即可，因为 diff 内容都在 feature 往 release 分支合并时仔细 review 过了
+  - 如果某一个时刻基于 release1 分支有 feature1 和 feature2 两个分支，当 feature1 通过 code review 合并到 release1 后，也需要将 release1 合并回 feature2
+  - 需要注意的是，机器人前端项目每次给 QA deb 包进行测试前，都首先要确保 package.json 中的 version 变化了，因为机器人前端项目目前是根据 package.json 中的 version 生成 deb 包的版本
+- Feature
+  - 所有的 feature 分支都应该从 release 分支 checkout 创建，即便这次 release 分支只有一个开发人员也应如此，feature 分支需要包含个人名称简写
+  - 提测前将 feature 分支 merge 到 release  分支，此处的 MR 需要严格 code review
+- Hotfix
+  - 从 master checkout 创建，然后需要修改 package.json 中的 version，创建 hotfix 分支时应该更改 patch version，比如从 0.6.0 改为 0.6.1
+  - 修改完成后创建 merge request 到 master
+  - 注意在将 hotfix 分支合并到 master 分之后，记得更新 release 分支以及 feature 分支
+
+
+#### eslint
+
+使用`eslint --init`即可初始化配置。
+
+配置内容
+- eslintrecommended、reactrecommended、tsrecommended
+- @byted/eslint-config：公司内部的eslint推荐配置
+- 自定义的一些
+  - 禁用魔法数字
+  - useState建议是`[xxxState,setXxxState]`的形式，以及useRef必须是xxxRef的形式，useReducer必须返回xxxReducer的形式。这三个都是自定义的插件，参考工程化中编写插件的部分。
+
+#### husky
+
+配置husky在eslint校验通过之前不允许提交。
+[husky文档](https://typicode.github.io/husky/#/)
+[husky配置](https://juejin.cn/post/7038143752036155428#heading-9)
+
+husky是一个操作 git 钩子的工具。可以使用预设的钩子，在git各种操作的时间进行补捕获和拦截。
+比如，在pre-commit阶段，即提交之前先进行lint的检查，如果不通过就不允许提交。
+
+配置流程：
+1. 安装lint-staged、husky、commitlint
+2. 配置husky在pre-commit阶段进行line-stage检查：
+
+```
+yarn husky add .husky/pre-commit "npx lint-staged"
+```
+
+当然还要配置.lintstagedrc.json 文件控制检查和操作方式
+
+```json
+{
+  "*.{js,jsx,ts,tsx}": ["eslint  --fix"],
+}
+```
+
+3. commitlint配置commit规范
+[commitlint文档](https://commitlint.js.org/#/?id=getting-started)
+
+使用husky在commit-msg钩子上增加对commit的检查：
+```
+husky add .husky/commit-msg 'npx --no-install commitlint --edit "$1"'
+```
+创建commitlint.config.js，使用预设：
+```js
+module.exports = { extends: ["@commitlint/config-conventional"] };
+```
+
+这个预设比较简单，就是要求提交前面必须是`fix/feat/doc`等。
+
+
+
+
+### 代码复用性
 
 - 拆分函数。做到“一个函数只负责一个功能”。比如说某个点击事件的回调，可能包括网络请求、改变状态、整理数据等多步，就把这几个不同的功能分别拆到不同的函数中。
 - 自定义工具函数。
@@ -190,7 +365,7 @@
   }
   ```
 
-#### 需求问题
+### 需求问题
 
 ##### canvas 问题
 
@@ -219,7 +394,7 @@ canvas.addEventListener("click", handleClick);
 ##### konva
 
 - 为什么选用？
-  - 减少 canvans 代码，直接用命令式绘制，或者使用 react-konva，直接采用组件的形式，像写 html 一样
+  - 减少 canvas 代码，直接用命令式绘制，或者使用 react-konva，直接采用组件的形式，像写 html 一样
   - 解决事件问题。这也是不选用其他库的一个原因，konva 有独特的事件系统。
     其他选项有：
     - Fabric：和 konva 类似，也有事件系统，但他和 react 的结合不如 konva 这种组件形式。
@@ -237,27 +412,31 @@ canvas.addEventListener("click", handleClick);
   - 代码简洁
   - 解决状态零碎问题，atom 本来就是推崇零碎状态。
 
-### 学到知识
+## 学到知识
 
-- konva、recoil 的使用
-- canvas
-- 自定义 hooks 的编写，代码复用性提升
+- 技术选型：状态管理库的了解，redux、mobx的原理、recoil的优势，其他状态管理库之间的优劣比较
+- konva的使用，konva的事件原理和设计模式，react-konva和react的结合方式
+- canvas api，canvas基础功能的实现，canvas优化
+- 代码规范，四个方面的代码规范
+- 工程化代码规范的方式（eslint、husky）
+- （其他）nextjs的使用问题，代码复用性，数据量大的处理
 
-## 秒杀平台项目
+# 秒杀平台项目
 
 遇到问题：
 - 请求数量大，请求需要添加jwt，不能每次请求都配置一次；并且请求部分代码多，影响代码质量
 - 首屏加载速度很慢，第一次加载可能等数秒才显示内容
-- 代码质量不高，初始采用js，当代码量逐渐增大时难以维护。（替换ts）
+- 针对模拟线上环境的优化，模拟秒杀系统应用场景
 
 项目重点：
 - 需要符合秒杀系统的应用场景，在前端做出优化。具体优化方向为减轻服务器负担，比如降低资源大小、减少请求次数等。
 - 关于技术选型相关的，比如为什么采用原生webpack而不是cra，cra相比手动配优势在哪里，cra做了哪些配置？
 - 项目中jwt的使用，可能有刷新token的机制？
+- 关于秒杀倒计时，怎么确定倒计时准确？
 
-### 遇到问题
+## 遇到问题
 
-#### 请求数量大：请求封装
+### 请求数量大：请求封装
 
 参考超管项目的封装
 
@@ -340,41 +519,62 @@ export const getBuildingInfo = (building_id: string) =>
 有一个缺点是 request 函数还是会 reject，也就是具体函数还是要具体处理错误。
 其实这样更好，因为不同上下文调用的函数可能错误处理不同，如果请求出错不是预设错误的话，就应该直接 reject。
 
-#### 白屏时间长：优化
+### 优化
 
-针对白屏时间的优化
+#### 优化内容总
 
-1. 代码分割。核心就是减少入口代码的大小；
+1. 代码分割。代码分割的目的有两个：
 
-由于js的执行一定会阻塞页面的渲染，因此减少首页白屏渲染时间最有效的方法就是减少首次加载的代码的大小。可以采取的方法有：
-- 动态加载部分库。比如lodash、pubsubjs等
-- 分出来的包也要减小大小，比如antd按需加载
-- 路由组件使用React.lazy动态加载
+- 缓存
+- 优化代码体积，加快加载速度。
 
-2. 代码优化：
-- 生产模式优化
+代码分割的方式：
+
+- 动态加载，使用React.lazy包裹页面组件。
+- splitChunk，分割vendor
+- 分割css
+
+2. 开发模式优化
+
+- 持久化缓存
+- sourcemap配置 eval-cheap-module-source-map
+- 关闭生产模式优化
+
+3. 生产模式优化
+
+- 代码压缩，css、js压缩
 - tree-shaking
-- 压缩js、提取压缩css
+- 利用import对图片等资源进行prefetch
 
-3. 骨架屏
-4. 图片压缩、webp格式、预加载，其他图片prefetch
-5. 缓存，利用好hash保证第二次加载速度更快
+4. 其他优化
 
-#### 其他优化
+- 图片：
+  - webp格式：webp-webpack-plugin
+  - 压缩：image-minimizer-webpack-plugin
+- loader：自己编写的loader
+- 按需导入antd的组件和css
+- 骨架屏
 
-- webpack 优化：详见优化实录
-  - 构建速度优化
-    - 缓存（最明显）
-    - include（babel 最明显）
-    - thread-loader（不减反增）
-    - noParse（1s 左右，太极端）
-  - 打包体积优化
-    - production
-    - 压缩代码，js 压缩看见了但是效果一般
-    - 去掉了 bootstrap，因为其 css 占用体积过大（取舍和更换一些模块）
-    - splitChunk：单入口效果一般，采用 cacheGroup 对 node_modules 分包，减少 index 体积
-    - treeshaking，不是很明显
-    - 分包。分包手段主要是动态导入，动态导入路由组件、lodash/antv 等大型库；采用 prefetch 预加载图片
-    - 图片：webp-webpack-plugin 改图片为 webp 格式，image-minimizer-webpack-plugin 压缩图片
-- 编写 loader：详见 webpack 编写 loader 部分
-- React 优化：详见 React 八股
+#### 针对线上环境的优化
+
+核心：请求优化
+- 减小请求大小
+- 降低请求次数
+
+1. 减小请求大小，即减小打包产物大小，上述的所有压缩等减小体积的方法
+
+2. 降低请求次数：
+
+- 充分利用缓存
+- 分包不要太细碎
+- 部分数据持久化，比如秒杀到期时间戳不用频繁同步
+- 秒杀接口的节流处理，多次点击只会生效一次
+
+
+### 其他
+
+- 倒计时的实现：setTimeout不一定准确。
+
+> setTimeout、setInterval 属于定时触发器线程属于 macrotask，它的回调会受到GUI渲染、事件触发、http请求、等的影响。所以这两个不适合做精准的定时。
+
+怎么实现一个精准的倒计时？setInterval不行，需要用setTimeout实现，并且不断修正。

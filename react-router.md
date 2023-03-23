@@ -107,8 +107,22 @@ function setState(history) {
 }
 ```
 
+注册在transitionManager上的listeners就是BrowserRouter组件注册的事件：
+
+```js
+this.unlisten = props.history.listen((location) => {
+  /* 当路由发生变化，派发更新 */
+  // 这个setState是Router组件里的
+  this.setState({ location });
+});
+```
+
+简单来说，就是如果location对象被改变（push方法），这里就会传入新的location对象，然后修改Router组件内的state，进而通过Provider对象下发到每个具体渲染的Route组件和Switch组件等。
+
+
 - push 和 replace 操作并不会触发 popstate 事件，而对于会触发 popstate 的操作，比如调用`history.go`，或者点击浏览器的前进、后退，还有一套额外的监听。通过监听这些会触发 popstate 的事件，再创建新的 location 对象，然后通过 setState 实现页面的更新。
-  简化后的代码如下：
+
+简化后的代码如下：
 
 ```js
 // 其实就是更改state，只不过这里是监听popstate做出的更改
@@ -251,6 +265,9 @@ export default class HashRouter extends React.Component {
 }
 ```
 
+
+
+
 # 基本构成
 
 ## 三个基本对象：history，location，match
@@ -314,14 +331,14 @@ class Router extends React.Component {
     this.state = {
       location: props.history.location,
     };
-    this.listen = props.history.listen((location) => {
+    this.unlisten = props.history.listen((location) => {
       /* 当路由发生变化，派发更新 */
       this.setState({ location });
     });
   }
   /* .... */
   componentWillUnmount() {
-    if (this.listen) this.unlisten();
+    if (this.unlisten) this.unlisten();
   } // 取消监听
   render() {
     return (
@@ -352,49 +369,20 @@ React-Router 是通过 context 上下文方式传递的路由信息，包括 his
 
 Route 可以通过 `RouterContext.Consumer` 来获取上一级传递来的 context value 进行路由匹配（包含 history 对象、最新的 location 对象等）；如果匹配，渲染子代路由。并利用 context 逐层传递的特点，将自己的路由信息，向子代路由传递下去。这样也就能轻松实现了嵌套路由。
 
-Route 的写法主要有四种：
+Route 组件并没有自己验证匹配的能力，它需要switch组件来告知自己是否需要渲染。如果需要，那就会渲染自己的children或者components参数的组件，否则不渲染。
+
+简化结构：
 
 ```js
-{
-  /* Route Component形式 */
-  /*无法传递父组件中的信息*/
-}
-<Route path="/router/component" component={RouteComponent} />;
-{
-  /* Render形式 */
-}
-<Route
-  path="/router/render"
-  render={(props) => <RouterRender {...props} />}
-  {...mes}
-/>;
-{
-  /* chilren形式 
-    子组件不能获取到路由相关的props
-  */
-}
-<Route path="/router/children">
-  <RouterChildren {...mes} />
-</Route>;
-{
-  /* renderProps形式 */
-}
-<Route path="/router/renderProps">
-  {(props) => <RouterRenderProps {...props} {...mes} />}
-</Route>;
+return (
+  <Context.Provider value={props}>
+    {props.match ? children : null}
+  </Context.Provider>
+)
 ```
 
-Route 组件的属性：
+实际上Route组件内部是一个嵌套结构，即Route可以嵌套其他Route，每个嵌套的Route都可以获取到location对象和match
 
-1. `path`：路径，即`history.location`值，是一个字符串，用于匹配路径。当 Route 是嵌套子集路由时，要写完整父级路由。
-
-> 官方文档：
-> `<Route path='/xxx'>` 匹配 URL 的**开头**，而不是整个内容。因此 `<Route path="/">` 将和任何 url 匹配，应当放在 `<Switch>` 的最后。
-
-2. `component`：要渲染的组件
-3. `exact`：精准匹配，即路径必须是完整和 path 的字符串相等。**如果是嵌套路由的父路由，千万不要加 exact=true 属性。换句话只要当前路由下有嵌套子路由，就不要加 exact。**
-
-配置可以使用`react-router-config`库做更清晰的配置，详见 https://juejin.cn/post/6911497890822029326
 
 ### Switch
 
@@ -410,6 +398,26 @@ Switch 作用是先通过匹配选出一个正确路由 Route 进行渲染，而
   <Route path="/list" component={List} />
   <Route path="/my" component={My} />
 </Switch>
+```
+
+switch内部会遍历自己的子元素，即各个route组件，然后检查是否和路径匹配。如果匹配，就把该子元素的match props设为true，表示这个Route组件要渲染。
+
+```js
+React.Children.forEach(_this.props.children, function (child) {
+  if (match == null && /*#__PURE__*/React.isValidElement(child)) {
+    element = child;
+    var path = child.props.path || child.props.from;
+    // matchPath检查location对象上的路径和子元素的path是否匹配
+    match = path ? matchPath(location.pathname, _extends({}, child.props, {
+      path: path
+    })) : context.match;
+  }
+});
+// 给子元素（Route组件）传入location对象和是否匹配的match参数
+return match ? /*#__PURE__*/React.cloneElement(element, {
+  location: location,
+  computedMatch: match
+}) : null;
 ```
 
 ### Redirect

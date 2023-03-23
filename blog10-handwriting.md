@@ -495,12 +495,38 @@ function isEqual(obj1, obj2) {
 
 ## 手写防抖/节流
 
+基本实现见下，更加高级的实现可以参考：https://juejin.cn/post/7057053516849758222#heading-7
+
 - 防抖
 
 ```js
 function debounce(func, wait) {
   let timeout;
   return function () {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => {
+      func.apply(this, arguments);
+    }, wait);
+  };
+}
+```
+
+上面的写法有个缺点，就是第一次触发时间时仍然会等待 wait 秒。可以增加一个 immediate，使得第一次执行不用等待
+
+```js
+function debounce(func, wait, isImmediate) {
+  let timeout;
+  let once = true;
+  return function () {
+    if (isImmediate && once) {
+      func.apply(this, arguments);
+      once = false;
+      // 注意这里还是要设置一个timeout
+      timeout = setTimeout(() => {
+        timeout = null;
+      }, wait);
+      return;
+    }
     if (timeout) clearTimeout(timeout);
     timeout = setTimeout(() => {
       func.apply(this, arguments);
@@ -536,6 +562,24 @@ function throttle(fn, delay) {
       timeout = null;
       fn.apply(this, arguments);
     }, delay);
+  };
+}
+```
+
+两种写法可以结合一下。使用时间戳记录时间差值，然后和设定的时间间隔相减作为 remain；如果 remain<=0，就立即执行；反之就是开启一个定时器，等到 remain 时间结束后再执行
+
+```js
+function throttle(fn, delay) {
+  let pre = 0;
+  return function () {
+    let now = new Date().getTime();
+    const remain = delay - (now - pre);
+    if (remain <= 0) {
+      fn.apply(this, arguments);
+      pre = now;
+    } else {
+      timer = setTimeout(fn, remain);
+    }
   };
 }
 ```
@@ -1128,6 +1172,53 @@ const MyPromiseMap = (promises, limit) => {
   });
 };
 ```
+
+## 手写 async pool
+
+async pool 和 promise map 的功能类似，即限制 promise 任务的并发数量，但是实现方式不同，下面是一种实现方式：
+
+```js
+// async pool一般不直接接收promise数组，而是通过函数生成
+async function asyncPool(poolLimit, array, iteratorFn) {
+  const ret = []; // 存储所有的异步任务
+  const executing = []; // 存储正在执行的异步任务
+  for (const item of array) {
+    // 调用iteratorFn函数创建promise
+    const p = Promise.resolve().then(() => iteratorFn(item, array));
+    ret.push(p); // 同步任务，保存新的异步任务
+
+    // 当poolLimit值小于或等于总任务个数时，进行并发控制
+    if (poolLimit <= array.length) {
+      // 创建e，e在p执行完后从正在执行的任务数组里删掉
+      const e = p.then(() => executing.splice(executing.indexOf(e), 1));
+      executing.push(e); // 保存正在执行的异步任务
+      if (executing.length >= poolLimit) {
+        await Promise.race(executing); // 等待较快的任务执行完成
+      }
+    }
+  }
+  return Promise.all(ret);
+}
+```
+
+这个的实现逻辑是这样的：
+
+1. 遍历数组，为每个数组中的项创建 promise 对象。需要注意的是，这个遍历在这里很重要，下面会说到
+2. 创建 p，然后创建 e。e 就相当于是执行完具体的任务 p 之后，再在 executing 数组中把 e 删掉；也就是说在这个 pool 内，谁执行完谁就把自己顺便清除掉了
+3. 使用 Promise.race 执行任务队列。相当于让 pool 中的任务竞争完成。下面举个例子
+
+```
+比如现在有三个任务，executing数组内 = [a,b,c]
+调用Promise.race执行三个任务，假设a先执行完
+a就是上面的e，因此会从executing数组内删掉自己，变成[b,c]
+然后，跳出await，进入下一次循环，取数组中的下一项（比如e）再继续，executing数组变成[b,c,e]
+重复上面几步，直到executing.length < poolLimit，最后剩下的几个任务并发执行。
+```
+
+核心有两个：
+
+- 每个任务执行完成后会从数组中删掉自己，腾出空间；
+- 利用 `await Promise.race(executing)`，等待正在执行任务列表中较快的任务执行完成之后，才会继续执行下一次循环。
 
 ## 实现异步 sum/add
 
@@ -2095,6 +2186,189 @@ const upload = (val, timout) => {
 };
 
 upload("hello world", 3000);
+```
+
+## 手写校准计时器
+
+js 的 setTimeout、setInterval 的执行是不准确的。由于 js 单线程的缘故，有些情况可能会导致实际的 timeout 比设定的长，或实际的 interval 比指定的 interval 长。
+
+gui 渲染、同步代码执行、微任务执行都会造成 timeout 的不准确。因此可以实现一个基本的校准机制，即通过每次计算任务前后的事件差来更改 timeout 的时间
+
+如下代码。当 doSomeWork 函数内有耗时比较长的代码（比如 react 更新）时，offset 就会有比较明显的值。
+
+```js
+function startTimer() {
+  const now = Date.now();
+  let timeout = null;
+  doSomeWork();
+  const post = Date.now();
+  const offset = post - now;
+  timeout = setTimeout(startTimer, 1000 - offset);
+}
+```
+
+## 手写 dayjs 时间格式化功能
+
+原理：参考 dayjs 源码。核心其实是这个正则的匹配
+
+其他功能考虑：
+
+- 增加更多模式字符串，比如 M、MMMM 等，以及对星期的支持
+- 类似 dayjs 函数的功能，函数本身可以接收一个时间，将这个时间进行格式化
+
+```js
+function formatDate(formateStr) {
+  const dateMatchRegexp = /Y{2,4}|M{2}|D{2}|H{2}|m{2}|s{2}|S{2}/g;
+  const date = new Date();
+  const dateInfo = {
+    second: date.getSeconds().toString(),
+    minute: date.getMinutes().toString(),
+    hour: date.getHours().toString(),
+    day: date.getDate().toString(),
+    month: date.getMonth().toString(),
+    year: date.getFullYear().toString(),
+    week: date.getDay().toString(),
+    ms: date.getMilliseconds().toString(),
+  };
+  const addZero = (str, len) => {
+    let newStr = str;
+    while (newStr.length < len) {
+      newStr = "0" + newStr;
+    }
+    return newStr;
+  };
+  const matches = {
+    YYYY: dateInfo.year,
+    YY: dateInfo.year.slice(2),
+    MM: addZero(dateInfo.month, 2),
+    DD: addZero(dateInfo.day, 2),
+    HH: addZero(dateInfo.hour, 2),
+    mm: addZero(dateInfo.minute, 2),
+    ss: addZero(dateInfo.second, 2),
+    SS: addZero(dateInfo.ms, 4),
+  };
+  return formateStr.replace(dateMatchRegexp, (match) => matches[match]);
+}
+console.log(formatDate("YYYY-MM-DD HH:mm:ss:SS"));
+```
+
+如果类似 dayjs 可以接受一个时间，其实也很简单，就是用 new Date 初始化这个时间就好。
+最好改成类的形式，方便初始化时间
+
+```js
+function dayjs(dateStr) {
+  return new Dayjs(dateStr);
+}
+class Dayjs {
+  constructor(dateStr) {
+    if (this.isValid(dateStr)) {
+      this.date = new Date(dateStr);
+    } else {
+      this.date = new Date();
+    }
+  }
+  isValid(str) {
+    return new Date(str).toString() !== "Invalid Date";
+  }
+  formatDate(formateStr) {
+   ...
+  }
+}
+console.log(dayjs('2002-08-08 08:08:08').formatDate('YYYY-MM-DD'));
+```
+
+## 手写虚拟列表
+
+虚拟列表的实现有很多，但是虚拟列表的基本思路不变。
+
+## 手写大文件分片上传
+
+分片上传的核心是使用 Blob.slice 方法对文件对象进行分割，然后把分割的文件块整理上传。
+文件块需要使用 formdata 封装，可以在请求头或 formdata 的数据中告知后端当前文件块是第几块，是否分片完毕。
+如果需要确定进度，需要通过 xhr，还需要单独统计当前上传成功/总共的片数。
+
+简单实现如下：
+
+```js
+function setProgress(chunkList) {
+  const eachChunkPercent = new Array(chunkList.length);
+  return function (percent, index) {
+    eachChunkPercent[index] = percent;
+    const fullPercent =
+      eachChunkPercent.reduce((a, b) => a + b) / eachChunkPercent.length;
+    console.log(fullPercent);
+  };
+}
+
+async function sliceFileUpload(file) {
+  const fileChunkList = getFileChunkList(file);
+  const requestFileChunkList = fileChunkList.map((chunk, index, list) =>
+    request(createFormData(chunk), (e) => {
+      setProgress(list)(e.loaded / e.total, index);
+    })
+  );
+  await MyPromiseMap(requestFileChunkList);
+}
+
+function createFormData(fileObj) {
+  const fd = new FormData();
+  for (const [key, value] of Object.entries(fileObj)) {
+    fd.append(key, value);
+  }
+  return fd;
+}
+
+function getFileChunkList(file) {
+  const chunkSize = 1024 * 1024 * 5;
+  const chunkAmount = Math.floor(file.size / chunkSize) + 1;
+  let start = 0;
+  const chunkedFileList = [];
+  for (let i = 0; i < chunkAmount; i++) {
+    const end = start + chunkSize > file.size ? file.size : start + chunkSize;
+    chunkedFileList.push({
+      file: file.slice(start, end),
+      index: i,
+      isEnd: false,
+      filename: file.name,
+    });
+  }
+  chunkedFileList[chunkedFileList.length - 1].isEnd = true;
+  return chunkedFileList;
+}
+
+function request(data, url, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("post", url);
+    xhr.send(data);
+    xhr.setRequestHeader("Content-Type", "mutiply/form-data");
+    xhr.onload = () => {
+      resolve(xhr.response);
+    };
+    xhr.upload.onprogress = onProgress;
+    xhr.onerror = (e) => {
+      reject(e);
+    };
+  });
+```
+
+如果需要错误处理、断点续传的话就比较麻烦。
+错误处理思路：把 promiseMap 内部的 promiseAll 实现替换成类似 promiseAllSettled 的形式，这样可以等把所有文件上传完之后再获取哪些成功、哪些失败。
+然后再通过递归重传失败的文件列表即可。
+
+```js
+async function sliceFileUpload(file) {
+  if(!file.length) return
+  const fileChunkList = getFileChunkList(file);
+  const requestFileChunkList = fileChunkList.map((chunk, index, list) =>
+    request(createFormData(chunk), (e) => {
+      setProgress(list)(e.loaded / e.total, index);
+    })
+  );
+  const res = await MyPromiseMapAllSettled(requestFileChunkList);
+  const failed = res.filter((item) => ...)
+  await sliceFileUpload(filed)
+}
 ```
 
 # 随机数相关问题
@@ -3185,63 +3459,3 @@ console.log(obj); // obj1  new的调用并没有改变this，说明Person1中的
 ![](https://pic1.imgdb.cn/item/6362611e16f2c2beb1fba29d.jpg)
 
 这道题其实和第一题是一样的。其实就是创建了一个对象，是 person 的一个属性；直接调用 obj 和 person.obj 是一样的
-
-# 计算机基础题
-
-## 设计模式
-
-1. 对象间存在一对多关系，当一个对象被修改时，则会自动通知它的依赖对象：这是观察者模式，不是代理模式
-
-## 计网
-
-各协议端口、作用
-![](https://pic.imgdb.cn/item/64142ddfa682492fcc78e926.jpg)
-
-网络接口卡是局域网组网需要的基本部件。网卡一端连接局域网中的计算机，另一端连接局域网的**传输介质**
-
-SMTP 是简单邮件传输协议，没有认证功能，并且只传输 7 位的 ACII 码，不能传送二进制文件。SMTP 协议只能支持从用户代理向邮件服务器发送邮件，反过来不行
-pop3 和 IMAP 协议是用于客户端接收邮件。
-pop3 协议从服务器上单向下载邮件，不会有邮件读取反馈。
-IMAP 协议是双向传输信息，客户端信息会反馈到服务器端。
-
-常用的信道复用技术：频分复用 FDM、时分复用 TDM、码分复用 CDM、波分复用 WDM。
-
-传输延迟与分组长度 L 和链路带宽 R 有关，T=L/R
-传播延迟与物理链路长度 D 和信号传播速度 S 有关，T=D/S
-
-全双工是指交换机在发送数据的同时也能够接收数据，两者同步进行。TCP 连接、UDP 连接、电话通信都是全双工的
-半双工数据传输允许数据在两个方向上传输，但是，在某一时刻，只允许数据在一个方向上传输，它实际上是一种切换方向的单工通信。
-单工数据传输只支持数据在一个方向上传输。
-
-IEEE（美国电子电气工程师协会）制定了以 802 开头的标准，目前共有 11 个与局域网有关的标准。
-IEEE 802.1—概述、体系结构和网络互连，以及网络管理和性能测量。  
-IEEE 802.2—逻辑链路控制 LLC。最高层协议与任何一种局域网 MAC 子层的接口。  
-IEEE 802.3—CSMA/CD 网络，定义 CSMA/CD 总线网的 MAC 子层和物理层的规范，**以太网**的技术原形
-IEEE 802.4—令牌总线网。定义令牌传递总线网的 MAC 子层和物理层的规范。  
-IEEE 802.5—令牌环形网。定义令牌传递环形网的 MAC 子层和物理层的规范。  
-IEEE 802.6—城域网。  
-IEEE 802.7—宽带技术。  
-IEEE 802.8—光纤技术。  
-IEEE 802.9—综合话音数据局域网。  
-IEEE 802.10—可互操作的局域网的安全。  
-IEEE 802.11—无线局域网。  
-IEEE 802.12—优先高速局域网(100Mb/s)。  
-IEEE 802.13—有线电视(Cable-TV)。
-
-链路层的多路划分协议：
-目的：解决多个接受节点和多个发送节点在一个共享广播信道上的访问问题。（即多个占一条线，怎么协调）
-三个基本方式
-信道划分协议
-TDM、FDM、CDMA（码分多址）
-随机接入协议
-时隙 ALOHA
-ALOHA
-CSMA
-CSMA/CD
-发送前空闲检测，只有信道空闲才发送数据
-发送过程中冲突检测，若有冲突发生则需避让
-冲突发生后，立即停止发送，随机避让。
-不存在优先级
-轮流协议
-
-承载信息量的基本信号单位是**码元**

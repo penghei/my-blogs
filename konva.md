@@ -305,3 +305,177 @@ _fire(eventType, evt) {
 }
 ```
 
+
+# react-konva 和 react 的结合
+
+react-konva的实现利用了react的react-reconciler来自定义渲染。React将组件分为Host类型和Custom类型，Host类型默认使用的是浏览器的document api进行渲染，但可以通过Reconciler来自定义HostComponent渲染，比如覆写appendChild方法、自定义元素instance实例等。
+
+[官方文档](https://github.com/facebook/react/tree/main/packages/react-reconciler)有关于Reconciler的介绍，并且有一些简单的例子。
+
+类似的实现方案有很多，比如Remax、react-pdf等
+
+简单来说，就是自己创建一个Reconciler，用以代替react的`ReactDOM.render`方法来渲染。比如：
+
+```js
+import ReactReconciler from "react-reconciler";
+
+const HostConfig = {
+  
+};
+const ReactReconcilerInstance = ReactReconciler(hostConfig);
+const canvasRender = {
+  render(){
+    
+  }
+}
+export default canvasRender
+
+// index.tsx
+import App from './App.tsx';
+
+const canvasDom = document.getElementById('canvas-root') as HTMLCanvasElement;
+
+CanvasRender.render(<App />, canvasDom)
+```
+
+hostconfig就是关于Reconciler上的自定义方法、属性等。这些方法都是为渲染自定义组件而用的，其中有几个主要的方法：
+
+- createInstance: 为element创建实例。这个实例不一定是dom元素，对于konva来说，实例就是konva中的每个节点，比如圆形、方形等图案、stage、layer等。
+
+
+```ts
+export function createInstance(type, props, internalInstanceHandle) {
+  let NodeClass = Konva[type];
+  if (!NodeClass) {
+    NodeClass = Konva.Group;
+  }
+
+  // 复制事件类型的props
+  const propsWithoutEvents = {};
+  const propsWithOnlyEvents = {};
+
+  for (var key in props) {
+    var isEvent = key.slice(0, 2) === 'on';
+    if (isEvent) {
+      propsWithOnlyEvents[key] = props[key];
+    } else {
+      propsWithoutEvents[key] = props[key];
+    }
+  }
+  // 这个就是konva中的node对象
+  const instance = new NodeClass(propsWithoutEvents);
+
+  applyNodeProps(instance, propsWithOnlyEvents);
+
+  return instance;
+}
+```
+
+除了创建的实例，一般还要有一个用于更新该实例的函数。当react触发更新时，就调用更新函数来更新这个实例。
+可以把createInstance看做是element的挂载阶段执行的步骤，commitUpdate则是更新时要执行的步骤。
+
+```ts
+export function commitUpdate(
+  instance,
+  updatePayload,
+  type,
+  oldProps,
+  newProps
+) {
+  // 处理更新时的操作
+  // 这个函数的内部大致是根据新的props更新instance上的属性
+  applyNodeProps(instance, newProps, oldProps);
+}
+```
+
+- 一些需要在commit阶段实现的方法，包括对文本节点、其他节点的插入、删除、更新的操作。
+
+比如appendChild方法，用于代替domcument.appendChild方法，告知react怎么执行appendChild操作：
+
+```ts
+export function appendChild(parentInstance, child) {
+  if (child.parent === parentInstance) {
+    child.moveToTop();
+  } else {
+    parentInstance.add(child);
+  }
+
+  updatePicture(parentInstance);
+}
+```
+
+类似的还有insertBefore、removeChild等。这些方法很多只是按照类型填充，如果不需要，直接返回null、boolean或某个特定值就可以。konva的实现可以参考[它的源码](https://github1s.com/konvajs/react-konva/blob/HEAD/src/ReactKonvaHostConfig.ts)
+
+当这些方法都填充完毕，最后就能实现自定义的渲染。
+不过，konva并不是直接替换根部的ReactDOM，而是编写了一个StageWrap组件，手动调用KonvaRenderer上的方法
+
+```ts
+const StageWrap = (props) => {
+  const container = React.useRef();
+  const stage = React.useRef<any>();
+  const fiberRef = React.useRef();
+
+  const oldProps = usePrevious(props);
+  const Bridge = useContextBridge();
+
+  const _setRef = (stage) => {
+    // 用于处理设置在stage上的 ref
+  };
+
+  // 初始化：调用createContainer创建实例，updateContainer调度mount
+  React.useLayoutEffect(() => {
+    stage.current = new Konva.Stage({
+      width: props.width,
+      height: props.height,
+      container: container.current,
+    });
+
+    _setRef(stage.current);
+
+    // @ts-ignore
+    fiberRef.current = KonvaRenderer.createContainer(
+      stage.current,
+      LegacyRoot,
+      false,
+      null
+    );
+    KonvaRenderer.updateContainer(
+      React.createElement(Bridge, {}, props.children),
+      fiberRef.current
+    );
+
+    return () => {
+      if (!Konva.isBrowser) {
+        return;
+      }
+      _setRef(null);
+      KonvaRenderer.updateContainer(null, fiberRef.current, null);
+      stage.current.destroy();
+    };
+  }, []);
+
+  // 更新：调用updateContainer更新元素，并通过applyNodeProps更新stage
+  React.useLayoutEffect(() => {
+    _setRef(stage.current);
+    applyNodeProps(stage.current, props, oldProps);
+    KonvaRenderer.updateContainer(
+      React.createElement(Bridge, {}, props.children),
+      fiberRef.current,
+      null
+    );
+  });
+
+  // 返回一个stage
+  return React.createElement('div', {
+    ref: container,
+    accessKey: props.accessKey,
+    className: props.className,
+    role: props.role,
+    style: props.style,
+    tabIndex: props.tabIndex,
+    title: props.title,
+  });
+};
+```
+
+

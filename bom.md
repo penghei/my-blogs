@@ -139,10 +139,11 @@ document.cookie =
 # history
 
 History 接口允许操作浏览器的曾经在标签页或者框架里访问的会话历史记录。
+
 ## 属性
 
 - length：访问的数量
-- state：表示history的状态，通过pushState等方式修改。这个state其实和history对象本身没有任何关系，完全由开发者通过pushState方法创建，传入什么对象，state就会是什么对象。
+- state：表示 history 的状态，通过 pushState 等方式修改。这个 state 其实和 history 对象本身没有任何关系，完全由开发者通过 pushState 方法创建，传入什么对象，state 就会是什么对象。
 
 ## 方法
 
@@ -152,42 +153,45 @@ History 接口允许操作浏览器的曾经在标签页或者框架里访问的
 - history.pushState
 - history.replaceState
 
-其中，后两个是最常用的方法，用于修改浏览器的url显示以及浏览记录。
+其中，后两个是最常用的方法，用于修改浏览器的 url 显示以及浏览记录。
 假设在 `http://mozilla.org/foo.html` 页面的 console 中执行了以下 JavaScript 代码：
 
 ```js
-window.onpopstate = function(e) {
-   alert(2);
-}
+window.onpopstate = function (e) {
+  alert(2);
+};
 
 let stateObj = {
-    foo: "bar",
+  foo: "bar",
 };
 history.pushState(stateObj, "page 2", "bar.html");
 ```
 
-这将使浏览器地址栏显示为 `http://mozilla.org/bar.html`，但并不会导致浏览器加载 bar.html ，甚至不会检查bar.html 是否存在。
-同时history.state对象将会变成`{foo: "bar"}`
+这将使浏览器地址栏显示为 `http://mozilla.org/bar.html`，但并不会导致浏览器加载 bar.html ，甚至不会检查 bar.html 是否存在。
+同时 history.state 对象将会变成`{foo: "bar"}`
 如果这时点击后退按钮，就会回到`http://mozilla.org/foo.html`。也就是相当于为浏览器添加了一条历史记录
-replaceState和pushState最大的差别在于pushState会像push栈一样添加历史记录，而replace则是替换。
+replaceState 和 pushState 最大的差别在于 pushState 会像 push 栈一样添加历史记录，而 replace 则是替换。
 
-### onpopstate事件
+### onpopstate 事件
 
-调用 `history.pushState()` 或者 `history.replaceState()` 不会触发 popstate 事件。但是仍然可以在popstate事件中获取到最新的由这两个api设置的state对象。
+调用 `history.pushState()` 或者 `history.replaceState()` 不会触发 popstate 事件。但是仍然可以在 popstate 事件中获取到最新的由这两个 api 设置的 state 对象。
 popstate 事件只会在浏览器某些行为下触发，比如点击后退按钮，或者在 JavaScript 中调用 history.back/forward 之类的方法
 
 ```js
-window.onpopstate = function(event) {
-  alert("location: " + document.location + ", state: " + JSON.stringify(event.state));
+window.onpopstate = function (event) {
+  alert(
+    "location: " + document.location + ", state: " + JSON.stringify(event.state)
+  );
 };
 
-history.pushState({page: 1}, "title 1", "?page=1");
-history.pushState({page: 2}, "title 2", "?page=2");
-history.replaceState({page: 3}, "title 3", "?page=3");
+history.pushState({ page: 1 }, "title 1", "?page=1");
+history.pushState({ page: 2 }, "title 2", "?page=2");
+history.replaceState({ page: 3 }, "title 3", "?page=3");
 history.back(); // 弹出 "location: http://example.com/example.html?page=1, state: {"page":1}"
 history.back(); // 弹出 "location: http://example.com/example.html, state: null
-history.go(2);  // 弹出 "location: http://example.com/example.html?page=3, state: {"page":3}
+history.go(2); // 弹出 "location: http://example.com/example.html?page=3, state: {"page":3}
 ```
+
 # Location
 
 ## 属性
@@ -881,7 +885,7 @@ async function asyncFn() {
 ```
 
 相当于对数组中的每一项依次执行 await；但是前提是数组的项必须要是 promise，就和 promise.all 类似。
-这个api的主要作用是针对iterator对象。由于其使用了遍历for of，因此可以直接处理iterator或generator对象。
+这个 api 的主要作用是针对 iterator 对象。由于其使用了遍历 for of，因此可以直接处理 iterator 或 generator 对象。
 
 # Generator
 
@@ -1005,7 +1009,7 @@ function* gen2() {
 > - 第二步，协程 A 执行到一半，进入暂停，执行权转移到协程 B。
 > - 第三步，（一段时间后）协程 B 交还执行权。
 > - 第四步，协程 A 恢复执行。
-> 
+>
 > 上面流程的协程 A，就是异步任务，因为它分成两段（或多段）执行。
 
 比如：

@@ -6175,7 +6175,8 @@ if (true) {
 - `loading` – 文档正在载入。
 - `interactive` – document 已经解析完毕时触发，几乎与`DOMContentLoaded`同时发生，但在`DOMContentLoaded`事件之前触发。
 - `complete` – 文档和资源加载完成时触发，几乎与`window.onload`同时发生，但在`onload`事件之前触发。
-  一般来说，大多数的操作我们都应该放在 DOMContentLoaded 事件中执行，而不要放在 window.onload 中执行。
+
+一般来说，大多数的操作我们都应该放在 DOMContentLoaded 事件中执行，而不要放在 window.onload 中执行。
 
 当用户离开页面时，会触发后两个事件：
 
@@ -6698,3 +6699,16 @@ customElements.define("my-button", MyElement, { extends: "button" });
 当把 template 元素插入节点时，实际上插入的是其内部的子节点（`template.content`值）；插入之后将会类似正常的 HTML 一样去解析。
 
 可以把一些 shadowdom 的样式在 template 中封装好，然后插入到元素的`elem.shadowRoot`中
+
+## Math.random的安全问题
+
+`Math.random()` 函数返回一个浮点数, **伪随机数**在范围(0, 1), 其生成的不能提供像密码一样安全的随机数字（黑客可以计算出客户端生成的的随机数）。
+当程序在需要不可预测性的上下文中生成可预测的值时，攻击者可能会猜测将要生成的下一个值，并使用该猜测来冒充另一个用户或访问敏感信息。
+
+可以使用Web Crypto API 来代替, 和更精确的`window.crypto.getRandomValues()`
+
+```js
+// crypto需要考虑浏览器兼容
+const crypto = window.crypto || window.webkitCrypto || window.mozCrypto || window.oCrypto || window.msCrypto;
+crypto.getRandomValues(new Uint32Array(1))[0];
+```

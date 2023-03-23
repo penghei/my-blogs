@@ -1,34 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-</head>
-<body>
-    <div class="container">
-        <div class="block block1">block1</div>
-        <div class="block block2">block2</div>
-        <div class="block block3">block3</div>
+  </head>
+  <body>
+    <!-- <h1 class="timer">aaaa</h1> -->
+    <div class="parent">
+
     </div>
-</body>
-<style>
-    .container{
-        display: flex;
-        width: 100px;
-    }
-    .block1{
-        background: red;
-        flex-basis: 100px;
-    }
-    .block2{
-        background: green;
-        width: 100px;
-    }
-    .block3{
-        background: blue;
-        width: 100px;
-    }
-</style>
+    
+    <style>
+      .parent{
+        background-color: red;
+        width: auto;
+        aspect-ratio: 2;
+        /* vertical-align: middle; */
+      }
+      .child{
+        background-color: blue;
+        line-height: 100px;
+        display: inline;
+      }
+    </style>
+    <script>
+      // #region
+      // const sellStartTime = 1679354253978;
+      // const timerElement = document.getElementsByClassName("timer")[0];
+
+      // function renderTime(time) {
+      //   const intervalTime = sellStartTime - time;
+      //   if (intervalTime <= 0) return;
+      //   const countDown = {
+      //     second: Math.floor((intervalTime / 1000) % 60),
+      //     minute: Math.floor((intervalTime / 1000 / 60) % 60),
+      //     hour: Math.floor((intervalTime / 1000 / 60 / 60) % 24),
+      //   };
+      //   // const arr = []
+      //   // for(let i = 0;i < 100000;i++){arr.push(i)}
+
+      //   const second =
+      //     countDown.second < 10
+      //       ? "0" + countDown.second
+      //       : countDown.second.toString();
+      //   const minute =
+      //     countDown.minute < 10
+      //       ? "0" + countDown.minute
+      //       : countDown.minute.toString();
+      //   const hour =
+      //     countDown.hour < 10
+      //       ? "0" + countDown.hour
+      //       : countDown.hour.toString();
+
+      //   timerElement.innerHTML = `${hour}:${minute}:${second}`;
+      // }
+
+      // function startTimer() {
+      //   const now = Date.now();
+      //   let timeout = null;
+      //   renderTime(now);
+      //   const post = Date.now()
+      //   const offset = post - now
+      //   timeout = setTimeout(startTimer, 1000 - offset);
+      // }
+      //
+      // window.onload = startTimer;
+      // #endregion
+
+      // function formatDate(formateStr) {
+      //   const dateMatchRegexp = /Y{2,4}|M{2}|D{2}|H{2}|m{2}|s{2}|S{2}/g;
+      //   const date = new Date();
+      //   const dateInfo = {
+      //     second: date.getSeconds().toString(),
+      //     minute: date.getMinutes().toString(),
+      //     hour: date.getHours().toString(),
+      //     day: date.getDate().toString(),
+      //     month: date.getMonth().toString(),
+      //     year: date.getFullYear().toString(),
+      //     week: date.getDay().toString(),
+      //     ms: date.getMilliseconds().toString(),
+      //   };
+
+      //   const addZero = (str, len) => {
+      //     let newStr = str;
+      //     while (newStr.length < len) {
+      //       newStr = "0" + newStr;
+      //     }
+      //     return newStr;
+      //   };
+      //   const matches = {
+      //     YYYY: dateInfo.year,
+      //     YY: dateInfo.year.slice(2),
+      //     MM: addZero(dateInfo.month, 2),
+      //     DD: addZero(dateInfo.day, 2),
+      //     HH: addZero(dateInfo.hour, 2),
+      //     mm: addZero(dateInfo.minute, 2),
+      //     ss: addZero(dateInfo.second, 2),
+      //     SS: addZero(dateInfo.ms, 4),
+      //   };
+      //   return formateStr.replace(dateMatchRegexp, (match) => matches[match]);
+      // }
+
+      // function dayjs(dateStr) {
+      //   return new Dayjs(dateStr);
+      // }
+
+      // class Dayjs {
+      //   constructor(dateStr) {
+      //     if (this.isValid(dateStr)) {
+      //       this.date = new Date(dateStr);
+      //     } else {
+      //       this.date = new Date();
+      //     }
+      //   }
+      //   isValid(str) {
+      //     return new Date(str).toString() !== "Invalid Date";
+      //   }
+
+      //   formatDate(formateStr) {
+      //     const dateMatchRegexp = /Y{2,4}|M{2}|D{2}|H{2}|m{2}|s{2}|S{2}/g;
+      //     const date = this.date
+      //     const dateInfo = {
+      //       second: date.getSeconds().toString(),
+      //       minute: date.getMinutes().toString(),
+      //       hour: date.getHours().toString(),
+      //       day: date.getDate().toString(),
+      //       month: date.getMonth().toString(),
+      //       year: date.getFullYear().toString(),
+      //       week: date.getDay().toString(),
+      //       ms: date.getMilliseconds().toString(),
+      //     };
+
+      //     const addZero = (str, len) => {
+      //       let newStr = str;
+      //       while (newStr.length < len) {
+      //         newStr = "0" + newStr;
+      //       }
+      //       return newStr;
+      //     };
+      //     const matches = {
+      //       YYYY: dateInfo.year,
+      //       YY: dateInfo.year.slice(2),
+      //       MM: addZero(dateInfo.month, 2),
+      //       DD: addZero(dateInfo.day, 2),
+      //       HH: addZero(dateInfo.hour, 2),
+      //       mm: addZero(dateInfo.minute, 2),
+      //       ss: addZero(dateInfo.second, 2),
+      //       SS: addZero(dateInfo.ms, 4),
+      //     };
+      //     return formateStr.replace(dateMatchRegexp, (match) => matches[match]);
+      //   }
+      // }
+      // console.log(dayjs('2002-08-08 08:08:08').formatDate('YYYY-MM-DD'));
+      // function debounce(func, wait, isImmediate) {
+      //   let timeout;
+      //   let once = true;
+      //   return function () {
+      //     if (isImmediate && once) {
+      //       func.apply(this, arguments);
+      //       once = false;
+      //       timeout = setTimeout(() => {
+      //         timeout = null;
+      //       }, wait);
+      //       return;
+      //     }
+      //     if (timeout) clearTimeout(timeout);
+      //     timeout = setTimeout(() => {
+      //       func.apply(this, arguments);
+      //     }, wait);
+      //   };
+      // }
+      // const timerElement = document.getElementsByClassName("timer")[0];
+      // timerElement.addEventListener(
+      //   "click",
+      //   debounce((e) => console.log(e), 1000, true)
+      // );
+
+    </script>
+  </body>
 </html>

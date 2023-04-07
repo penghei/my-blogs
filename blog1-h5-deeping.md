@@ -458,7 +458,8 @@ localStorage、sessionStorage、indexDB，详见 WebAPI
 
 ## 主要特点
 
-- 不能直接在 `worker` 线程中操纵 DOM 元素；或使用 `window` 对象中的某些方法和属性。
+- 不能直接在 `worker` 线程中操纵 DOM 元素
+- 不能使用 `window` 对象中对象的默认方法和属性，但依然可以使用ws、indexDB等
 - `workers` 运行在另一个全局上下文中,不同于当前的`window`. 因此，在 `Worker` 内通过 `window`获取全局作用域 (而不是 self) 将返回错误。
 - 主线程和 `worker` 线程相互之间使用 `postMessage()` 方法来发送信息, 并且通过 `onmessage` 来接收信息（传递的信息包含在 `Message` 这个事件的 data 属性内) 。数据的交互方式为传递副本，而不是直接共享数据。
 - worker 可以另外生成新的 worker，这些 worker 与它们父页面的宿主相同。 此外，worker 可以通过 `XMLHttpRequest `来访问网络，只不过 `XMLHttpRequest` 的 `responseXML` 和 `channel` 这两个属性的值将总是 `null` 。
@@ -520,3 +521,30 @@ close();
 ```
 
 更多 api 可以参考 https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Using_web_workers
+
+
+## webworker和主线程的通信
+
+webworker的本质还是运行在浏览器进程内的多线程架构，因此webworker和js主线程的通信基本也和进程下的多线程通信方式一致：
+
+通信方式有三种：
+1. Structured Clone：Structured Clone 是 postMessage 默认的通信方式，如下图所示，复制一份线程 A 的 js object 内存给到线程 B，线程 B 能获取和操作新复制的内存。
+Structured Clone 通过复制内存的方式简单有效的隔离了不同线程的内存，避免冲突；且传输的 object 数据结构很灵活，但复制过程中，线程 A 要 同步执行 Object Serialization，线程 B 要 同步执行 Object Deserialization，如果 object 规模过大，会占用大量的线程时间。
+
+![](https://pic.imgdb.cn/item/641d6a8ea682492fccabd1ba.jpg)
+
+2. Transfer Memory
+Transfer Memory 意味着转移内存，它不需要序列化和反序列化，能大大减少传输过程占用的线程时间。如下图所示，线程 A 将制定内存的所有权和操作权转交给线程 B，但转然后线程 A 无法在访问这块内存。
+Transfer Memory 以失去控制权来换取高效传输，通过内存独占给多线程并发加锁，但只能转让 ArrayBuffer 等大小规整的二进制数据，对矩阵数据（比如 RGB图片）比较适用，实践上要考虑从 js object 生成二进制数据的运算成本
+
+![](https://pic.imgdb.cn/item/641d6b4ea682492fccacff45.jpg)
+
+3. Shared Array Buffers
+Shared Array Buffers 是共享内存，线程 A 和线程 B 可以 同时访问和操作 同一块内存空间，数据都共享了，也就没什么传输的事了。
+但多个并行的线程共享内存，会产生竞争问题，不像前两种传输方式默认加锁，Shared Array Buffers 把难题抛给了开发者，开发者可以用 Atomics 来维护这块共享的内存。作为较新的传输方式，浏览器兼容性可想而知，目前只有 Chrome 68+ 支持。
+
+![](https://pic.imgdb.cn/item/641d6b5ca682492fccad16dc.jpg)
+
+
+
+

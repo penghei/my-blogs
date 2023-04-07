@@ -75,8 +75,6 @@ chunk 在打包过程中会被分成三种类型：
 这里除了 webpack 还会给出一些常用的安装
 
 ```
-
-
 npm install webpack webpack-cli --save-dev
 
 
@@ -160,6 +158,9 @@ Webpack 首先需要根据输入配置(entry/context) 找到项目入口文件�
 整个 webpack.config.js 文件导出的部分，大多数情况是一个对象，但是还有两种形式：
 
 - 配置对象数组：每个数组项都是一个完整的配置对象，每个对象都会触发一次单独的构建，通常用于需要为同一份代码构建多种产物的场景，比如把一个库打包成 ESM/CMD/UMD 等多种模块形式
+
+> output.chunkFormat可以配置不同的输出模块化方案。可配置的有"commonjs"、"module"等，可以通过插件添加其他模式
+
 - 函数：Webpack 启动时会执行该函数获取配置，我们可以在函数中根据环境参数(如 NODE_ENV)动态调整配置对象。
 
 数组对象如下例子：
@@ -184,8 +185,10 @@ module.exports = [
 
 如果导出的是一个函数，那么 webpack 会调用这个函数，并且给函数传入两个参数。这两个参数都是启动 webpack 时传入的命令行参数
 
-- env: 通过 --env 传递的命令行参数
-- argv: 命令行 Flags 参数，即除了 env 参数之外的其他命令行参数，详见：https://webpack.js.org/api/cli/#flags
+- env: 通过 --env 传递的命令行参数。一般是自定义的，比如`webpack --env prod=1`收到的env的值就是`{ prod: "1" }`
+- argv: 命令行 Flags 参数，一般是两个横线开头，这些值都是webpack的配置项。比如 `--entry`，就是设置入口，这个和在webpack.config.js中设置是一样的。还有常用的有`--config`用于指定配置文件。
+
+详见：https://webpack.js.org/api/cli/#flags
 
 函数形式的配置可以更加灵活，函数内部可以根据命令行参数、环境变量等采取不同的配置、导入不同的 loader 和 plugin。
 
@@ -473,7 +476,13 @@ publicPath: "https://cdn.example.com/assets/";
 <script src="https://cdn.example.com/assets/a_12345678.js"></script>
 ```
 
-### loader（module）
+#### output.chunkFilename
+
+此选项决定了非初始（non-initial）chunk 文件的名称。取值和filename一样。
+
+即，对于代码分割的模块，需要用这个属性来设置输出的非主chunk的filename，即async chunk、runtime chunk、splitChunk的分割结果等内容。
+
+### module.rules
 
 loader 属于配置项的 module 部分，主要用于解析、处理项目中的非 js、html 部分解析或者对文件进行一些预处理
 主要体现于 rules 数组中，数组里每一项都描述了如何去处理部分文件。 配置一项 rules 时大致通过以下方式：
@@ -537,14 +546,14 @@ use 为对象的形式：
 
 ```js
 {
-    test: /\.js$/,
-    exclude: /node_modules/,
-    use: {
-      loader: 'babel-loader',
-      options: {
-        presets: ['@babel/preset-env']
-      }
+  test: /\.js$/,
+  exclude: /node_modules/,
+  use: {
+    loader: 'babel-loader',
+    options: {
+      presets: ['@babel/preset-env']
     }
+  }
 }
 ```
 
@@ -624,8 +633,8 @@ Plugin 的配置很简单，plugins 配置项接受一个数组，数组里每�
 ```js
 plugins: [
   new HtmlWebpackPlugin({
-      template: "template.html",
-    }),
+    template: "template.html",
+  }),
 ],
 ```
 
@@ -1099,7 +1108,7 @@ module.exports = {
     //使用 alias 把导入 react 的语句换成直接使用单独完整的 react.min.js 文件
     alias: {
       react: path.resolve(
-        __dirname,
+        __dirname, 
         "./node_modules/react/umd/react.production.min.js"
       ),
     },
@@ -1188,7 +1197,6 @@ module.exports = {
   },
 };
 ```
-
 ### optimization 部分配置
 
 常见的构建速度优化，适用于开发环境
@@ -1805,8 +1813,6 @@ module.exports = {
 
 1. 代码分离。把经常变化和不经常变化的代码分离开
 2. 文件名优化。对于经常变化的文件，其输出需要带上诸如 contenthash 这样的文件名，从而保证其文件内容改变时可以及时重新请求
-
-
 
 #### 代码分割
 
@@ -2481,7 +2487,6 @@ export const cssTypes: {...}
 
 1. css-loader 已经生成了 js 形式的 css 代码。从上可以看出`___CSS_LOADER_EXPORT___.locals`对象包含了我们所需要的类名，因此我们可以用正则提取其中的类名，作为生成的类名使用
 2. 输出形式也已经确定好了，即上面的形式，我们可以通过模板字符串插入需要的变量名和类名，然后修改生成文件的文件名为`xxx.d.ts`，最后通过文件系统 fs.writeFileSync 将其写出到相同目录即可。
-
 
 ```js
 const path = require("path");

@@ -587,6 +587,24 @@ function draw() {
 }
 ```
 
+## 转换矩阵
+
+如图所示：
+
+![](https://pic.imgdb.cn/item/6429dce4a682492fcc55bc00.jpg)
+
+使用getTransform可以获取这个矩阵（一个对象），通过setTransform可以设置矩阵。
+这几个值的含义为：
+
+a: 水平缩放。
+b: 垂直倾斜。
+c: 水平倾斜。
+d: 垂直缩放。
+e: 水平移动。
+f: 垂直移动。
+
+即使不是通过setTransform修改的变化，也可以通过getTransform获取。这点在获取canvas变换上非常方便。
+
 # canvas 合成和剪切
 
 - 合成`globalCompositeOperation`用于控制多个 canvas 图形绘制在一起时的重叠情况。默认时就是一个覆盖另一个，可以通过设置这个属性为不同的值来控制。
@@ -633,3 +651,305 @@ requestAnimationFrame(animation);
 要注意的是，canvas 动画在绘制新一帧之前一定要清除之前帧，表现为调用`context.clearRect(0, 0, canvas.height,canvas.width);`，否则绘制出来的图像是连在一起的
 
 动画可以通过 canvas 自带的 translate/rotate 等，也可以通过不断更改新绘制的位置实现，后者在一些动画中更容易实现（比如小球弹跳等效果）
+
+# canvas 优化
+
+## canvas 的性能问题
+
+影响 canvas 性能的主要有两个因素：
+
+- 「 绘制图形的个数 」。类似于 dom 元素过多的情况，过多的图形将会给 canvas 带来极大的负担，导致其不能及时响应之后的绘制任务或交互。
+- 「 绘制图形的大小 」。越大的图形，一次绘制需要的像素点就越多。不过图形大小的影响不如数量的影响。
+
+因此优化 canvas，最主要的就是这两个方面。主要的思想就是：
+
+- 减少绘制次数，降低绘制频率，将绘图指令集中化。
+- 将绘制过程变为非阻塞，或者缓存绘制过程。
+
+## 优化方式
+
+canvas 常见的优化方式：
+
+1. 减少浮点数坐标，对坐标取整
+
+绘制图形或调用 drawImage 这样的函数时，如果使用的是浮点数作为参数，浏览器为了达到抗锯齿的效果会做额外的运算。
+
+```js
+ctx.drawImage(myImage, 0.3, 0.5);
+```
+
+2. 使用多层 canvas 绘制一个复杂的场景。如果针对动画或者游戏的场景，有些内容可能保持静止，有些则需要频繁渲染。可以选择把静止的内容和频繁运动的内容分离到不同层的 canvas 上去。
+
+```html
+<div id="stage">
+  <canvas id="ui-layer" width="480" height="320"></canvas>
+  <canvas id="game-layer" width="480" height="320"></canvas>
+  <canvas id="background-layer" width="480" height="320"></canvas>
+</div>
+
+<style>
+  #stage {
+    width: 480px;
+    height: 320px;
+    position: relative;
+    border: 2px solid black;
+  }
+  canvas {
+    position: absolute;
+  }
+  #ui-layer {
+    z-index: 3;
+  }
+  #game-layer {
+    z-index: 2;
+  }
+  #background-layer {
+    z-index: 1;
+  }
+</style>
+```
+
+除了垂直分层之外，同层也可以。举个例子，假设我们现在需要实现 Web 端 VsCode，而整个界面都是由 Canvas 绘制。我们可以将 VsCode 拆分成几个区域：顶部栏、左侧栏、底部栏、编辑区。显然这个几个区域的变更频率、触发变更的前提都不一致，我们可以将其做拆分。
+
+3. 将画布的函数调用集合到一起（例如，画一条折线，而不要画多条分开的直线）。这点类似于集中 dom 操作，都是为了将绘制过程合并。
+
+4. 提高像素。如果 canvas 在高清屏幕上绘制，可能会因为分辨率更高而导致出现模糊的情况。解决方案有两个：
+
+- 通过 ctx.scale 缩放 canvas。即获取 window.devicePixelRatio，然后把 canvas 的宽高乘上分辨率，再使用 scale 缩放回去，就相当于放大了像素密度。
+
+```js
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+var scale = window.devicePixelRatio;
+canvas.width = canvas.width * scale;
+canvas.height = canvas.height * scale;
+ctx.scale(scale, scale);
+```
+
+- 同样是缩放，除了 scale 之外还可以使用 css 对 canvas 元素进行缩放，比如修改 canvas 元素的宽、高，然后在 css 中再修改 style 属性的宽高。
+
+```js
+var canvas = document.getElementById("canvas");
+var ctx = canvas.getContext("2d");
+canvas.width = 500; // 设计分辨率
+canvas.height = 500;
+canvas.style.width = "250px"; // 显示分辨率
+canvas.style.height = "250px";
+```
+
+5. 离屏渲染。对于离屏渲染的概念，大多数情况是指：使用一个不可见（或是屏幕外）的 Canvas 对即将渲染的内容的某部分进行提前绘制，然后频繁地将屏幕外图像渲染到主画布上，避免重复生成该部分内容的步骤。
+
+比如，提前绘制好某个图像，在画布更新的时候直接使用该图像.
+
+```js
+const offscreenCtx = offscreenCanvas.getCanvas("2d");
+offscreenCtx.beginPath();
+offscreenCtx.arc(250, 250, 100, 0, 2 * Math.PI);
+offscreenCtx.fillStyle = "red";
+offscreenCtx.fill();
+
+//...
+
+const ctx = canvas.getCanvas("2d");
+ctx.drawImage(offscreenCanvas, 0, 0);
+```
+
+对于需要频繁绘制的图形，这种形式相当于封装了绘制过程。离屏渲染的 canvas 相当于一种缓存，减少了在 canvas 上的重复绘制。
+
+在 konva 的 Shape 类的绘制方法中，即对于每个元素的绘制，都采用了离屏渲染的方式。把绘制函数先在 bufferCanvas 上绘制，再把 bufferCanvas 绘制到 sceneCanvas 上。
+
+```js
+// Stage
+_buildDOM() {
+  this.bufferCanvas = new SceneCanvas({
+    width: this.width(),
+    height: this.height(),
+  });
+  // ...
+}
+
+// Shape
+if (this._useBufferCanvas() && !skipBuffer) {
+  stage = this.getStage();
+  bufferCanvas = stage.bufferCanvas;
+  bufferContext = bufferCanvas.getContext();
+  bufferContext.clear();
+  bufferContext.save();
+  bufferContext._applyLineJoin(this);
+  // 调用绘制函数，绘制到离屏的canvas上
+  drawFunc.call(this, bufferContext, this);
+  bufferContext.restore();
+  var ratio = bufferCanvas.pixelRatio;
+  if (hasShadow) {
+    context._applyShadow(this);
+  }
+  context._applyOpacity(this);
+  context._applyGlobalCompositeOperation(this);
+  context.drawImage(
+    bufferCanvas._canvas,
+    0,
+    0,
+    bufferCanvas.width / ratio,
+    bufferCanvas.height / ratio
+  );
+}
+```
+
+离屏渲染在 canvas 动画，或者用 canvas 执行大量绘制任务时比较有用。
+
+除此之外离屏渲染还可以实现预渲染。比如一个小说软件，这一页的小说在显示时，可以预渲染前后几页的canvas，使得翻页时可以立即加载。
+
+6. 只绘制可视区域
+
+可以用一个 container 包裹 canvas 画布，使这个 html container 的大小比 canvas 更小。这样 canvas 就会表现出“溢出”，可以采用拖拽或滚动的方式移动 canvas 从而只显示可视区域。
+
+```html
+<!-- HTML代码 -->
+<div id="canvas-container">
+  <canvas id="my-canvas"></canvas>
+</div>
+
+<style>
+  /* container比canvas小 */
+  #canvas-container {
+    width: 500px;
+    height: 500px;
+    overflow: scroll;
+  }
+
+  #my-canvas {
+    width: 1000px;
+    height: 1000px;
+  }
+</style>
+
+<script>
+  const canvas = document.getElementById("my-canvas");
+  const ctx = canvas.getContext("2d");
+
+  // 绘制需要显示的内容
+  ctx.fillStyle = "red";
+  ctx.fillRect(0, 0, 1000, 1000);
+
+  // 监听用户的滚动和拖动事件
+  const container = document.getElementById("canvas-container");
+  let offsetX = 0;
+  let offsetY = 0;
+
+  container.addEventListener("touchmove", (e) => {
+    e.preventDefault();
+    offsetX += e.touches[0].clientX - e.touches[0].clientX;
+    offsetY += e.touches[0].clientY - e.touches[0].clientY;
+    draw();
+  });
+
+  // 绘制可视区域内的内容
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-offsetX, -offsetY);
+    ctx.beginPath();
+    // 这里可以把rect范围稍微大一些，增加渲染范围，防止拖拽时显示空白
+    ctx.rect(offsetX, offsetY, container.clientWidth, container.clientHeight);
+    ctx.clip();
+    ctx.fillStyle = "blue";
+    ctx.fillRect(0, 0, 1000, 1000);
+    ctx.restore();
+  }
+</script>
+```
+
+7. 减少对上下文的操作，防止非法赋值。
+
+所谓上下文操作，就是对context进行赋值。比如`context.font`这个属性的赋值消耗非常大
+，类似的还有line相关、fill相关等常用的
+
+如果是非法赋值，那么消耗会更大。所谓非法赋值就是没有按照格式赋值，比如把一个对象赋给lineWidth。
+
+因此我们可以通过适当地安排调用绘图 API 的顺序，降低 context 状态改变的频率。
+
+8. 非阻塞渲染
+
+和dom操作一样，js代码也会阻塞canvas的绘制。当然这点和其他js优化一样，可以通过webworker、时间分片等方式减少js代码造成的阻塞。
+
+# canvas 其他
+
+## canvas绘制原理
+
+之前面试被问到一个问题：canvas 绘制和 dom 绘制有什么不同，以及 canvas 绘制原理是什么
+感觉应该是这样：
+
+先说原理：canvas 绘制原理本质上和 dom 元素是差不多的，都是经过浏览器的绘制、分层、合成过程。可以理解为 canvas 就是一块固定的元素，浏览器在其上执行绘制，和绘制其他 dom 元素一样。
+
+canvas 元素和其他 dom 元素并不属于一个图层（合成层）。因此canvas上的绘制过程是由gpu完成的。也就是说，canvas自己的绘制并不会触发浏览器的重绘重排，而是类似gpu加速的dom元素一样，直接由gpu控制绘制。
+
+但是有特例，即如果修改canvas的css样式，比如canvas的大小、可见等属性时，仍然会导致重绘重排的发生。不过使用transform改变canvas样式可以避免重绘重排。
+
+canvas 本质上是像素点位图，它内部的绘制不需要像其他 dom 元素一样通过 layout 计算得出位置，而是直接在内部的像素点上绘制。因此相对于常规dom元素效率更高、性能更强。
+
+## canvas放大缩小
+
+放大缩小的方式有几种：
+
+- 修改canvas样式。即修改canvas的尺寸，比如把canvas的宽度加倍。这种方法很不好，首先会导致分辨率降低，其次是当canvas扩大时，需要绘制的范围更大，对性能也有影响。
+- 通过ctx.scale放缩。这是一种canvas原生的方式，缺点是可能写起来比较麻烦
+
+注意scale放缩的是canvas的坐标系，也就是说放缩之后还是需要重新渲染的。一个简单的例子如下：
+
+```js
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+// 绘制初始地图
+drawMap();
+// 监听鼠标滚轮事件
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  // 计算当前放大比例
+  const delta = e.deltaY > 0 ? -0.1 : 0.1;
+  const scale = Math.max(0.1, Math.min(2, ctx.getTransform().+delta));
+  // 缩放 Canvas
+  ctx.setTransform(scale, 0, 0, scale, 0, 0);
+  // 清空 Canvas
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // 重新绘制地图
+  drawMap();
+});
+// 绘制地图
+function drawMap() {
+}
+```
+
+另外，如果需要实现鼠标绘制的功能，那么当地图比例变化时，还需要注意鼠标位置的计算。
+具体来说，如果地图放大2倍，那么所有获取到的鼠标坐标就应该除以2，才能使得绘制位置和鼠标位置不会出现偏差。
+
+如果有其他偏移，比如上下左右的位移，那么也需要这样做。比如通过transform向上移动了50，那么实际点位就需要减50。所有移动的值都可以通过getTransform获取。
+
+```js
+canvas.addEventListener("mousedown", (e) => {
+  const scale = ctx.getTransform().a;
+  let startX = e.offsetX / scale;
+  let startY = e.offsetY / scale;
+  ctx.beginPath();
+  ctx.moveTo(startX, startY);
+  const moveListener = (e) => {
+    const scale = ctx.getTransform().a;
+    const mouseX = e.offsetX / scale;
+    const mouseY = e.offsetY / scale;
+    ctx.lineTo(mouseX, mouseY);
+    ctx.stroke();
+  };
+  canvas.addEventListener("mousemove", moveListener);
+  canvas.addEventListener("mouseup", () => {
+    canvas.removeEventListener("mousemove", moveListener);
+  });
+});
+```
+
+- drawImage。每次放大相当于使用drawImage重绘了内容，可以使用drawImage截取一部分图片内容，然后绘制到整个canvas上，就相当于放大了。
+
+这个方法的关键是找准放大位置。比如实现鼠标点击某个位置放大，其实就是把鼠标周围一圈的 范围绘制到整个canvas上。
+
+从性能角度来说，当canvas元素比较多时，scale方法可能效率不如drawImage，因为需要反复重新绘制每个元素。相比之下drawImage只是截取一部分重新绘制，对于复杂图形的放缩性能更好。
+
+
+

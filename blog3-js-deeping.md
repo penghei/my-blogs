@@ -444,10 +444,10 @@ console.log({} instanceof Object); // true
 
 > 原始数据类型是由这些构造函数构造出来的，但是这些并不是对象，**如果我们试图访问它们的属性，那么临时包装器对象将会通过内建的构造器 String、Number 和 Boolean 被创建。它们提供给我们操作字符串、数字和布尔值的方法然后消失。**这些对象的方法也驻留在它们的 `prototype` 中，可以通过 `String.prototype`、`Number.prototype` 和 `Boolean.prototype` 进行获取。
 > 具体来说，主要有以下特点：
-> 1. 和正常的构造函数类似，也可以像prototype上添加方法和属性，并且可以通过原始值访问。
-> 2. 不能通过new的形式创建。通过new形式返回的是一个对象，和对应的原始数据类型不严格相等；但可以直接调用，比如`String('aaa')返回的就是'aaa'这个string类型的数据`
-> ![](https://pic.imgdb.cn/item/640b97f9f144a01007efce3c.jpg)
-> 另外，null 和 undefined 是特例，不能访问其构造函数的 prototype。
+>
+> 1. 和正常的构造函数类似，也可以像 prototype 上添加方法和属性，并且可以通过原始值访问。
+> 2. 不能通过 new 的形式创建。通过 new 形式返回的是一个对象，和对应的原始数据类型不严格相等；但可以直接调用，比如`String('aaa')返回的就是'aaa'这个string类型的数据` > ![](https://pic.imgdb.cn/item/640b97f9f144a01007efce3c.jpg)
+>    另外，null 和 undefined 是特例，不能访问其构造函数的 prototype。
 
 ### constructor
 
@@ -2030,20 +2030,20 @@ MyObject.prototype.getMessage = function () {
 3. 闭包产生的泄露问题：
 4. 减少使用闭包
 5. 如果是嵌套函数闭包：
-    - 在闭包内部，当闭包执行完成后将引用的变量置空
-    - 当闭包被使用完毕时，应该清除闭包的引用。比如：
-    ```js
-    const cacheFn = (fn) => {
-      const cache = new Map()
-      return function (...args){
-        console.log(cache)
-        //...
-      }
-    }
-    let cachedAdd = cacheFn(add)
-    // ...调用cachedAdd
-    cacheAdd = null // 清除闭包
-    ```
+   - 在闭包内部，当闭包执行完成后将引用的变量置空
+   - 当闭包被使用完毕时，应该清除闭包的引用。比如：
+   ```js
+   const cacheFn = (fn) => {
+     const cache = new Map();
+     return function (...args) {
+       console.log(cache);
+       //...
+     };
+   };
+   let cachedAdd = cacheFn(add);
+   // ...调用cachedAdd
+   cacheAdd = null; // 清除闭包
+   ```
 6. 如果是回调函数闭包，比如 addEventListener，就要及时清除监听器。如果是自己编写的回调函数，则可以通过置空的方式。
 
 ### 闭包的出现场景
@@ -4161,11 +4161,11 @@ f();
 # 宏任务微任务
 
 宏任务：`setTimeout`，`setInterval`，`Ajax`，DOM 事件，同步代码算作一整个宏任务
-微任务：`Promise.then/.catch/.finally`，`async/await`，`MutationObserver`。
+微任务：`Promise.then/.catch/.finally`，`async/await`，`queueMicrotask`。
 两者区别：
 
 - 宏任务：DOM 渲染后触发
-- 微任务：DOM 渲染前触发
+- 微任务：DOM 渲染前触发。即**微任务是有可能阻塞渲染的**
 
 纠正误区：
 
@@ -4173,6 +4173,10 @@ f();
 2. 同步代码算作一整个宏任务，因此同步代码执行完后会先调用微任务，然后才是剩下的异步宏任务。因此在表现上就是微任务先执行；实际上微任务一定是在宏任务之后执行。
 3. `new Promise`本身是同步任务，包括其内部的`executor`都是同步的，只有`.then/.catch/.finally`或者 await 才是异步微任务
 4. 对于上面的 api，一个函数就是一个宏任务；比如一个`setTimeout`就是一个宏任务，这个**宏任务执行完后会立刻把微任务队列中的所有微任务都执行**，才会进入下一个宏任务（下一个 setTimeout）
+
+微任务会在执行任何其他事件处理，或渲染，或执行任何其他宏任务之前完成。eventLoop通常按照`同步任务 -> 微任务 -> 渲染 -> 宏任务 -> 微任务 -> ....`这样的顺序执行。类似下图：
+
+![](https://pic.imgdb.cn/item/642470d6a682492fcc1d7eb6.jpg)
 
 # DOM
 
@@ -6700,15 +6704,61 @@ customElements.define("my-button", MyElement, { extends: "button" });
 
 可以把一些 shadowdom 的样式在 template 中封装好，然后插入到元素的`elem.shadowRoot`中
 
-## Math.random的安全问题
+## Math.random 的安全问题
 
 `Math.random()` 函数返回一个浮点数, **伪随机数**在范围(0, 1), 其生成的不能提供像密码一样安全的随机数字（黑客可以计算出客户端生成的的随机数）。
 当程序在需要不可预测性的上下文中生成可预测的值时，攻击者可能会猜测将要生成的下一个值，并使用该猜测来冒充另一个用户或访问敏感信息。
 
-可以使用Web Crypto API 来代替, 和更精确的`window.crypto.getRandomValues()`
+可以使用 Web Crypto API 来代替, 和更精确的`window.crypto.getRandomValues()`
 
 ```js
 // crypto需要考虑浏览器兼容
-const crypto = window.crypto || window.webkitCrypto || window.mozCrypto || window.oCrypto || window.msCrypto;
+const crypto =
+  window.crypto ||
+  window.webkitCrypto ||
+  window.mozCrypto ||
+  window.oCrypto ||
+  window.msCrypto;
 crypto.getRandomValues(new Uint32Array(1))[0];
 ```
+
+## 数组的空值
+
+JavaScript中数组空位指的是数组中的empty，其表示的是在该位置没有任何值，而且empty是区别于undefined的，同样empty也不属于Js的任何数据类型。
+
+在JavaScript的数组是以稀疏数组的形式存在的，所以当在某些位置没有值时，就需要使用某个值去填充。当然对于稀疏数组在各种浏览器中会存在优化的操作，例如在V8引擎中就存在快数组与慢数组的转化，此外在V8中对于empty的描述是一个空对象的引用。在Js中使用Array构造器创建出的存在空位的问题，默认并不会以undefined填充，而是以empty作为值
+
+```js
+console.log([,,,]); // (3) [empty × 3]
+console.log(new Array(3)); // (3) [empty × 3]
+console.log([undefined, undefined, undefined]); // (3) [undefined, undefined, undefined]
+console.log(0 in [undefined, undefined, undefined]); // true
+console.log(0 in [,,,]); // false // in 是检查索引 此处表示 0 位置是没有值的
+```
+
+一些方法对数组空值的处理：
+
+- 跳过空位：forEach、for in、filter、every、some。map会跳过对空位的函数执行，但会保留空属性的占位
+- 字符串：join和toString会将空位与undefined以及null处理成空字符串
+- 转换：Array.form和扩展运算符会把空位转换成undefined，includes、entries、keys、values、find和findIndex等会将空位上的值视为undefined，for of和for let i循环也会遍历空位并将值作为undefined。
+
+
+
+## MouseEvent上的各种和鼠标相关的值
+
+1. clientX、clientY：鼠标位置相对于整个页面的左上角，不会受到页面滚动影响。即以页面左上角为原点，鼠标点击时的坐标。
+2. offsetX、offsetY：鼠标位置和元素的padding在x、y方向上的偏移量。具体来说就是，一个元素监听鼠标事件，然后如果鼠标在其内部，那么这个值就是以当前元素的左上角为原点的位置。相当于使用这个值可以直接判断类似canvas的鼠标点击坐标。
+
+```js
+canvas.addEventListener("mousedown", (e) => {
+  const mouseX = e.offsetX;
+  const mouseY = e.offsetY;
+  ctx.moveTo(mouseX, mouseY);
+});
+```
+
+3. pageX、pageY：也是基于文档左上角，但是如果有滚动时，要考虑到滚动的位置。比如一个页面高度为1000px，实际显示500px，滚动了500px。那么这时如果点击可视区域的左上角，pageY的值是500，因为它基于原本的左上角计算的。
+
+
+
+

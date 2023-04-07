@@ -1427,3 +1427,160 @@ export default function Form() {
 - useSyncExternalStore：用于外部状态库的接入，它消除了在实现对外部数据源的订阅时对 useEffect 的需求
 - useInsertionEffect：用于css-in-js库
 
+# 其他React实践
+
+## React表单
+
+React表单主要要解决几个问题：
+
+- 状态的管理。所有的组件都应该是可控的，那么这些组件要怎么去管理状态，怎么触发值的改变，用什么结构来整理状态，是很重要的
+- 表单校验。考虑校验方式以及校验之后的提示方式
+- 组件关系。即类似Form和FormItem的嵌套、FormItem和具体元素的嵌套，这种嵌套关系之间怎么实现状态的统一和数据的获取。
+
+具体可以参考这篇文章：https://github.com/varHarrie/varharrie.github.io/issues/28
+
+下面是简单内容。
+
+### 基本思路和简单实现
+
+这个表单组件实现起来主要分为三部分：
+
+- Form：用于传递表单上下文。
+- Field（也可以叫FormItem）： 表单域组件，用于自动传入value和onChange到表单组件。
+- FormStore： 存储表单数据，封装相关操作。
+
+```jsx
+<Form store={this.store} onSubmit={this.onSubmit}>
+  <Field name="username">
+    <input />
+  </Field>
+  <Field name="password">
+    <input type="password" />
+  </Field>
+  <button>Submit</button>
+</Form>
+```
+
+formStore可以是一个类：
+
+```js
+class FormStore {
+  constructor(defaultValues = {}, rules = {}) {
+    // 表单值
+    this.values = defaultValues;
+    // 事件回调
+    this.listeners = [];
+  }
+  subscribe(listener) {
+    this.listeners.push(listener);
+    // 返回一个用于取消订阅的函数
+    return () => {
+      const index = this.listeners.indexOf(listener);
+      if (index > -1) this.listeners.splice(index, 1);
+    };
+  }
+  // 通知表单变动，调用所有listener
+  notify(name) {
+    this.listeners.forEach(listener => listener(name));
+  }
+  get(name) {
+    // 如果传入name，返回对应的表单值，否则返回整个表单的值
+    return name ? this.values : this.values[name];
+  }
+  // 设置表单值
+  set(name, value) {
+    //如果指定了name
+    if (typeof name === "string") {
+      // 设置name对应的值
+      this.values[name] = value;
+      this.notify(name);
+    } else if (Array.isArray(name)) {
+      const values = name;
+      Object.keys(values).forEach(key => this.set(key, values[key]));
+    }
+  }
+}
+```
+
+获取数据的核心是通过发布订阅模式，即：
+
+- 当每个FormItem创建时，就向FormStore增加一个订阅。当表单内数据变化时，通知所有的订阅者，传递的参数可以是具体的表单的哪一项。
+
+FormStore内还有的其他方法有：
+
+- get和set，一个用于获取value，一个用于修改value。当修改value时，可以再通过notify触发所有的订阅者，传递更新后的value
+- 校验。校验可以采用传入一个校验对象，每个键是对应的字段，值是校验函数。每次校验时通过get获取对应字段的值，然后调用校验函数，根据结果设置。
+  校验这里，其实可以再用一个发布订阅，或者复用原来的发布订阅传入一个错误。对于订阅者来说，如果收到错误触发，就可以改变样式。
+
+Form和FormItem组件主要如下：
+
+- Form：使用context下发FormStore
+
+```js
+const FormStoreContext = React.createContext(undefined);
+
+function Form(props) {
+  const { store, children, onSubmit } = props;
+
+  return (
+    <FormStoreContext.Provider value={store}>
+      <form onSubmit={onSubmit}>{children}</form>
+    </FormStoreContext.Provider>
+  );
+}
+```
+
+- FormItem：核心是给子组件传入value和onChange两个参数。当子组件调用onChange时，把值通过store.set修改到FormStore中。
+  还要订阅store。当store对应字段的值发生更改时，通过setState修改自己内部的值
+
+```js
+function FormItem(props) {
+  const { label, name, children } = props;
+
+  const store = useContext(FormStoreContext);
+
+  // 传给子组件的value和onChange
+  const [value, setValue] = useState(
+    name && store ? store.get(name) : undefined
+  );
+  const onChange = useCallback(
+    // 当onChange触发时，修改FormStore内的value
+    (...args) => name && store && store.set(name, formatValue(...args)),
+    [name, store]
+  );
+
+  // 订阅表单数据变动
+  useEffect(() => {
+    if (!name || !store) return;
+
+    return store.subscribe(n => {
+      // 当前name的数据发生了变动，获取数据并重新渲染
+      if (n === name || n === "*") {
+        setValue(store.get(name));
+      }
+    });
+  }, [name, store]);
+
+  let child = children;
+
+  // 如果children是一个合法的组件，传入value和onChange
+  if (name && store && React.isValidElement(child)) {
+    const childProps = { value, onChange };
+    child = React.cloneElement(child, childProps);
+  }
+
+  // 表单结构
+  return (
+  );
+}
+```
+
+如果考虑到组件校验，可以再加上一个error状态用于渲染错误样式。然后通过订阅store内的错误信息，如果匹配到自己内部的字段就提示错误。
+
+
+
+
+## React 表格
+
+
+

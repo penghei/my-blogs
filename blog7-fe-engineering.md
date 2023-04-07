@@ -20,8 +20,8 @@ package.json 中的关键属性：
 - scripts：即可执行的命令。每个 scripts 都有自己的生命周期，
 - dependencies 和 devDependencies：详见下
 - engines：主要用于限制 node 和 npm 的版本。在 engines 字段中添加对 node 或 npm 版本的要求，如果用户的版本不符合，则会导致警告（npm）或报错（yarn）
-- peerDependencies: 可以避免类似的核心依赖库被重复下载的问题。即一个库中把某个库声明为peerDependencies时，当用户下载该库时，就会检查是否已经安装了该库，如果已经有的话就不会安装。
-比如，开发者开发了一个基于react的库，然后把react写入peerDependencies而不是dependies。这样在其他用户安装这个库时，npm 会自动检查是否已经安装了 React，如果已经安装了，则不会再次下载 React，否则会提示用户手动安装 React。如果版本不对或不兼容则会提示用户。
+- peerDependencies: 可以避免类似的核心依赖库被重复下载的问题。即一个库中把某个库声明为 peerDependencies 时，当用户下载该库时，就会检查是否已经安装了该库，如果已经有的话就不会安装。
+  比如，开发者开发了一个基于 react 的库，然后把 react 写入 peerDependencies 而不是 dependies。这样在其他用户安装这个库时，npm 会自动检查是否已经安装了 React，如果已经安装了，则不会再次下载 React，否则会提示用户手动安装 React。如果版本不对或不兼容则会提示用户。
 
 ## npm scripts 的生命周期
 
@@ -54,12 +54,12 @@ package.json 中的关键属性：
 
 至于其他的可以参考[官方文档](https://docs.npmjs.com/cli/v8/using-npm/scripts#npm-cache-add)
 
-### dependencies 和 devDependencies
+## dependencies 和 devDependencies
 
 `devDependencies` 里面的插件只用于开发环境，不用于生产环境，
 `dependencies` 是需要发布到生产环境的。
 
-### semver
+## semver
 
 即安装库时后面的版本号，版本号有三个数，分别为`[major, minor, patch]`：
 
@@ -208,25 +208,27 @@ fi
 
 ## yarn
 
-“Yarn是由Facebook、Google、Exponent 和 Tilde 联合推出了一个新的 JS 包管理工具 ，它的开发是为了提供 NPM 当时缺乏的更多高级功能（例如版本锁定），同时也使其更安全、更可靠、更高效。
+“Yarn 是由 Facebook、Google、Exponent 和 Tilde 联合推出了一个新的 JS 包管理工具 ，它的开发是为了提供 NPM 当时缺乏的更多高级功能（例如版本锁定），同时也使其更安全、更可靠、更高效。
 
-yarn的主要特点：
+yarn 的主要特点：
+
 1. 速度快。速度快主要来自以下两个方面：
 
 - 并行安装：无论 npm 还是 Yarn 在执行包的安装时，都会执行一系列任务。npm 是按照队列执行每个 package，也就是说必须要等到当前 package 安装完成之后，才能继续后面的安装。而 Yarn 是同步执行所有任务，提高了性能。
-- 离线模式：如果之前已经安装过一个软件包，用Yarn再次安装时之间从缓存中获取，就不用像npm那样再从网络下载了。
+- 离线模式：如果之前已经安装过一个软件包，用 Yarn 再次安装时之间从缓存中获取，就不用像 npm 那样再从网络下载了。
 
-2. 安全性。在npm早期版本中对安全性检查很差，而yarn在下载包时，它会在后台运行安全检查，利用包许可证信息来避免下载危险的脚本或导致依赖性问题。
+2. 安全性。在 npm 早期版本中对安全性检查很差，而 yarn 在下载包时，它会在后台运行安全检查，利用包许可证信息来避免下载危险的脚本或导致依赖性问题。
 
 ## pnpm
 
 特点：
+
 1. 节省空间。主要是两个方面：
 
 - 所有文件都保存在磁盘上的一个位置。安装包时，它们的文件是从那个地方硬链接的，不占用额外的磁盘空间。这允许跨项目共享相同版本的依赖项。
 - 如果依赖不同版本的依赖项，则只会将不同的文件添加到存储中。例如，如果它有 100 个文件，而一个新版本只对其中一个文件进行了更改，则 pnpm update 只会将 1 个新文件添加到存储中，而不是仅为单个更改克隆整个依赖项。
 
-如下图，可以看到当每次安装新的包时，大量的文件是被reused的。
+如下图，可以看到当每次安装新的包时，大量的文件是被 reused 的。
 
 ![](https://pic.imgdb.cn/item/64174b28a682492fcc9bdc8c.jpg)
 
@@ -236,39 +238,72 @@ yarn的主要特点：
   - 依赖解析
   - 目录结构计算
   - 链接依赖项
-  这种方法比传统的解析、获取和写入所有依赖项到 node_modules 的三阶段安装过程要快得多。
+
+这种方法比传统的解析、获取和写入所有依赖项到 node_modules 的三阶段安装过程要快得多。
 
 如下图：
 
 ![](https://pic.imgdb.cn/item/6417471ea682492fcc9411f0.jpg)
 ![](https://pic.imgdb.cn/item/6417472aa682492fcc9434eb.jpg)
 
+3. 非扁平的 node_modules 目录。使用 npm 或 Yarn 安装依赖项时，所有包都将提升到模块目录的根目录。而 pnpm 使用符号链接仅将项目的直接依赖项添加到模块目录的根目录中。
 
-3. 非扁平的 node_modules 目录。使用 npm 或 Yarn 安装依赖项时，所有包都将提升到模块目录的根目录。而pnpm 使用符号链接仅将项目的直接依赖项添加到模块目录的根目录中。
+什么意思呢？举个例子，使用 yarn 或 npm 在安装包时，如果一个包依赖其他包，那么就会把这个包依赖的所有包全部安装。我们经常遇到的我只是在 package.json 里添加了几个包，装完之后 node_modules 多了一堆包，因为 npm / yarn 的安装会把包里面依赖的包也给安装到 node_modules，也就是安装之后 node_modules 其实是一个拍平的结构，避免出现依赖嵌套的结构
 
-什么意思呢？举个例子，使用yarn或npm在安装包时，如果一个包依赖其他包，那么就会把这个包依赖的所有包全部安装。我们经常遇到的我只是在package.json里添加了几个包，装完之后node_modules多了一堆包，因为npm / yarn的安装会把包里面依赖的包也给安装到node_modules，也就是安装之后node_modules其实是一个拍平的结构，避免出现依赖嵌套的结构
+这种形式有一个致命的问题。比如现在有两个包 A 和 B，B 依赖于 A；当两者都不变化时没有影响，但如果 B 更新，B 新依赖的 A 是一个和旧的 A 不兼容的版本，那么就会出现问题，因为 npm/yarn 并不会主动更新 B 的所有依赖，而是只会更新 B 本身。
 
-这种形式有一个致命的问题。比如现在有两个包A和B，B依赖于A；当两者都不变化时没有影响，但如果B更新，B新依赖的A是一个和旧的A不兼容的版本，那么就会出现问题，因为npm/yarn并不会主动更新B的所有依赖，而是只会更新B本身。
-
-pnpm在项目中安装的依赖实际上是一个软链接，链接到了.pnpm文件夹。如果在项目中安装react，那么实际上就是在.pnpm文件夹下安装的react。
-实际上pnpm的安装结果就像这样，非常简洁：
+pnpm 在项目中安装的依赖实际上是一个软链接，链接到了.pnpm 文件夹。如果在项目中安装 react，那么实际上就是在.pnpm 文件夹下安装的 react。
+实际上 pnpm 的安装结果就像这样，非常简洁：
 ![](https://pic.imgdb.cn/item/64174b66a682492fcc9c2049.jpg)
 
-这里的react和react-dom都是软链接，链接到.pnpm文件夹下的react文件夹。
-而.pnpm内的文件夹实际上是这样：
+这里的 react 和 react-dom 都是软链接，链接到.pnpm 文件夹下的 react 文件夹。
+而.pnpm 内的文件夹实际上是这样：
 ![](https://pic.imgdb.cn/item/64174bc0a682492fcc9c816d.jpg)
 ![](https://pic.imgdb.cn/item/64174beaa682492fcc9cb37d.jpg)
 
-loose-envify是react的依赖项，可以看到这也是一个软链接。对react-dom也同理，除了自己的库本体，其他的依赖项都是软链接的形式，相当于形成了一个嵌套结构，一个库套着另一个库，而非传统的扁平结构。
+loose-envify 是 react 的依赖项，可以看到这也是一个软链接。对 react-dom 也同理，除了自己的库本体，其他的依赖项都是软链接的形式，相当于形成了一个嵌套结构，一个库套着另一个库，而非传统的扁平结构。
 
-> 注意，pnpm中既有软链接也有硬链接
-> 硬链接是pnpm在各个项目中共享node_modules的方式，即在磁盘的一块连续地址上存储所有下载的npm包，并且通过硬链接的方式将npm包链接到各个项目的node_modules中。
+> 注意，pnpm 中既有软链接也有硬链接
+> 硬链接是 pnpm 在各个项目中共享 node_modules 的方式，即在磁盘的一块连续地址上存储所有下载的 npm 包，并且通过硬链接的方式将 npm 包链接到各个项目的 node_modules 中。
 > 软链接是在一个项目中形成嵌套关系的方式，即每个依赖内部有其他依赖的软链接。
 > 硬链接和软链接的区别：
+>
 > - 硬链接是同一个文件的不同名称，可以理解为从不同的角度看同一个事物，所有对硬链接的操作都是对文件本身的操作，删除一个硬链接就像限制你的视角，文件本身并不会消失，当所有的硬链接都被删除，则文件本身也被删除了
 > - 软链接只是一个快捷方式，删除所有的软链接也不会对文件有任何影响，对软链接的所有操作会被文件系统替换为对软链接指向的文件的操作，如果原始文件的位置被移动了，那么软链接就找不到对应的文件了，改动自然也无法同步到文件上，与硬链接不同，因为软链接只是个快捷方式，所以软链接甚至可以指向不存在的文件
 
+## 幽灵依赖和 pnpm
 
+幽灵依赖的定义是：子依赖提升造成的，虽然不会出现在 package.json 中（声明缺失），但是仍可以在项目中正常被 import，即可以访问非法（未声明的） npm 包。
+
+举个例子：假设 react 依赖于 lodash，那么当我们在一个项目中安装 react 时，lodash 也会被同时安装。lodash 并不会出现在 package.json 中，但由于 npm 的扁平依赖方案，lodash 也会被安装在 node_modules 里。这种情况下，如果在项目中直接引入 lodash，是不会报错的；
+这样的问题有两个：
+
+1. 如果我们的项目是一个要发布的库，当我们发布到 npm，其他用户下载之后，由于 package.json 中没有 lodash，但项目中确实使用了 lodash，那么就可能会导致 lodash 找不到，或者版本不确定等问题。
+2. 如果 react 不再依赖 lodash，或 react 依赖的 lodash 的版本发生变化了，当我们更新 react 不会更新 lodash，这时就可能导致 react 运行异常。
+
+幽灵依赖产生的根本原因就是 npm 的扁平规则。npm 把所有安装的库的依赖，甚至依赖的依赖都扁平化到了整个 node_modules 内；这样的好处的方便管理和控制，坏处就是容易导致一些问题：
+
+- 幽灵依赖：上面说的
+- 依赖版本不确定：同样的 package.json 文件，install 依赖后可能不会得到同样的 node_modules 目录结构。
+  比如还是假设 react 会安装 lodash1.0 版本，而另一个库安装了 lodash2.0，或者用户先安装了 lodash2.0，那么 node_modules 内的 lodash 版本就不确定了，很可能在 react 目录下（/node_modules/react/node_modules，即 react 自己的 node_modules）维护的是 1.0 版本的 lodash，而在外部（/node_modules，整个项目的 node_modules）又使用 lodash2.0 版本。
+- 重复安装：还是上面的例子，react 内部的 lodash 和外部的 lodash 版本冲突，那么这时就会重复安装 lodash。除非版本不冲突，否则库都会在 react 内部的 node_modules 安装一次，不会复用外部的，就会导致重复安装的问题。
+
+而 pnpm 解决上述问题的关键就是它的树形结构（有向图）。
+具体来说，如果每个库的依赖都由他们自己维护，不会扁平化到整个 node_modules 中，就可以减少这些情况。
+举个例子：
+
+```
+react
+  |__node_modules
+              |__lodash@1.0
+react-dom
+  |__node_modules
+              |__lodash@2.0
+```
+
+每个库都维护自己的依赖，不会把 lodash 在根 node_modules 中安装；同时，这两个 lodash 也并非重复安装，而是都来自于 pnpm 的硬链接。也就是说，lodash1.0 和 2.0 版本并非都被安装到了项目的 node_modules 中，而是都维护在 pnpm 的根目录下。当项目中需要使用时，只需要将其硬链接到位置即可。这样就解决了重复安装的问题，也不会发生版本冲突。
+
+至于幽灵依赖的问题，也不会发生，因为lodash是react和react-dom自己的node_modules里的，根本就不会安装到项目的node_modules中。这样的话，项目的package.json是什么结构，实际的node_modules内也就是什么结构，不会出现未声明的依赖。
 
 
 # Babel
@@ -574,16 +609,69 @@ ESLint 是完全可配置的，也就说可以同时配置一些预设、插件�
 
 ## 插件编写
 
+### 前置知识
+
+[eslint 官方文档](https://zh-hans.eslint.org/docs/latest/extend/custom-rules)给出了编写 eslint 插件的规范和方法。
+
+1. espree：eslint 使用的 ast 生成工具，不同于 webpack 使用的 acron。
+2. 选择器：选择器是可以用来匹配抽象语法树（AST）中节点的字符串。AST 选择器的语法与 CSS 选择器的语法类似。
+
+[选择器](https://zh-hans.eslint.org/docs/latest/extend/selectors)是 ast 中很重要的概念。比如下面这张图，圈出来的部分都是选择器：
+
+![](https://pic.imgdb.cn/item/6421e141a682492fcc7d03fe.jpg)
+
+选择器的作用和 css 选择器类似，就是通过指定的语法访问到所有节点。比如选择器名字叫"CallExpression"，那就会匹配所有的调用语句，把他们对应的节点传入到函数中去。
+
+选择器有很多种，常见的有：
+
+- AST 节点类型：ForStatement
+- 通配符（匹配所有节点）：\*
+- 字段：FunctionDeclaration > Identifier.id （意思就是选择所有 FunctionDeclaration 节点下的 Identifier 节点的 id 属性）
+- 后裔：FunctionExpression ReturnStatement
+- 子项：UnaryExpression > Literal
+
+看起来和 css 选择器很类似。只不过 css 选择器选择的是 dom 元素，而 ast 选择的是 ast 元素
+在 eslint 插件中，可以利用选择器选出部分特定的 ast 节点，从而减小搜索范围。
+
+通常将选择器写在 create 函数的返回对象中：
+
+```js
+module.exports = {
+  create(context) {
+    // ...
+
+    return {
+      // 这个监听器将为所有有块的 IfStatement 节点被调用。
+      "IfStatement > BlockStatement": function (blockStatementNode) {
+        // ...你的逻辑在此
+      },
+
+      // 这个监听器会调用所有有 3个 以上参数的函数声明。
+      "FunctionDeclaration[params.length>3]": function (
+        functionDeclarationNode
+      ) {
+        // ... 你的逻辑在此
+      },
+    };
+  },
+};
+```
+
+在拿到 AST 之后，ESLint 会以"从上至下"再"从下至上"的顺序遍历每个选择器两次。我们所监听的选择器默认会在"从上至下"的过程中触发，如果需要在"从下至上"的过程中执行则需要添加:exit，在上文中 CallExpression 就变为 CallExpression:exit。
+
+### 具体编写
+
 编写的全过程可以参考https://obkoro1.com/web_accumulate/accumulate/tool/ESLint%E6%8F%92%E4%BB%B6.html#%E5%8F%91%E5%B8%83%E6%8F%92%E4%BB%B6
 按照这个方式试了，确实成功了。
 
-插件源码比较简单，就是一个用于检查react hooks的：
-- useState的第二个返回值必须是setXXX的形式
-- useRef的返回值必须是xxxRef的形式
-- useReducer的返回值必须是xxxReducer的形式
+插件源码比较简单，就是一个用于检查 react hooks 的：
 
-编写的逻辑就是查看[ast explorer](https://astexplorer.net/)对ast的解析，写一个示例代码，然后对照着查看什么样的ast结构。
-比如下面这个例子，就是先查找一个node，为函数调用类型，名称为`useState`；然后在其父元素获取它的返回值，检查是否是解构数组形式。最后获取数组的第二项，检查其是否满足要求
+- useState 的第二个返回值必须是 setXXX 的形式
+- useRef 的返回值必须是 xxxRef 的形式
+- useReducer 的返回值必须是 xxxReducer 的形式
+
+编写的逻辑就是查看[ast explorer](https://astexplorer.net/)对 ast 的解析，写一个示例代码，然后对照着查看什么样的 ast 结构。
+比如下面这个例子，就是先查找一个 node，为函数调用类型，名称为`useState`；然后在其父元素获取它的返回值，检查是否是解构数组形式。最后获取数组的第二项，检查其是否满足要求
 
 参考下图：
 ![](https://pic.imgdb.cn/item/64188312a682492fcccb8ed6.jpg)
@@ -592,7 +680,7 @@ ESLint 是完全可配置的，也就说可以同时配置一些预设、插件�
 // setstate-startwith-set.js
 module.exports = {
   meta: {
-    type: 'problem', 
+    type: "problem",
     docs: {
       description: "useState的第二个返回值应该以set开头，并且为camelCase写法",
     },
@@ -603,12 +691,12 @@ module.exports = {
     return {
       CallExpression: function (node) {
         if (
-          node.callee.type === "Identifier" && // 
+          node.callee.type === "Identifier" && //
           node.callee.name === "useState" && //找到useState调用语句
           node.parent.type === "VariableDeclarator" &&
           Array.isArray(node.parent.id.elements) && // 从父元素找到useState的返回值数组
           node.parent.id.elements.length === 2 &&
-          node.parent.id.elements[0].type === "Identifier" && 
+          node.parent.id.elements[0].type === "Identifier" &&
           node.parent.id.elements[1].type === "Identifier" // 取出数组的两项
         ) {
           const stateName = node.parent.id.elements[0].name;
@@ -629,11 +717,10 @@ module.exports = {
     };
   },
 };
-
 ```
 
-一个规则对应一个文件。编写其他hooklint的方式类似。
-注意必须通过npm publish发布到npm上，再下载并在eslint中使用：
+一个规则对应一个文件。编写其他 hooklint 的方式类似。
+注意必须通过 npm publish 发布到 npm 上，再下载并在 eslint 中使用：
 
 ```js
 plugins: ["react", "@typescript-eslint", "sngthrdlint"],
@@ -641,7 +728,6 @@ rules: {
   "sngthrdlint/setstate-startwith-set": "error",
 },
 ```
-
 
 # CSS Modules
 
@@ -1252,8 +1338,8 @@ Git 作为一个源码管理系统，不可避免涉及到多人协作。
 
 首先，项目存在两个长期分支。
 
-- 主分支master
-- 开发分支develop
+- 主分支 master
+- 开发分支 develop
 
 前者用于存放对外发布的版本，任何时候在这个分支拿到的，都是稳定的分布版；后者用于日常开发，存放最新的开发版。
 
@@ -1263,67 +1349,67 @@ Git 作为一个源码管理系统，不可避免涉及到多人协作。
 - 补丁分支（hotfix branch）
 - 预发分支（release branch）
 
-一旦完成开发，它们就会被合并进develop或master，然后被删除。
+一旦完成开发，它们就会被合并进 develop 或 master，然后被删除。
 
-Git flow的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。大多数工具都将master当作默认分支，可是开发是在develop分支进行的，这导致经常要切换分支，非常烦人。
+Git flow 的优点是清晰可控，缺点是相对复杂，需要同时维护两个长期分支。大多数工具都将 master 当作默认分支，可是开发是在 develop 分支进行的，这导致经常要切换分支，非常烦人。
 
-更大问题在于，这个模式是基于"版本发布"的，目标是一段时间以后产出一个新版本。但是，很多网站项目是"持续发布"，代码一有变动，就部署一次。这时，master分支和develop分支的差别不大，没必要维护两个长期分支。
+更大问题在于，这个模式是基于"版本发布"的，目标是一段时间以后产出一个新版本。但是，很多网站项目是"持续发布"，代码一有变动，就部署一次。这时，master 分支和 develop 分支的差别不大，没必要维护两个长期分支。
 
 ### Github flow
 
-它只有一个长期分支，就是master
+它只有一个长期分支，就是 master
 
-- 第一步：根据需求，从master拉出新分支，不区分功能分支或补丁分支。
-- 第二步：新分支开发完成后，或者需要讨论的时候，就向master发起一个pull request（简称PR）。
-- 第三步：Pull Request既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。
-- 第四步：你的Pull Request被接受，合并进master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）
+- 第一步：根据需求，从 master 拉出新分支，不区分功能分支或补丁分支。
+- 第二步：新分支开发完成后，或者需要讨论的时候，就向 master 发起一个 pull request（简称 PR）。
+- 第三步：Pull Request 既是一个通知，让别人注意到你的请求，又是一种对话机制，大家一起评审和讨论你的代码。对话过程中，你还可以不断提交代码。
+- 第四步：你的 Pull Request 被接受，合并进 master，重新部署后，原来你拉出来的那个分支就被删除。（先部署再合并也可。）
 
 Github flow 的最大优点就是简单，对于"持续发布"的产品，可以说是最合适的流程。
 
-问题在于它的假设：master分支的更新与产品的发布是一致的。也就是说，master分支的最新代码，默认就是当前的线上代码。
+问题在于它的假设：master 分支的更新与产品的发布是一致的。也就是说，master 分支的最新代码，默认就是当前的线上代码。
 
-可是，有些时候并非如此，代码合并进入master分支，并不代表它就能立刻发布。比如，苹果商店的APP提交审核以后，等一段时间才能上架。这时，如果还有新的代码提交，master分支就会与刚发布的版本不一致。另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于master分支。
+可是，有些时候并非如此，代码合并进入 master 分支，并不代表它就能立刻发布。比如，苹果商店的 APP 提交审核以后，等一段时间才能上架。这时，如果还有新的代码提交，master 分支就会与刚发布的版本不一致。另一个例子是，有些公司有发布窗口，只有指定时间才能发布，这也会导致线上版本落后于 master 分支。
 
-上面这种情况，只有master一个主分支就不够用了。通常，你不得不在master分支以外，另外新建一个production分支跟踪线上版本。
+上面这种情况，只有 master 一个主分支就不够用了。通常，你不得不在 master 分支以外，另外新建一个 production 分支跟踪线上版本。
 
 ### Gitlab flow
 
 Gitlab flow 是 Git flow 与 Github flow 的综合。它吸取了两者的优点，既有适应不同开发环境的弹性，又有单一主分支的简单和便利。
-Gitlab flow 的最大原则叫做"上游优先"（upsteam first），即只存在一个主分支master，它是所有其他分支的"上游"。只有上游分支采纳的代码变化，才能应用到其他分支。
+Gitlab flow 的最大原则叫做"上游优先"（upsteam first），即只存在一个主分支 master，它是所有其他分支的"上游"。只有上游分支采纳的代码变化，才能应用到其他分支。
 
 ![](https://pic.imgdb.cn/item/64175692a682492fccaa5685.jpg)
 
-对于"持续发布"的项目，它建议在master分支以外，再建立不同的环境分支。比如，"开发环境"的分支是master，"预发环境"的分支是pre-production，"生产环境"的分支是production。
+对于"持续发布"的项目，它建议在 master 分支以外，再建立不同的环境分支。比如，"开发环境"的分支是 master，"预发环境"的分支是 pre-production，"生产环境"的分支是 production。
 
-开发分支是预发分支的"上游"，预发分支又是生产分支的"上游"。代码的变化，必须由"上游"向"下游"发展。比如，生产环境出现了bug，这时就要新建一个功能分支，先把它合并到master，确认没有问题，再cherry-pick到pre-production，这一步也没有问题，才进入production。
+开发分支是预发分支的"上游"，预发分支又是生产分支的"上游"。代码的变化，必须由"上游"向"下游"发展。比如，生产环境出现了 bug，这时就要新建一个功能分支，先把它合并到 master，确认没有问题，再 cherry-pick 到 pre-production，这一步也没有问题，才进入 production。
 
 只有紧急情况，才允许跳过上游，直接合并到下游分支。
 
 ![](https://pic.imgdb.cn/item/641756a5a682492fccaa8ed0.jpg)
 
-对于"版本发布"的项目，建议的做法是每一个稳定版本，都要从master分支拉出一个分支，比如2-3-stable、2-4-stable等等。
+对于"版本发布"的项目，建议的做法是每一个稳定版本，都要从 master 分支拉出一个分支，比如 2-3-stable、2-4-stable 等等。
 
-以后，只有修补bug，才允许将代码合并到这些分支，并且此时要更新小版本号。
+以后，只有修补 bug，才允许将代码合并到这些分支，并且此时要更新小版本号。
 
 ### Gitflow flow
 
 ![](https://pic.imgdb.cn/item/641756f0a682492fccab4983.jpg)
 
 分支作用：
+
 - master：主分支，负责上线版本
-- hotfix：直接从master创建，修复后直接合并到master
+- hotfix：直接从 master 创建，修复后直接合并到 master
 - release：作为发布前的一个前置分支，可以用于测试
 - develop：开发分支，所有开发完成的功能都在这里记录
 - feature：功能分支，从开发分支分下来，开发每个具体功能，再合并到开发分支中。
 
 1. Hot-fix 分支是唯一一个从 master 分支创建的分支，并且直接合并到 master 分支而不是 develop 分支。仅在必须快速修复生产环境问题时使用。该分支的一个优点是，它使你可以快速修复并部署生产环境的问题，而无需中断其他人的工作流，也不必等待下一个发布周期。
-将修复合并到 master 分支并进行部署后，应将其合并到 develop 和当前的 release 分支中。这样做是为了确保任何从 develop 分支创建新功能分支的人都具有最新代码。
+   将修复合并到 master 分支并进行部署后，应将其合并到 develop 和当前的 release 分支中。这样做是为了确保任何从 develop 分支创建新功能分支的人都具有最新代码。
 
 在将所有准备发布的功能的代码成功合并到 develop 分支之后，就可以从 develop 分支创建 release 分支了。
 
 2. Release 分支不包含新功能相关的代码。仅将与发布相关的代码添加到 release 分支。例如，与此版本相关的文档，错误修复和其他关联任务才能添加到此分支。
-一旦将此分支与 master 分支合并并部署到生产环境后，它也将被合并回 develop 分支中，以便之后从 develop 分支创建新功能分支时，新的分支能够具有最新代码。
-
+   一旦将此分支与 master 分支合并并部署到生产环境后，它也将被合并回 develop 分支中，以便之后从 develop 分支创建新功能分支时，新的分支能够具有最新代码。
 
 # Rollup
 
@@ -1349,19 +1435,19 @@ rollup 相对于 webpack 将会有更好的 tree-shaking 效果，同时它对 t
 
 ## 模块化对循环加载的解决方案
 
-“循环加载”简单来说就是就是脚本之间的相互依赖，比如a.js依赖b.js，而b.js又依赖a.js。例如：
+“循环加载”简单来说就是就是脚本之间的相互依赖，比如 a.js 依赖 b.js，而 b.js 又依赖 a.js。例如：
 
 ```js
 // a.js
-const b = require('./b.js')
+const b = require("./b.js");
 
 // b.js
-const a = require('./a.js')
+const a = require("./a.js");
 ```
 
 这是一个很常见的场景，如果没有处理机制，则会造成递归循环，而递归循环是应该被避免的。
 
-cjs和esm对循环加载的解决方式不同：
+cjs 和 esm 对循环加载的解决方式不同：
 
 ### CommonJS 模块的循环加载
 
@@ -1378,145 +1464,262 @@ CommonJS 的一个模块，就是一个脚本文件。require 命令第一次加
 ```
 
 CommonJS 模块解决循环加载的策略就是：**一旦某个模块被循环加载，就只输出已经执行的部分，没有执行的部分不输出。**
-意思就是，require语句可以看做是跳到另一个模块中去执行代码，当一个模块执行过程中发现某个require语句导入的形成了循环依赖，就不会再进入去执行这个模块，而是继续执行本模块剩下的内容，直到本模块执行完成后才退回上一个模块。
+意思就是，require 语句可以看做是跳到另一个模块中去执行代码，当一个模块执行过程中发现某个 require 语句导入的形成了循环依赖，就不会再进入去执行这个模块，而是继续执行本模块剩下的内容，直到本模块执行完成后才退回上一个模块。
 
 举个例子：
+
 ```js
 // a.js
-console.log('a starting');
+console.log("a starting");
 exports.done = false;
-const b = require('./b.js');
+const b = require("./b.js");
 // 这里之后的语句是执行完b.js才执行的
-console.log('in a, b.done = %j', b.done);
+console.log("in a, b.done = %j", b.done);
 exports.done = true;
-console.log('a done');
+console.log("a done");
 
 // b.js
-console.log('b starting');
+console.log("b starting");
 exports.done = false;
-const a = require('./a.js'); // 循环依赖的位置，这里不会再进去执行a.js内的语句，而是直接提取之前加载的a.js内的exports
+const a = require("./a.js"); // 循环依赖的位置，这里不会再进去执行a.js内的语句，而是直接提取之前加载的a.js内的exports
 // 这里之后的语句会连着上面的执行，因为a.js是加载过的依赖，不会反复进入
-console.log('in b, a.done = %j', a.done);
+console.log("in b, a.done = %j", a.done);
 exports.done = true;
-console.log('b done');
+console.log("b done");
 
 // main.js
-console.log('main starting');
-const a = require('./a.js');
-const b = require('./b.js');
-console.log('in main, a.done = %j, b.done = %j', a.done, b.done);
+console.log("main starting");
+const a = require("./a.js");
+const b = require("./b.js");
+console.log("in main, a.done = %j, b.done = %j", a.done, b.done);
 ```
 
 上面代码的执行顺序：
 
-1. 输出字符串 main starting 后，加载a脚本
-2. 进入 a 脚本，a脚本中输出的done变量被设置为false，随后输出字符串 a starting，然后加载 b脚本
-3. 进入 b 脚本，随后输出字符串 b starting，接着b脚本中输出的done变量被设置为false，然后加载 a脚本，发现了循环加载，此时不会再去执行a脚本，只输出已经执行的部分（即a.js中的`exports.done = false`，就是在b.js内的a变量），随后输出字符串in b, a.done = false，接着b脚本中输出的done变量被设置为true，最后输出字符串 b done，b脚本执行完毕，回到之前的a脚本
-4. a脚本继续从第4行开始执行，随后输出字符串in a, b.done = true，接着a脚本中输出的done变量被设置为true，最后输出字符串 a done，a脚本执行完毕，回到之前的main脚本
-5. main脚本继续从第3行开始执行，加载b脚本，发现b脚本已经被加载了，将不再执行，直接返回之前的结果，最终输出字符串in main, a.done = true, b.done = true，至此main脚本执行完毕
+1. 输出字符串 main starting 后，加载 a 脚本
+2. 进入 a 脚本，a 脚本中输出的 done 变量被设置为 false，随后输出字符串 a starting，然后加载 b 脚本
+3. 进入 b 脚本，随后输出字符串 b starting，接着 b 脚本中输出的 done 变量被设置为 false，然后加载 a 脚本，发现了循环加载，此时不会再去执行 a 脚本，只输出已经执行的部分（即 a.js 中的`exports.done = false`，就是在 b.js 内的 a 变量），随后输出字符串 in b, a.done = false，接着 b 脚本中输出的 done 变量被设置为 true，最后输出字符串 b done，b 脚本执行完毕，回到之前的 a 脚本
+4. a 脚本继续从第 4 行开始执行，随后输出字符串 in a, b.done = true，接着 a 脚本中输出的 done 变量被设置为 true，最后输出字符串 a done，a 脚本执行完毕，回到之前的 main 脚本
+5. main 脚本继续从第 3 行开始执行，加载 b 脚本，发现 b 脚本已经被加载了，将不再执行，直接返回之前的结果，最终输出字符串 in main, a.done = true, b.done = true，至此 main 脚本执行完毕
 
-
-### ESM的循环加载
+### ESM 的循环加载
 
 ES6 模块是编译时加载：即编译时遇到模块加载命令 import，不会去执行这个模块，只会输出一个只读引用，等到真的需要用到这个值时（即运行时），再通过这个引用到模块中取值。换句话说，模块内部这个值改变了，仍旧可以根据输出的引用获取到最新变化的值。
 
 跟 CommonJS 模块一样，ES6 模块也不会再去执行重复加载的模块，并且解决循环加载的策略也一样：一旦某个模块被循环加载，就只输出已经执行的部分，没有执行的部分不输出。
 
-但ES6 模块的循环加载与 CommonJS 存在本质上的不同。由于 ES6 模块是动态引用，用 import从一个模块加载变量，那个变量不会被缓存（是一个引用），所以只需要保证真正取值时能够取到值，即已经声明初始化，代码就能正常执行。
+但 ES6 模块的循环加载与 CommonJS 存在本质上的不同。由于 ES6 模块是动态引用，用 import 从一个模块加载变量，那个变量不会被缓存（是一个引用），所以只需要保证真正取值时能够取到值，即已经声明初始化，代码就能正常执行。
 
-举个🌰：
+举个 🌰：
 
 ```js
 // a.js
-import { bar } from './b';
-console.log('a.js');
+import { bar } from "./b";
+console.log("a.js");
 console.log(bar);
-export let foo = 'foo';
+export let foo = "foo";
 
 // b.js
-import { foo } from './a';
-console.log('b.js');
+import { foo } from "./a";
+console.log("b.js");
 console.log(foo);
-export let bar = 'bar';
+export let bar = "bar";
 ```
 
-从a.js开始执行，就会发现报错foo is not defined，
+从 a.js 开始执行，就会发现报错 foo is not defined，
 
-简单分析一下a脚本执行过程：
-1. 开始执行a脚本，加载b脚本
-2. 进入b脚本，加载a脚本，发现了循环加载，此时不会再去执行a脚本，只输出已经执行的部分，但此时a脚本中的foo变量还未被初始化，接着输出字符串a.mjs，之后尝试输出foo变量时，发现foo变量还未被初始化，所以直接抛出异常
+简单分析一下 a 脚本执行过程：
 
+1. 开始执行 a 脚本，加载 b 脚本
+2. 进入 b 脚本，加载 a 脚本，发现了循环加载，此时不会再去执行 a 脚本，只输出已经执行的部分，但此时 a 脚本中的 foo 变量还未被初始化，接着输出字符串 a.mjs，之后尝试输出 foo 变量时，发现 foo 变量还未被初始化，所以直接抛出异常
 
 ### webpack 对循环依赖的处理
 
-无论是esm还是cjs，webpack都会把它翻译成自己的webpackrequire形式的模块化。
-但是这种方式仍然会出现循环依赖的问题。以上面ESM循环依赖的例子测试，得到的报错和直接在node环境下调用一样，foo is not defined。
+无论是 esm 还是 cjs，webpack 都会把它翻译成自己的 webpackrequire 形式的模块化。
+但是这种方式仍然会出现循环依赖的问题。以上面 ESM 循环依赖的例子测试，得到的报错和直接在 node 环境下调用一样，foo is not defined。
 
-默认webpack也只是对导入导出做出解析，而不会检查循环依赖，包括编译之后的文件内容也是可以看出来循环依赖的。
+默认 webpack 也只是对导入导出做出解析，而不会检查循环依赖，包括编译之后的文件内容也是可以看出来循环依赖的。
 
 ### 循环依赖的解决
 
 #### 语句顺序
 
-要知道循环依赖本身不是一个问题。对esm来说，所出现的问题实际上调用顺序的错误。比如上面esm的例子中，本质上相当于这样：
+要知道循环依赖本身不是一个问题。对 esm 来说，所出现的问题实际上调用顺序的错误。比如上面 esm 的例子中，本质上相当于这样：
 
 ```js
 console.log(foo);
-let foo = 'foo';
+let foo = "foo";
 ```
 
 这种情况肯定会报错。类似这样的循环依赖在项目中出现的比较少，通常常见的循环依赖都是很多个文件串起来的。
-因此想要解决循环依赖导致的问题，核心就是要调整好代码顺序。具体来说，就是调整好import的顺序。
+因此想要解决循环依赖导致的问题，核心就是要调整好代码顺序。具体来说，就是调整好 import 的顺序。
 
-还是上面的例子，假如我们让foo变量在导入之前就声明，就不会报错了：
+还是上面的例子，假如我们让 foo 变量在导入之前就声明，就不会报错了：
+
 ```js
 // a.js
-export let foo = 'foo';
-import { bar } from './b';
-console.log('a.js');
+export let foo = "foo";
+import { bar } from "./b";
+console.log("a.js");
 console.log(bar);
 
 // b.js
-import { foo } from './a';
-console.log('b.js');
+import { foo } from "./a";
+console.log("b.js");
 console.log(foo);
-export let bar = 'bar';
+export let bar = "bar";
 ```
-这样加载bar之前，foo变量已经在a.js中声明，再去执行b.js时得到的foo就是一个确定的值。
+
+这样加载 bar 之前，foo 变量已经在 a.js 中声明，再去执行 b.js 时得到的 foo 就是一个确定的值。
 
 不过这种方式太随机了，对于复杂的循环依赖，其实很难知道到底是哪里出了问题。
-并且如果有多个import的话，不同import之间的顺序也很重要。通常某些import加载的模块可能依赖于其他import加载的模块，因此需要把被依赖的调整到前面
+并且如果有多个 import 的话，不同 import 之间的顺序也很重要。通常某些 import 加载的模块可能依赖于其他 import 加载的模块，因此需要把被依赖的调整到前面
 
 #### 统一导出
 
 参考：https://medium.com/visual-development/how-to-fix-nasty-circular-dependency-issues-once-and-for-all-in-javascript-typescript-a04c987cf0de
 
 另外一种方式更好一些，就是：
+
 - 引入一个 index.js 和 internal.js 文件
 - internal.js 模块从项目中的每个本地模块导入和导出所有内容
 - 项目中的每个其他模块仅从 internal.js 文件导入，从不直接从项目中的其他文件导入
-- 如果是一个库，那么index.js内部需要从 internal.js 导入和导出想要向外界公开的所有内容
+- 如果是一个库，那么 index.js 内部需要从 internal.js 导入和导出想要向外界公开的所有内容
 
-internal.js起到的作用就是把所有模块想要导出的内容统一导入进来再导出。可以使用`export * from '...'`这样的语句
-在internal内部调整各个import之间的顺序
+internal.js 起到的作用就是把所有模块想要导出的内容统一导入进来再导出。可以使用`export * from '...'`这样的语句
+在 internal 内部调整各个 import 之间的顺序
 
 ```js
 // main.js
-import {a,b} from './internal'
-export const main = {a,b}
+import { a, b } from "./internal";
+export const main = { a, b };
 
 // a.js
-import { main } from './internal';
-export let a = 'a';
+import { main } from "./internal";
+export let a = "a";
 
 // b.js
-import { main } from './internal';
-export let b = 'b';
+import { main } from "./internal";
+export let b = "b";
 
 // internal.js
-export * from './main'
-export * from './a';
-export * from './b';
+export * from "./main";
+export * from "./a";
+export * from "./b";
 ```
 
 另外，像上面那种两个模块循环依赖的方式是很难解决的。不过这种方式也比较容易定位，需要自己手动解除问题，比如把变量拆分到单独的文件中，或者删除部分导入等。
+
+# MVC/MVVM/MVP
+
+## MVC
+
+MVC 全名是 Model View Controller，是模型(model)－视图(view)－控制器(controller)的缩写，一种软件设计典范，用一种业务逻辑、数据、界面显示分离的方法组织代码，将业务逻辑聚集到一个部件里面，在改进和个性化定制界面及用户交互的同时，不需要重新编写业务逻辑。MVC 被独特的发展起来用于映射传统的输入、处理和输出功能在一个逻辑的图形化用户界面的结构中。
+
+![](https://pic.imgdb.cn/item/64218586a682492fccdc1c8c.jpg)
+
+- Model（模型）表示应用程序核心（如数据库）。
+- View（视图）显示效果（HTML 页面）。
+- Controller（控制器）处理输入（业务逻辑）。通常是用于获取模型中的数据（数据库），然后提供给视图（html）。
+
+举个例子，对于一个 web 应用来说，这三个部分分别应该是：
+
+- model：数据库，即该 web 应用存储数据的数据库
+- view：展示的界面，可以是 html、css 以及用于实现交互效果的 js
+- controller：通常指后端代码，从 model 中读取数据并提供给 view。
+
+controller 可以修改 model（后端代码操作数据库），同时 view 也可以对 controller 进行控制（比如 dom 事件触发的 ajax）。最后 model 把数据嵌入到 view 中并向用户展示。
+当然这是传统的 mvc 模式。如果是前端框架，那么通常 controller 就是控制数据的 js 代码，model 则是一些数据结构，这时 js 是运行在框架提供的运行时内的。
+
+React 是一种类 MVC 架构。React 组件充当了 View 和 Controller 的角色，组件内的 state 就是 Model；contoller 可以接收 view 的控制（事件）来修改 model 中的数据（setState），最后反映在 view 上（state）
+
+优点：
+
+- 耦合性低：可以理解为 M、V、C 三个部分不互相依赖，三个部分比较独立，改变其中一个并不会影响另外两个。同样，一个应用的业务流程或者业务规则的改变只需要改动 MVC 的模型层即可
+- 利于修改
+- 重用性高
+
+缺点：
+
+- 复杂：对于小型、简单的应用，如果使用 mvc，就会显得比较复杂。
+- 控制器负担重：在 MVC 模式中，控制器负责处理所有的用户请求和数据更新，当应用程序变得复杂时，控制器会变得越来越臃肿，难以维护。
+
+## MVVM
+
+![](https://pic.imgdb.cn/item/642187a2a682492fccdf5cec.jpg)
+
+MVVM 的核心是双向绑定，即 ViewModel 和 View 之间的数据流向是双向的。View 的变动会自然更新 ViewModel，而 ViewModel 内的数据改变也会更新 View。
+MVVM 模式的核心思想是将视图和数据绑定在一起，使得视图的状态和数据模型的状态能够自动同步，从而简化开发人员的工作。
+
+MVVM 中的三个部分分别负责以下内容：
+
+- 模型（Model）：负责管理应用程序的数据和业务逻辑，例如数据的获取、处理、存储等。
+- 视图（View）：负责展示应用程序的用户界面，例如 HTML 页面、CSS 样式等。
+- 视图模型（ViewModel）：负责将模型中的数据转换为视图所需要的格式，并且将视图中的用户操作转换为模型中的数据操作。视图模型充当着视图和模型之间的桥梁，通过数据绑定将视图和模型连接在一起，实现视图和模型的自动同步。
+
+在 MVC 模式中，如果想要把 Model 中的数据展现在 view 上，需要开发者手动操作（比如通过 dom、jsp 等方式）；而 MVVM 模式的宗旨就是让数据和视图自动同步，从而避免了手动操作 DOM 元素的复杂性和错误风险。
+
+vue 就是很典型的 MVVM 架构模式。vue 充当了一个 viewModel 的角色，将用户对 view 的操作（事件及传递的数据）修改到 model 上（js 对象或数组），而负责这部分同步的 vue 代码及框架本身都是 viewModel 角色。
+
+优点：和 MVC 基本一样，包括低耦合、方便维护和分工等
+缺点：最大的缺点是双向绑定的性能和调试问题。当数据量较大或数据变化频繁时，会影响应用程序的响应速度。
+
+## MVP
+
+MVP 是 MVVC 的前身，同时是 MVC 的衍生。它将视图和控制器分开，引入了 Presenter 层来协调和管理视图和模型之间的交互。
+
+![](https://pic.imgdb.cn/item/64218d14a682492fcce85569.jpg)
+
+在 MVP 架构中，模型（Model）仍然负责管理应用程序的数据，视图（View）负责展示数据给用户，Presenter 则负责处理用户的操作并更新数据和视图。Presenter 是一个介于视图和模型之间的中间层，它负责将视图和模型解耦，并协调它们之间的交互。Presenter 通过向视图提供接口来控制视图的显示和行为，并通过向模型提供接口来更新和获取数据。
+
+与 MVVM 架构不同的是，Presenter 负责将模型中的数据格式化后传递给视图，而不是直接和视图进行双向数据绑定。View 非常薄，不部署任何业务逻辑，称为"被动视图"（Passive View），即没有任何主动性，而 Presenter 非常厚，所有逻辑都部署在那里。
+
+也就是说，MVP 中模型和视图之间还需要一个手动修改的过程。相对于 MVVC 的自动绑定来说需要更多的代码。
+
+MVP 架构模式的缺点：（优点和 MVC 差不多）
+
+- 开发成本高：MVP 模式需要开发人员手动实现 Presenter 层，相对于 MVVM 模式，开发成本和学习成本都会更高。
+- 代码量多：MVP 模式需要开发人员手动实现 Presenter 层，因此代码量会比 MVVM 模式多，对于小型项目来说可能会显得冗余。但相对 MVVM 来说，如果 present 层实现的好，是要比 MVVM 的双向绑定更加效率高的。
+
+# Turbopack
+
+## 优点
+
+turbopack 是一个针对 JavaScript 和 TypeScript 优化的增量打包器。
+turbopack 由 rust 编写，主要的优势有：
+
+1. 开发环境下的打包：类似 webpack，turbopack 也会在开发环境下对源代码进行打包工作。不同与 vite 直接利用浏览器的 module 功能，Turbopack 依然会对开发环境下的源代码进行打包，不过这个打包过程使用的是 rust，因此比 webpack 更快。
+
+2. 增量计算能力：充分利用函数级别的缓存。按照官方文档的说法就是，“永远不会把一个函数执行第二遍”。因此 Turbo 可以缓存程序中任何函数的结果。当程序再次运行时，函数将不会重新运行，除非它的参数改变了。
+
+这样说可能比较抽象。实际上这种“函数”并不是指代码中实现的功能的函数，更多是导入导出的组件级别的函数。
+举个例子：
+
+```js
+import Header from "../components/header";
+import Footer from "../components/footer";
+export default function Home() {
+  return (
+    <div>
+            <Header />      <h1>Home</h1>
+            <Footer />   {" "}
+    </div>
+  );
+}
+```
+
+上面这段代码中，如果更新 Footer 这个组件并保存，在 Webpack 中 Header 和 Footer 两个组件都会被重新编译，而仔细观察 Turbopack 输出的缓存文件，会发现只有 Footer 组件被重新编译，而 Header 组件则使用的是上一次的编译结果。
+通过这种缓存机制，去除大量重复的工作，使得编译的效率大幅度的提升。
+
+3. 懒加载：turbopack 提供自动懒加载的功能。相对于 webpack 需要手动代码分割，turbopack 可以自动得出所需的最小代码，将其打包，而不会将整个模块全部打包。对于第一次启动来说，只需要计算入口所需的模块及其依赖，将其打包之后发送到浏览器，这个过程要比原生 esm 快得多。
+
+在懒加载之上，turbopack 还引入了请求级编译的功能，即浏览器需要什么才编译什么。比如浏览器请求 HTML，只编译 HTML，而不是 HTML 引用的任何内容。
+
+4. 编译工具：Turbopack 的速度如此之快有一个很大的原因是使用了 SWC 作为编译器。大部分 Webpack 的项目编译都是使用 Babel 编译和转换，由于 Babel 本身也是使用 Javascript 编写，转换效率并不理想，而 Turbopack 原生使用 SWC 作为编译器。SWC 是一款 Rust 编写的 Javascript 代码编译器，官方宣称其编译速度是 Babel 的 20 倍（ Webpack 也可以使用 SWC）。
+
+## 缺点
+
+turbopack 的缺点也很明显
+
+1. 未成熟：目前只能在 nextjs 中体验，官方文档上使用的是一个 nextjs 项目的实例，而 next12 之后用的都是 turbopack，不能单独拿出来用。更深入的了解也只能依赖官方文档
+2. 生态一般：webpack、vite 相关的插件目前还无法兼容和创建新的生态，因此生态比较一般。

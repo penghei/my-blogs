@@ -51,6 +51,91 @@ export class Circle extends Shape<CircleConfig> {
 
 每个具体图形都继承自 Shape 类，Shape 类包含一些基本的方法和属性。在 Shape 和 Node 两个基类上面只负责调用，具体的实现放到具体的 Shape 实现上面。
 
+在shape基类中，konva会获取每个图形的_sceneFunc函数，然后放到自己的drawScene函数中
+
+```ts
+drawScene(can?: SceneCanvas, top?: Node) {
+  // basically there are 3 drawing modes
+  // 1 - simple drawing when nothing is cached.
+  // 2 - when we are caching current
+  // 3 - when node is cached and we need to draw it into layer
+  var layer = this.getLayer(),
+    canvas = can || layer.getCanvas(),
+    context = canvas.getContext() as SceneContext,
+    cachedCanvas = this._getCanvasCache(),
+    drawFunc = this.getSceneFunc(), // 获取绘制函数
+    hasShadow = this.hasShadow(),
+    stage,
+    bufferCanvas,
+    bufferContext;
+  var skipBuffer = canvas.isCache;
+  var cachingSelf = top === this;
+  if (!this.isVisible() && !cachingSelf) {
+    return this;
+  }
+  // 从缓存中绘制图形
+  if (cachedCanvas) {
+    context.save();
+    var m = this.getAbsoluteTransform(top).getMatrix();
+    context.transform(m[0], m[1], m[2], m[3], m[4], m[5]);
+    this._drawCachedSceneCanvas(context);
+    context.restore();
+    return this;
+  }
+  if (!drawFunc) {
+    return this;
+  }
+  // 每次绘制前先保存
+  context.save();
+  // 离屏绘制，在bufferCanvas上绘制
+  if (this._useBufferCanvas() && !skipBuffer) {
+    stage = this.getStage();
+    bufferCanvas = stage.bufferCanvas;
+    // 获取canvas context
+    bufferContext = bufferCanvas.getContext();
+    bufferContext.clear();
+    bufferContext.save();
+    bufferContext._applyLineJoin(this);
+    // layer might be undefined if we are using cache before adding to layer
+    var o = this.getAbsoluteTransform(top).getMatrix();
+    bufferContext.transform(o[0], o[1], o[2], o[3], o[4], o[5]);
+    // 在canvas context上执行绘制函数
+    // 注意这里是在bufferContext上渲染的，是一种离屏渲染
+    drawFunc.call(this, bufferContext, this);
+    bufferContext.restore();
+    var ratio = bufferCanvas.pixelRatio;
+    if (hasShadow) {
+      context._applyShadow(this);
+    }
+    context._applyOpacity(this);
+    context._applyGlobalCompositeOperation(this);
+    context.drawImage(
+      bufferCanvas._canvas,
+      0,
+      0,
+      bufferCanvas.width / ratio,
+      bufferCanvas.height / ratio
+    );
+  } else {
+    // 直接在canvas上绘制
+    context._applyLineJoin(this);
+    if (!cachingSelf) {
+      var o = this.getAbsoluteTransform(top).getMatrix();
+      context.transform(o[0], o[1], o[2], o[3], o[4], o[5]);
+      context._applyOpacity(this);
+      context._applyGlobalCompositeOperation(this);
+    }
+    if (hasShadow) {
+      context._applyShadow(this);
+    }
+    drawFunc.call(this, context, this);
+  }
+  context.restore();
+  return this;
+}
+```
+
+
 # konva 事件
 
 事件系统是 konva 最具特色的一项。
@@ -174,51 +259,49 @@ getIntersection(pos: Vector2d) {
 Layer 上的 getIntersection 方法如下：(简化)
 
 ```ts
-  getIntersection(pos: Vector2d) {
-    if (!this.isListening() || !this.isVisible()) {
-      return null;
-    }
-    while (true) {
-      for (let i = 0; i < INTERSECTION_OFFSETS_LEN; i++) {
-        const intersectionOffset = INTERSECTION_OFFSETS[i];
-        const obj = this._getIntersection({
-          x: pos.x + intersectionOffset.x * spiralSearchDistance,
-          y: pos.y + intersectionOffset.y * spiralSearchDistance,
-        });
-        const shape = obj.shape;
-        if (shape) {
-          return shape;
-        }
+getIntersection(pos: Vector2d) {
+  if (!this.isListening() || !this.isVisible()) {
+    return null;
+  }
+  while (true) {
+    for (let i = 0; i < INTERSECTION_OFFSETS_LEN; i++) {
+      const intersectionOffset = INTERSECTION_OFFSETS[i];
+      const obj = this._getIntersection({
+        x: pos.x + intersectionOffset.x * spiralSearchDistance,
+        y: pos.y + intersectionOffset.y * spiralSearchDistance,
+      });
+      const shape = obj.shape;
+      if (shape) {
+        return shape;
       }
     }
   }
-  _getIntersection(pos: Vector2d): { shape?: Shape; antialiased?: boolean } {
-    const ratio = this.hitCanvas.pixelRatio;
-    const p = this.hitCanvas.context.getImageData(
-      Math.round(pos.x * ratio),
-      Math.round(pos.y * ratio),
-      1,
-      1
-    ).data;
-    const p3 = p[3];
-
-    // 完全不透明的像素点，说明找到了某个shape
-    if (p3 === 255) {
-      const colorKey = Util._rgbToHex(p[0], p[1], p[2]);
-      // 从shapes数组中取到那个shape
-      const shape = shapes[HASH + colorKey];
-      if (shape) {
-        return {
-          shape: shape,
-        };
-      }
+}
+_getIntersection(pos: Vector2d): { shape?: Shape; antialiased?: boolean } {
+  const ratio = this.hitCanvas.pixelRatio;
+  const p = this.hitCanvas.context.getImageData(
+    Math.round(pos.x * ratio),
+    Math.round(pos.y * ratio),
+    1,
+    1
+  ).data;
+  const p3 = p[3];
+  // 完全不透明的像素点，说明找到了某个shape
+  if (p3 === 255) {
+    const colorKey = Util._rgbToHex(p[0], p[1], p[2]);
+    // 从shapes数组中取到那个shape
+    const shape = shapes[HASH + colorKey];
+    if (shape) {
       return {
-        antialiased: true,
+        shape: shape,
       };
     }
-
-    return {};
+    return {
+      antialiased: true,
+    };
   }
+  return {};
+}
 ```
 
 当 Shape 初始化的时候，会生成一个随机的颜色，以这个颜色作为 key 存入到 shapes 数组里面。

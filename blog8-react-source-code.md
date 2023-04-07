@@ -3298,6 +3298,33 @@ requestHostCallback = function (callback) {
 从这个角度来说，就相当于是js代码和浏览器渲染相互协作，js代码被拆成多段，一旦时间片完就交出线程控制权，否则会持续执行。两者关系类似下图：
 ![](https://pic.imgdb.cn/item/63ee7075f144a010074e492a.jpg)
 
+我们可以把这种调度过程看作是这种形式：
+
+```js
+function scheduler() {
+  do {
+    workLoop()
+  } while (shouleYield() || taskFinished);
+
+  if (state === finished) {
+    // 执行完任务
+  } else {
+    // 没执行完，异步安排下一次任务
+    requestIdleCallback(count); 
+  }
+}
+
+scheduler();
+```
+
+
+MessageChannel的选择主要基于以下几点考虑。详情参考：[react为什么选择MessageChannel](https://juejin.cn/post/6953804914715803678)
+
+- 微任务和宏任务：时间分片不能采用微任务，因为react分片的目的是防止阻塞渲染，但微任务会在下一次页面更新之前执行，从某种角度上来说和同步任务是没有区别的。
+- setTimeout：由于setTimeout递归执行可能导致4ms的延迟。scheduler本质上是一种递归（调度一个任务，这个任务内还会再调度一个任务），不能采用。
+- rAF：执行时间不确定。在 rAF() 的回调中再次调用 rAF()，会将第二次 rAF() 的回调放到下一帧前执行，而不是在当前帧前执行
+
+
 
 ## 异步调度
 
@@ -4008,6 +4035,213 @@ while (workQueue.length > 0) {
 ```
 
 这种方式可以更灵活地检测用户输入，从而保证不会阻塞用户的输入。
+
+## 渲染中断
+
+react的concurrent模式下还有一个非常重要的地方，就是渲染的可中断。
+Scheduler 通过时间分片控制了每个任务的最大执行时间，给任务设置不同的过期时间，分为 timerQueue 和 taskQueue，通过 MessageChannel 来手动调度 taskQueue 中每个任务的执行。
+但是有一个问题是，scheduler没有考虑到单个任务的执行问题，即scheduler调度的对象是任务，但每个任务可能会执行很长时间。
+对于这种long task 可以通过时间分片 + 优先级调度的方式在执行和暂停之间切换状态，就像 Scheduler 那样。
+
+这里就有一个很重要的问题。对于react的渲染过程（render的中断），当一次渲染中断之后，怎么在下一次执行时恢复到上次中断的位置？总不能全部重新渲染吧
+
+在performConcurrentWorkOnRoot函数内有这么一段：
+```js
+function performConcurrentWorkOnRoot(root) {
+  // 省略一部分代码 ... 执行 renderRootConcurrent 前的一些准备
+
+  // 开始 Reconciler 的 render 阶段
+  // exitStatus 用来表示 render 流程的结果状态
+  let exitStatus = renderRootConcurrent(root, lanes);
+
+  if (
+    includesSomeLane(
+      workInProgressRootIncludedLanes,
+      workInProgressRootUpdatedLanes
+    )
+  ) {
+    // ... 处理边缘场景
+    // 在 rendering 阶段中，如果发生了新的 update，但是这个 update 是把一些隐藏的组件重新展示出来
+    // 但是新的 update 的 lane 已经在当前的 rendering 阶段中被标记过了（执行过了），所以需要重头开始
+    prepareFreshStack(root, NoLanes);
+    // 看到这段注释，想必大家会很疑惑，不着急，我们现在还不需要理解它
+  } else if (exitStatus !== RootIncomplete) {
+    // 如果退出状态不等于未完成，那么说明有可能是一下几种
+    // 1、已完成
+    // 2、有报错被捕获
+    // 3、有报错未被捕获，严重级别的错误
+  }
+
+  // ensureRootIsScheduled内部会修改callbackNode，这个可以详情看下面模拟实现的部分
+  ensureRootIsScheduled(root, now());
+  if (root.callbackNode === originalCallbackNode) {
+    // 如果当前执行的 scheduler task 未发生变化，还是最初在执行的那个 task
+    // 那么返回一个新的函数，注意这一步，很关键
+    return performConcurrentWorkOnRoot.bind(null, root);
+  }
+  // 如果当前执行的 scheduler task 已经发生了变化或者被取消了，返回 null
+  // 这一步没有返回函数，也很关键
+  return null;
+}
+```
+
+一般来说，如果没有出现更高优先级的 lane priority，任务 task 就不会取消，也就是 root.callbackNode 和 root.callbackPriority 都没有发生变化
+若任务处于 RootInComplete - 未完成 状态，那么 performConcurrentWorkOnRoot 会返回 `performConcurrentWorkOnRoot.bind(null, root)` 作为恢复任务的关键，Scheduler 在执行 workloop 流程中会保存这个返回的回调，并重新赋值到 task.callback 上，在下次调度时重新执行。这时任务层面的中断和执行。
+
+对于任务内部来说，主要是通过这个部分：
+```js
+let exitStatus = renderRootConcurrent(root, lanes);
+```
+函数是这样：
+```js
+function renderRootConcurrent(root: FiberRoot, lanes: Lanes) {
+  // ... 省略流程
+  do {
+    try {
+       if (
+        workInProgressSuspendedReason !== NotSuspended &&
+        workInProgress !== null
+      ) {
+        // ...
+        workLoopConcurrent();
+        // 如果workLoop渲染中断，就退出
+        break;
+      }
+    } catch (thrownValue) {
+      handleError(root, thrownValue);
+    }
+  } while (true);
+  // ... 省略流程
+}
+// 一些恢复操作
+resetContextDependencies();
+
+popDispatcher(prevDispatcher);
+popCacheDispatcher(prevCacheDispatcher);
+executionContext = prevExecutionContext;
+
+
+// Check if the tree has completed.
+  if (workInProgress !== null) {
+    // Still work remaining.
+    if (enableSchedulingProfiler) {
+      markRenderYielded();
+    }
+    return RootInProgress;
+  } else {
+    // Completed the tree.
+    if (enableSchedulingProfiler) {
+      markRenderStopped();
+    }
+
+    // Set this to null to indicate there's no in-progress render.
+    workInProgressRoot = null;
+    workInProgressRootRenderLanes = NoLanes;
+
+    // It's safe to process the queue now that the render phase is complete.
+    finishQueueingConcurrentUpdates();
+
+    // Return the final exit status.
+    return workInProgressRootExitStatus;
+  }
+```
+
+workLoopConcurrent就是上面说过的render阶段的workLoop。
+这时会判断是否还有未完成渲染的节点。如果还有剩余节点需要处理，返回未完成的状态RootInProgress；如果已完成，重置 workInProgress 状态，返回 workInProgressRootExitStatus
+
+对于RootInProgress这个状态，表示渲染被中断，在ensureRootIsScheduled函数内，会得到这个状态：
+
+```js
+let exitStatus = shouldTimeSlice
+    ? renderRootConcurrent(root, lanes)
+    : renderRootSync(root, lanes);
+```
+
+然后下面会对exitStatus做出判断，如果不是RootInProgress，那么就会考虑几种情况，比如因为高优先级中断，或者也可能是render阶段完成这样的。
+
+到这里为止，可以看到react内部其实没有显式地说明，如果渲染过程因为时间片原因中断，应该怎么恢复之前的节点；
+可以大胆猜测一下，既然没有说怎么保存，只是说怎么“清除”，那就可以认为，react本来就会保存当前正在渲染的节点（workInProgress）。如果本次workLoop被中断了，然后通过scheduler重新调度一次workLoop，那么就还是会从workInProgress开始执行
+
+```js
+let workInProgress: Fiber | null = null;
+
+// ...
+function workLoopConcurrent() {
+  // Perform work until Scheduler asks us to yield
+  while (workInProgress !== null && !shouldYield()) {
+    performUnitOfWork(workInProgress);
+  }
+}
+```
+
+只要workInProgress没被清除，那么loop还是会从这里开始，即使是下一个时间片再调度。
+
+反过来说，如果主动清除workInProgress，将其重新设为root，那就相当于放弃了已经生成的树，转而去重建一颗。如果渲染时因为高优先级任务打断的，那么react会重新从根部开始渲染，而不是保留上次的wip节点。
+
+在prepareFreshStack函数内。这个函数会在scheduleUpdateOnFiber的一开始调度
+
+```js
+export function scheduleUpdateOnFiber(
+  root: FiberRoot,
+  fiber: Fiber,
+  lane: Lane,
+  eventTime: number,
+) {
+  if (
+    workInProgressSuspendedReason === SuspendedOnData &&
+    root === workInProgressRoot
+  ) {
+    // The incoming update might unblock the current render. Interrupt the
+    // current attempt and restart from the top.
+    prepareFreshStack(root, NoLanes);
+  }
+}
+```
+
+这个函数主要是做了状态的初始化。即，如果因为高优先级打断的渲染，则会初始化之前保存的workInProgress为根部。
+
+```js
+function prepareFreshStack(root: FiberRoot, lanes: Lanes): Fiber {
+  root.finishedWork = null;
+  root.finishedLanes = NoLanes;
+
+  const timeoutHandle = root.timeoutHandle;
+  if (timeoutHandle !== noTimeout) {
+    // The root previous suspended and scheduled a timeout to commit a fallback
+    // state. Now that we have additional work, cancel the timeout.
+    root.timeoutHandle = noTimeout;
+    // $FlowFixMe Complains noTimeout is not a TimeoutID, despite the check above
+    cancelTimeout(timeoutHandle);
+  }
+
+  resetWorkInProgressStack();
+  workInProgressRoot = root;
+  const rootWorkInProgress = createWorkInProgress(root.current, null);
+  workInProgress = rootWorkInProgress;
+  workInProgressRootRenderLanes = renderLanes = lanes;
+  workInProgressSuspendedReason = NotSuspended;
+  workInProgressThrownValue = null;
+  workInProgressRootDidAttachPingListener = false;
+  workInProgressRootExitStatus = RootInProgress;
+  workInProgressRootFatalError = null;
+  workInProgressRootSkippedLanes = NoLanes;
+  workInProgressRootInterleavedUpdatedLanes = NoLanes;
+  workInProgressRootRenderPhaseUpdatedLanes = NoLanes;
+  workInProgressRootPingedLanes = NoLanes;
+  workInProgressRootConcurrentErrors = null;
+  workInProgressRootRecoverableErrors = null;
+
+  finishQueueingConcurrentUpdates();
+
+  if (__DEV__) {
+    ReactStrictModeWarnings.discardPendingWarnings();
+  }
+
+  return rootWorkInProgress;
+}
+```
+
+如果清除了当前保存的workInProgress，就意味着下一次渲染将会从头开始执行。
 
 # Hooks 原理
 
@@ -6925,6 +7159,10 @@ componentWillUnmount(){
 比如说，React18 的 Concurrent 模式下，render 阶段可能会被反复执行，或者中断到之后才执行，那么这三个生命周期也就可能会被反复执行，而导致他们没有对应的 componentDidUpdate 这种应该匹配的函数。如果这些生命周期内有副作用，那就会导致更复杂的问题（副作用被反复调用是很恐怖的事情）。
 React18 的 Suspense 也会导致这个问题，由于在新版的 Suspense 中，正在挂起的组件树将会被“丢弃”，然后等到挂起状态结束后才会再次渲染，因此也是会出现重复调用的问题。
 
+注意，这三个生命周期被重复执行不是因为时间分片机制导致的workLoopConcurrent中断，而是由于高优先级任务的进入。
+前者不会放弃已经渲染的节点，因此这三个生命周期不会重复执行；但高优先级任务会导致整个workInProgress树被重新构建，就可能导致这三个生命周期被重复调用。
+
+
 > 一起被挂上该标签的一共有三个：
 >
 > - `UNSAFE_componentWillMount`
@@ -7358,3 +7596,181 @@ function attachSuspenseRetryListeners(finishedWork: Fiber) {
   }
 }
 ```
+
+# React 更新
+
+这部分主要是解决之前没弄清的地方。
+
+## 更新方式
+
+导致一个组件更新的情况有这几种：
+
+- 主动调度setState
+- props改变
+- context
+- 父组件rerender，且当前组件没有采用memo等方式
+- 外部状态导致的更新，比如状态管理库
+
+第一种已经在上面说的很清楚了，这里来说一下props或context导致的更新。
+
+
+### props/context更新
+
+实际上，在beginwork函数一开始，就比较了props：
+
+```ts
+function beginWork(
+  current: Fiber | null,
+  workInProgress: Fiber,
+  renderLanes: Lanes,
+): Fiber | null {
+  if (current !== null) {
+    const oldProps = current.memoizedProps;
+    const newProps = workInProgress.pendingProps;
+
+    if (
+      oldProps !== newProps ||
+      hasLegacyContextChanged() ||
+    ) {
+      // 这个变量，用于控制通过props或context引起的更新
+      didReceiveUpdate = true;
+    } else {
+      // 检查是否包含由updateLane引起的更新
+      // 即是否由setState引起的更新。如果有的话那么didReceiveUpdate也是true
+    }
+  } else {...}
+}
+```
+
+didReceiveUpdate会在后续的过程中起到标识是否更新的作用，也可以直接调度更新，比如：
+
+```ts
+if (didReceiveUpdate || hasContextChanged) {
+  // This boundary has changed since the first render. This means that we are now unable to
+  // hydrate it. We might still be able to hydrate it using a higher priority lane.
+  const root = getWorkInProgressRoot();
+  if (root !== null) {
+    const attemptHydrationAtLane = getBumpedLaneForHydration(
+      root,
+      renderLanes,
+    );
+    if (
+      attemptHydrationAtLane !== NoLane &&
+      attemptHydrationAtLane !== suspenseState.retryLane
+    ) {
+      // Intentionally mutating since this render will get interrupted. This
+      // is one of the very rare times where we mutate the current tree
+      // during the render phase.
+      suspenseState.retryLane = attemptHydrationAtLane;
+      // TODO: Ideally this would inherit the event time of the current render
+      const eventTime = NoTimestamp;
+      enqueueConcurrentRenderForLane(current, attemptHydrationAtLane);
+      // 直接调度更新
+      scheduleUpdateOnFiber(
+        root,
+        current,
+        attemptHydrationAtLane,
+        eventTime,
+      );
+    }
+  }
+}
+```
+
+在updateFunctionComponent函数内也有类似的：
+
+```ts
+if (current !== null && !didReceiveUpdate) {
+  // 如果不需要更新，那就跳过当前组件的更新
+  bailoutHooks(current, workInProgress, renderLanes);
+  return bailoutOnAlreadyFinishedWork(current, workInProgress, renderLanes);
+}
+if (getIsHydrating() && hasId) {
+  pushMaterializedTreeId(workInProgress);
+}
+// 如果didReceiveUpdate为true并且current存在，就会继续调和（rerender）当前组件
+reconcileChildren(current, workInProgress, nextChildren, renderLanes);
+return workInProgress.child;
+```
+
+
+### 父组件导致的更新
+
+实际上，父组件更新导致子组件更新的原因并不是子组件真的要更新，而是子组件的rerender被视作是“更新”
+
+react判断是否是更新、执行更新还是挂载步骤的核心就是判断current是否存在。对于子组件来说，父组件更新必然执行render，也必然会render到子组件。
+即，即使子组件没有任何改变，也仍然会进入reconcile进行调和。
+
+```ts
+if (current === null) {
+  workInProgress.child = mountChildFibers(
+    workInProgress,
+    null,
+    nextChildren,
+    renderLanes,
+  );
+} else {
+  // current存在，进入更新
+  workInProgress.child = reconcileChildFibers(
+    workInProgress,
+    current.child,
+    nextChildren,
+    renderLanes,
+  );
+}
+```
+
+这个差异对于函数组件来说并不明显，因为函数组件无论是初始化还是更新都是执行一遍函数，只是在updateQueue上会有不同（rerender并不会增加updateQueue）
+但是对于类组件，由于调用的不同，执行的生命周期也不同。
+
+```ts
+if (instance === null) {
+  resetSuspendedCurrentOnMountInLegacyMode(current, workInProgress);
+  // In the initial pass we might need to construct the instance.
+  constructClassInstance(workInProgress, Component, nextProps);
+  mountClassInstance(workInProgress, Component, nextProps, renderLanes);
+  shouldUpdate = true;
+} else if (current === null) {
+  // In a resume, we'll already have an instance we can reuse.
+  shouldUpdate = resumeMountClassInstance(
+    workInProgress,
+    Component,
+    nextProps,
+    renderLanes,
+  );
+} else {
+  shouldUpdate = updateClassInstance(
+    current,
+    workInProgress,
+    Component,
+    nextProps,
+    renderLanes,
+  );
+}
+```
+resumeMountClassInstance/mountClassInstance/updateClassInstance内部执行的生命周期是不同的，他们分别对应完全初始化状态（没有类组件的instance）、初始化（没有current）和更新（current）
+
+---
+
+这里引入了一个问题，对于父组件更新，以及它有的一个子组件，这两个组件内的生命周期执行顺序是什么样的？如果是挂载阶段呢？
+
+其实大概就是这样的流程：
+
+- 更新：父gdsfp -> 父shup -> 父render -> 子gdsfp -> 子shup -> 子render -> 子gsn -> 父gsn -> 子cdup -> 父cdup
+
+render之前的生命周期都是在beginwork阶段调用的，因此按照beginwork从上到下的顺序，应该是先父组件内的这些，一直到render，进入子组件执行这些生命周期。
+然后，render阶段结束，进入commit；commit阶段内的before mutation会执行getSnapShotBeforeUpdate，Layout阶段会执行componentDidUpdate，并且这两个都是在“归”的过程执行的（参考上面commit阶段的解析）。因此这两个阶段都是先执行子再执行父（从下到上）
+
+如果考虑到旧的生命周期（cwrp、cwup），那就是这样（注意这两个和gdsfp和gsn不能共存）
+
+- 父cwrp（前提是组件新旧props必须不同） -> 父shup -> 父cwup -> 父render -> 子cwrp -> 子shup -> 子render -> 子cdup -> 父cdup
+
+注意cwrp应该是在shup前面的。
+
+最后，挂载阶段执行的应该是：
+
+- 父ctor -> 父gdsfp -> 父render -> 子ctor -> 子gdsfp -> 子render -> 子cdm -> 父cdm
+
+原理和更新的流程基本上差不多。
+
+

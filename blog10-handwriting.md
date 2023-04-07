@@ -139,6 +139,15 @@ function flatten(arr) {
     return pre.concat(flatten(curr));
   }, []);
 }
+
+function flatten(arr) {
+  if (!Array.isArray(arr)) return arr;
+  let res = [];
+  for (const val of arr) {
+    res = res.concat(flatten(val));
+  }
+  return res;
+}
 ```
 
 ## 手写数组分组
@@ -779,6 +788,33 @@ class Promise {
         onRejected(this.reason);
       });
     }
+  }
+  // catch可以简单实现为执行then的第二个参数
+  catch(onReject){
+    this.then(()=>{},onReject)
+  }
+}
+```
+
+如果希望 then 内部通过微任务的方式执行，可以使用 queueMicrotask：
+
+```js
+then(onResolve, onReject) {
+  if (this.state === "fulfilled" && onResolve) {
+    queueMicrotask(() => onResolve(this.value));
+  }
+  if (this.state === "rejected" && onReject) {
+    queueMicrotask(() => onReject(error));
+  }
+  if (this.state === "pending") {
+    onResolve &&
+      this.onResolvedCallbacks.push(() => {
+        queueMicrotask(() => onResolve(this.value));
+      });
+    onReject &&
+      this.onRejectCallbacks.push(() => {
+        queueMicrotask(() => onReject(this.error));
+      });
   }
 }
 ```
@@ -1607,39 +1643,44 @@ function flatten(obj) {
 > ```
 
 实现思路
-遍历对象，如果键名称含有 `.`， 将最后一个子键拿出来，构成对象，如 `{'a.b.c.dd': 'abcdd'}` 变为 `{'a.b.c': { dd: 'abcdd' }}` , 如果变换后的新父键名中仍还有点，递归进行以上操作。
+递归。每次处理一个属性的键，有点像前缀树的思路
+
+- 每次递归的 level 表示“层级”，即键数组的序号。比如键为`a.b.c.d`，拆成数组`[a,b,c,d]`，那么每次递归就是从第一项开始，每递归一次向后走一个，然后把上一层创建的对象传下去，本层递归在上一层创建的对象上添加属性
+  - 如果属性存在，那就继续往下走
+  - 如果属性不存在，就创建属性，初始化为空对象
+- 当`level === keysArr.length - 1`，表示走到了最后一个属性，这时就把值赋给这个属性即可。
+
+这是基础的版本，暂时没有处理数组的情况。
 
 ```js
-function nested(obj) {
-  Object.keys(obj).map((k) => {
-    //一次传递一个键，这一组键拆分完后再处理第二组
-    getNested(k);
-  });
+const deFlat = (object) => {
+  if (!object) return null;
+  const entries = [];
+  for (const [key, value] of Object.entries(object)) {
+    const keysArr = key.split(".");
+    entries.push([keysArr, value]);
+  }
+  const res = {};
+  for (let i = 0; i < entries.length; i++) {
+    dfs(0, res, entries[i][0], entries[i][1]);
+  }
 
-  return obj;
-
-  function getNested(key) {
-    const idx = key.lastIndexOf(".");
-    const value = obj[key];
-    if (idx !== -1) {
-      delete obj[key]; //删掉原对象的这个键
-      //取最后一个点前面和后面的部分，分别作为主键和副键（要被放入内部的键）
-      const mainKey = key.substring(0, idx);
-      const subKey = key.substr(idx + 1);
-      if (!obj[mainKey]) {
-        //如果原对象没有主键，创建一个新键，值是一个新对象
-        obj[mainKey] = { [subKey]: value };
+  function dfs(level, parentObj, keysArr, value) {
+    if (level >= keysArr.length) return;
+    const key = keysArr[level];
+    if (keysArr[level] != null && level < keysArr.length - 1) {
+      if (parentObj[key] != null && typeof parentObj[key] === "object") {
+        dfs(level + 1, parentObj[key], keysArr, value);
       } else {
-        //这种情况是源对象已经有一个同名的键，把新值直接放入原先有的键下面
-        obj[mainKey][subKey] = value;
+        parentObj[key] = {};
+        dfs(level + 1, parentObj[key], keysArr, value);
       }
-      if (mainKey.includes(".")) {
-        //
-        getNested(mainKey);
-      }
+    } else if (level === keysArr.length - 1) {
+      parentObj[key] = value;
     }
   }
-}
+  return res;
+};
 ```
 
 ## 手写虚拟 dom 转化为真实 dom
@@ -2188,7 +2229,9 @@ const upload = (val, timout) => {
 upload("hello world", 3000);
 ```
 
-## 手写校准计时器
+## 计时器相关
+
+### setTimeout递归调用校准
 
 js 的 setTimeout、setInterval 的执行是不准确的。由于 js 单线程的缘故，有些情况可能会导致实际的 timeout 比设定的长，或实际的 interval 比指定的 interval 长。
 
@@ -2206,6 +2249,32 @@ function startTimer() {
   timeout = setTimeout(startTimer, 1000 - offset);
 }
 ```
+
+### 用setTimeout实现setInterval
+
+原理：和上面的调用校准类似。我们递归调用myInertval函数，每次检查调用的时间差值：
+
+- 如果差值和interval的差值<=0，说明定时时间到了，立即执行
+- 如果差值>0，说明还没到，那就用setTimeout延迟剩余时间执行。
+
+```js
+let pre = Date.now();
+function myInterval(fn, interval) {
+  let now = Date.now();
+  const remain = interval - (now - pre);
+  if (remain <= 0) {
+    fn();
+    pre = now;
+    myInterval(fn, interval);
+  } else {
+    setTimeout(() => {
+      myInterval(fn,interval);
+    }, remain);
+  }
+}
+myInterval(() => console.log(1),1000)
+```
+
 
 ## 手写 dayjs 时间格式化功能
 
@@ -2276,10 +2345,6 @@ class Dayjs {
 }
 console.log(dayjs('2002-08-08 08:08:08').formatDate('YYYY-MM-DD'));
 ```
-
-## 手写虚拟列表
-
-虚拟列表的实现有很多，但是虚拟列表的基本思路不变。
 
 ## 手写大文件分片上传
 
@@ -2374,7 +2439,8 @@ async function sliceFileUpload(file) {
 # 随机数相关问题
 
 随机数的核心是利用`Math.random()`。
-如果要取`[0, n)`上的数，就可以利用`Math.floor(Math.random() * n)`。注意 random 生成的范围不包括 1，所以很多情况下要取[1,n]，应该是`Math.floor(Math.random() * n +)`
+如果要取`[0, n)`上的数，就可以利用`Math.floor(Math.random() * n)`。注意 random 生成的范围不包括 1，所以很多情况下要取[1,n]，应该是`Math.floor(Math.random() * n) + 1`
+如果要取`[0,n]`，那就是`Math.floor(Math.random() * (n + 1))`
 
 ## 从数组中随机取一个元素
 
@@ -2492,7 +2558,8 @@ const randomCode2 = () => {
 ```js
 const shuffle = (arr) => {
   for (let i = arr.length - 1; i > 0; i--) {
-    const tmp = Math.floor(Math.random() * i + 1);
+    // 从[0, i]中随机取一个数
+    const tmp = Math.floor(Math.random() * (i + 1));
     [arr[tmp], arr[i]] = [arr[i], arr[tmp]];
   }
   console.log(arr);
@@ -2561,7 +2628,7 @@ get(object, "a[100].b.c", 10086);
 
 ```js
 const _get = (obj, str, val) => {
-  str = str.replaceAll("[", ".").replaceAll(/\'|\]|\"/g, ""); // 把左括号全部改为 "." ，其他字符去掉
+  str = str.replace(/\[("|')?(\w+)("|')?\]/g, ".$2"); // 用 $2 来代表捕获到的内容
   const props = str.split(".");
   let res = obj;
   for (let prop of props) {
@@ -3459,3 +3526,392 @@ console.log(obj); // obj1  new的调用并没有改变this，说明Person1中的
 ![](https://pic1.imgdb.cn/item/6362611e16f2c2beb1fba29d.jpg)
 
 这道题其实和第一题是一样的。其实就是创建了一个对象，是 person 的一个属性；直接调用 obj 和 person.obj 是一样的
+
+## 输出题错题记录
+
+### 1. 嵌套对象的引用问题：单独取出来嵌套对象的引用和原本的引用是冲突的
+
+```js
+var obj = { a: { b: 2 } };
+var obj2 = obj;
+var obj3 = obj.a;
+obj2.a = 3;
+console.log(obj3);
+// 复原
+obj2.a = { b: 3 };
+console.log(obj3);
+// 复原
+obj2.a.b = 3;
+console.log(obj3);
+```
+
+输出：
+
+```
+{b:2}
+{b:2}
+{b:3}
+```
+
+解释：
+
+obj3 和 obj.a 都是对对象`{b:2}`的索引。假如覆盖 obj.a 的值，那么相当于 obj.a 不再保持该对象的索引，只有 obj3 才保留；
+但是由于修改的是 obj.a 的属性，并不会影响这个 obj.a 这个对象本身（即修改的是 obj 内的一个属性，这时已经和`{b:2}`这个对象没有关系了）。
+如果是通过 obj.a.b 来修改`{b:2}`这个对象，那么会对 obj3 造成影响。反过来，如果修改 obj3，也会修改 obj.a 的值。因为 obj.a 和 obj3 这时都是`{b:2}`这个对象的索引。
+
+注意好一点：对于嵌套的引用类型结构，如果取的是内部的嵌套对象，并不是复制，只是对这个子对象取了一个索引。如果通过新的索引或源对象的方式修改该子对象，都会修改对象本身。
+如果是直接替换，那就相当于丢失了这个索引。
+
+---
+
+### 2. var 定义问题：函数定义在哪就从那哪查找，但实际的值是执行阶段确定的
+
+```js
+const fn = () => console.log(i);
+for (var i = 0; i < 3; i++) {
+  setTimeout(fn, i * 1000);
+}
+
+// 如果把var替换成let呢
+```
+
+输出：
+
+```
+3 // 第0秒
+3 // 第1秒
+3 // 第2秒
+
+// 如果换成let
+报错：i未定义
+```
+
+这道题其实和那个 var 对于 setTimeout 的输出是一样的。即使把 fn 提取到外面，也是一样的。
+因为 var 的变量提升，导致 i 每次执行都会更新顶层的值
+
+```js
+var i = undefined;
+const fn = () => console.log(i);
+for (i = 0; i < 3; i++) {
+  setTimeout(fn, i * 1000);
+}
+```
+
+注意：这里输出**不是**undefined。因为 i 在下面循环中被赋值；当 fn 执行时，i 已经被赋值为 3 了。这和 fn 在内部定义是完全一样的：
+
+```js
+// 和上面是一样的
+for (var i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), i * 1000);
+}
+```
+
+这里是之前错的地方。i 如果定义在 for 循环内部，那么它查找的时候会按照`for的块级作用域 -> 外部作用域`这个顺序查找的，而直接定义在外部则是直接在`外部作用域`内查找。但是不管在哪里查找，对于 var 定义的变量来说，都是声明在最顶层的，并且当执行 fn 的时候 i 都是已经赋值的了。并不会出现 undefined 的情况。
+
+如果是 let，那么只有 for 内部才有 i 这个变量。如果是把 fn 定义在外面，就会报错找不到 i，因为 i 不在外部作用域内（注意不是 TDZ，因为 i 根本不在外部作用域，不是 i 在声明之前被使用）
+
+---
+
+### 3. function 和 var 声明的覆盖问题
+
+```js
+var a;
+function a() {}
+console.log(a);
+a = 10;
+console.log(a);
+```
+
+输出：
+
+```
+f a()
+10
+```
+
+函数声明不会被 var 声明覆盖。因此这里函数声明可以声明成功，第一个 console.log 打印的是函数 a；
+而后面 a=10 的语句相当于覆盖了函数 a 的声明。注意不是 var 定义变量的声明。
+
+如果把 var 替换成 let，这里就会报错 a 已经被声明过了，不能再声明一个名字叫 a 的变量。
+
+```js
+let a; // 报错
+function a() {}
+```
+
+---
+
+### 4. 函数内参数重命名、赋值，以及函数参数默认值
+
+```js
+function f(x) {
+  console.log(x);
+  var x = 200;
+  console.log(x);
+}
+f(100);
+```
+
+输出
+
+```
+100
+200
+```
+
+函数内的变量理论上是不能重新声明的。如果使用 let、const 重新声明，则会直接报错；而如果使用 var，则不会显式报错，但声明会失败。
+这里`var x = 200`相当于只执行了`x = 200`，`var x`这个并没有生效。因此第一个 log 打印的是参数的值而不是 var 的声明；第二个 log 打印的是赋值之后的 x
+
+---
+
+### 5. 对象内箭头函数中 this 的指向
+
+```js
+function global() {
+  const obj = {
+    name: "inner",
+    f1() {
+      console.log(this.name);
+    },
+    f2: function () {
+      console.log(this.name);
+    },
+    f3: () => {
+      console.log(this.name);
+    },
+    f4() {
+      return function () {
+        console.log(this.name);
+      };
+    },
+    f5() {
+      return () => console.log(this.name);
+    },
+  };
+  return obj;
+}
+const outer = {
+  name: "outer",
+};
+const obj = global.bind(outer)();
+obj.f1();
+obj.f2();
+obj.f3();
+obj.f4()();
+obj.f5()();
+```
+
+输出：
+
+```
+inner
+inner
+outer
+undefined
+inner
+```
+
+解释：
+
+1. f1 和 f2 是相同的方式的不同写法，由于调用采用了隐式绑定，因此输出值为 obj 的 name
+2. f3 是箭头函数。箭头函数是将 this 设置为外层的 this，注意这个“外层”，指的是上层执行上下文。也就是说，这个外层只能是函数或全局，而不是一个对象。
+
+什么意思呢，就是说箭头函数取的 this 应该是其外层函数内的 this，而不是外层对象内的 this。因此上面的 f3 取的是 global 函数内的 this，而不是 obj 对象的 this。
+同理也适用于 f5，f5 的返回值这个箭头函数的“外层”指的是 f5 这个函数，因此执行这个箭头函数会从 f5 函数内取 this，即 obj（因为是通过`obj.f5`调用的，f5 内的 this 被设置为 obj）
+
+3. f4 打印 undefined，因为这个函数相当于单独执行，但它有又没有去取外层的 this。
+
+### 6. 构造函数内的箭头函数
+
+```js
+function Test() {
+  this.flag = false;
+  this.change = () => {
+    this.flag = true;
+  };
+}
+function Test1() {
+  this.flag = false;
+}
+Test1.prototype.change = function () {
+  this.flag = true;
+};
+const test1 = new Test1();
+const test = new Test();
+test.change();
+test1.change();
+console.log(test.flag, test1.flag);
+```
+
+输出：
+
+```
+true
+true
+```
+
+解释：
+
+这两个定义的效果是相同的：
+
+```js
+function Test() {
+  this.change = () => {
+    this.flag = true;
+  };
+}
+
+function Test() {
+  this.flag = false;
+  this.change = function () {
+    this.flag = true;
+  };
+}
+```
+
+执行 change，都可以修改 flag 的值。原因在于，第一个因为是箭头函数，所以内部的 this 就是 Test 函数的 this。当构造时，this 被设置为实例，因此构造函数内的 this 也是构造出的实例。
+
+```js
+test = {
+  flag: false,
+  change: () => {
+    this.flag = true;
+  },
+};
+```
+
+如果是上面这个对象内的 change，显然不能实现。因为这里的 this 是指外层函数的 this，不会指向 test 对象，也不能绑定到 test 对象。
+但是为什么在构造函数内就可以呢？还是因为箭头函数使用的是 Test 函数的 this，而构造时这个 this 被绑定为构造出的实例。
+再具体一点，像下面这样：
+
+```js
+function Test() {
+  this.flag = false;
+  this.change = () => {
+    // 这里的this就是Test函数的this，是同一个值，因此改变这里的this就是改变实例
+    this.flag = true;
+  };
+}
+
+const test = new Test();
+const testChange = test.change;
+testChange();
+console.log(test.flag); // true，修改成功
+```
+
+可以看到即使把 change 方法从 test 中取出来，依旧可以让函数内部的 this 指向构造出的对象。这也就证明 new 绑定的优先级高于隐式绑定，并且 new 绑定之后即使不使用隐式绑定的调用方式依然可以保证 this 的指向。
+
+再说回这个函数：
+
+```js
+function Test() {
+  this.flag = false;
+  this.change = function () {
+    // Test内的this不会影响到这里，这里的this是change函数自己的
+    this.flag = true;
+  };
+}
+
+test = {
+  flag: false,
+  change() {
+    this.flag = true;
+  },
+};
+```
+
+这个就很好理解了，change 方法的调用就是和对象内调用一样。注意这里的 this 是不会像箭头函数那样和 Test 内的 this 绑定的，因此如果不使用隐式绑定，就会出错。
+
+```js
+const test = new Test();
+const testChange = test.change;
+testChange(); // window，即this没有绑定到test对象上
+```
+
+总结来说，就是：
+
+- new 会把构造函数内的 this 绑定到实例上，因此如果构造函数内有箭头函数，由于他们共享 this（箭头函数内的 this 本来就是构造函数内的），所以这个 this 一定是实例，不会绑定到其他对象上。
+- 对于构造函数内定义的普通函数，函数内的 this 依然是自己的，不会被 new 执行影响；因此这些函数调用就需要进行绑定，否则会缺少指向。
+
+### 7. 作用域问题
+
+还是上面那个例子：
+
+```js
+function test() {
+  this.flag = false;
+  this.change = () => {
+    console.log(button.flag);
+  };
+}
+const button = new test();
+button.change(); // 输出：false
+```
+
+这里似乎有个很奇怪的地方，为什么看起来 change 函数内的 button 是在其声明前调用的，但是依旧能正常输出 button？
+
+这里纠正一个之前错误的点：作用域的查找单位是“层”，而不是“行”。也就是说，变量查找是以层为单位的，在本层查找不到，就到外层查找，而不用管这个变量到底在外层的哪里。
+比如说：
+
+```js
+function getName(){
+  console.log(name);
+}
+const name = "aaa";
+getName(); // aaa
+```
+
+当执行getName时，打印出的name就是外层的name。**注意这个“外层”，指的是整个外层的变量，和具体位置没关系，和先后顺序也没关系。**
+即使const是在函数声明之后定义的，但依然不影响变量的查找。
+只要getName函数的调用在name声明和赋值之后，就能取到正常的值。
+
+另外，TDZ也指的是执行时才会出现的作用域问题，而不是在作用域查找时才会出现。比如：
+
+```js
+getName(); // Cannot access 'name' before initialization
+const name = "aaa";
+function getName(){
+  console.log(name);
+}
+```
+
+很显然TDZ和函数定义和变量定义的先后顺序没有关系，只和函数执行的前后有关系。
+
+### 8. 函数的构造调用和直接调用的this
+
+```js
+function Foo(){
+  console.log(this);
+  return this
+}
+Foo.prototype.getName = function (){
+  console.log(1);
+}
+console.log(Foo());
+console.log(new Foo())
+new Foo().getName()
+```
+
+输出：
+
+```
+window
+window
+{}
+{}
+```
+
+解释：
+
+当构造函数直接返回一个对象时，new构造函数的结果就是这个对象。不过有一个例外，就是返回this的情况。
+按理来说Foo函数内的this指向window，new Foo()应该返回window才对；但是new Foo同时也会把this指向创建的实例对象。因此Foo函数内的this实际是构造出的实例对象，返回的也是这个，而不是默认情况下的window或undefined
+
+```js
+function Foo(){
+  // const this = {}
+  return this
+}
+```
+
+既然new Foo能成功创建，因此getName方法也能正常执行。
+

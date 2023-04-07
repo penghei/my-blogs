@@ -422,9 +422,6 @@ var intersection = function (nums1, nums2) {
 
 另外考虑到去掉重复的数字，还可以设置一个变量pre表示前一个作为交集的数字。当`nums1[i] === nums2[j]`时，就把pre设置为nums1[i]；后面如果再遇见值为pre的nums1[i]就跳过，否则就记录并更改pre。
 
-
-
-
 ## 旋转数组（轮转数组）
 
 > 给你一个数组，将数组中的元素向右轮转 k  个位置，其中  k  是非负数。
@@ -3707,7 +3704,148 @@ function dfs(node) {
 如果最简单的二叉树（只有三个节点）可以执行，那么任何情况下的二叉树都可以执行。因此这类问题可以先从最简单的考虑。如果最简单的情况可以保证递归的完整，那么之后的逻辑就不用考虑递归的内部，而是只把递归当成一个“取值”的步骤，正常处理其他逻辑。
 
 
-## 判断平衡二叉树
+## 平衡二叉树
+
+### 基础数据结构
+
+js 平衡二叉树代码：
+
+```js
+class AVLTree {
+  constructor() {
+    this.root = null;
+  }
+
+  // 获取节点的高度
+  getHeight(node) {
+    if (!node) return 0;
+    return Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
+  }
+
+  // 获取节点的平衡因子
+  getBalanceFactor(node) {
+    if (!node) return 0;
+    return this.getHeight(node.left) - this.getHeight(node.right);
+  }
+
+  // 左旋转
+  leftRotate(node) {
+    const temp = node.right;
+    node.right = temp.left;
+    temp.left = node;
+    return temp;
+  }
+
+  // 右旋转
+  rightRotate(node) {
+    const temp = node.left;
+    node.left = temp.right;
+    temp.right = node;
+    return temp;
+  }
+
+  // 插入节点
+  insert(key) {
+    const newNode = {
+      key,
+      left: null,
+      right: null,
+    };
+    this.root = this._insertNode(this.root, newNode);
+  }
+
+  _insertNode(node, newNode) {
+    if (!node) return newNode;
+    if (newNode.key < node.key) {
+      node.left = this._insertNode(node.left, newNode);
+    } else if (newNode.key > node.key) {
+      node.right = this._insertNode(node.right, newNode);
+    } else {
+      return node; // 已存在相同节点
+    }
+
+    const balanceFactor = this.getBalanceFactor(node);
+    if (balanceFactor > 1 && newNode.key < node.left.key) {
+      // LL情况，进行右旋转
+      return this.rightRotate(node);
+    }
+    if (balanceFactor < -1 && newNode.key > node.right.key) {
+      // RR情况，进行左旋转
+      return this.leftRotate(node);
+    }
+    if (balanceFactor > 1 && newNode.key > node.left.key) {
+      // LR情况，先对左子节点进行左旋转，再对当前节点进行右旋转
+      node.left = this.leftRotate(node.left);
+      return this.rightRotate(node);
+    }
+    if (balanceFactor < -1 && newNode.key < node.right.key) {
+      // RL情况，先对右子节点进行右旋转，再对当前节点进行左旋转
+      node.right = this.rightRotate(node.right);
+      return this.leftRotate(node);
+    }
+    return node;
+  }
+
+  // 删除节点
+  remove(key) {
+    this.root = this._removeNode(this.root, key);
+  }
+
+  _removeNode(node, key) {
+    if (!node) return null;
+    if (key < node.key) {
+      node.left = this._removeNode(node.left, key);
+    } else if (key > node.key) {
+      node.right = this._removeNode(node.right, key);
+    } else {
+      // 当前节点就是要删除的节点
+      if (!node.left && !node.right) {
+        // 情况1：叶子节点
+        return null;
+      } else if (!node.left || !node.right) {
+        // 情况2：只有一个子节点
+        return node.left || node.right;
+      } else {
+        // 情况3：有两个子节点
+        const minNode = this._findMinNode(node.right);
+        node.key = minNode.key;
+        node.right = this._removeNode(node.right, minNode.key);
+      }
+    }
+
+    const balanceFactor = this.getBalanceFactor(node);
+    if (balanceFactor > 1 && this.getBalanceFactor(node.left) >= 0) {
+      // LL情况，进行右旋转
+      return this.rightRotate(node);
+    }
+    if (balanceFactor < -1 && this.getBalanceFactor(node.right) <= 0) {
+      // RR情况，进行左旋转
+      return this.leftRotate(node);
+    }
+    if (balanceFactor > 1 && this.getBalanceFactor(node.left) < 0) {
+      // LR情况，先对左子节点进行左旋转，再对当前节点进行右旋转
+      node.left = this.leftRotate(node.left);
+      return this.rightRotate(node);
+    }
+    if (balanceFactor < -1 && this.getBalanceFactor(node.right) > 0) {
+      // RL情况，先对右子节点进行右旋转，再对当前节点进行左旋转
+      node.right = this.rightRotate(node.right);
+      return this.leftRotate(node);
+    }
+    return node;
+  }
+
+  // 查找最小节点
+  _findMinNode(node) {
+    while (node && node.left) {
+      node = node.left;
+    }
+    return node;
+  }
+}
+```
+
+### 判断平衡二叉树
 
 平衡二叉树，即一个节点的左右子树高度差不能大于 1。
 
@@ -3759,7 +3897,7 @@ const isBalanced2 = function (root) {
 };
 ```
 
-## 构造平衡二叉搜索树
+### 构造平衡二叉搜索树
 
 > 构造平衡二叉树.给你一棵二叉搜索树，请你返回一棵平衡后的二叉搜索树，新生成的树应该与原来的树有着相同的节点值。
 
@@ -3787,6 +3925,253 @@ const balanceBST = function (root) {
     return node;
   }
   return tree;
+};
+```
+
+## BST（二叉搜索树）
+
+### BST 的特点
+
+- BST 的基本特点是一个根节点的左子树上的**所有值**一定比该节点小，右子树的**所有值**一定比该节点大
+- BST 的中序遍历会返回一个从小到大的顺序排列，可以利用这一点做很多事，比如求最值等等。
+
+二叉搜索树的主要作用是便于查找。类似二分查找，一颗比较平衡的二叉搜索树的查找的理想时间复杂度是O(logn)；但在最坏的情况下，二叉搜索树可能会退化为链表，此时查找的时间复杂度将变为O(n)。
+因此比较好的方式是采用平衡的二叉搜索树。即，将二叉搜索树和二叉平衡树结合起来，保证二叉搜索树效率最大化。
+
+### BST 基本操作
+
+查找：
+
+```js
+function search(root, n) {
+  if (!root) return null;
+  if (root.val === n) return root;
+  else if (root.val < n) search(root.left, n);
+  else search(root.right, n);
+}
+```
+
+增加：
+
+```js
+function insert(root, n) {
+  if (!root) return;
+  if (n < root.val) {
+    if (!root.left) root.left = new TreeNode(n);
+    else insert(root.left, n);
+  } else {
+    if (!root.right) root.right = new TreeNode(n);
+    else insert(root.right, n);
+  }
+}
+```
+
+删除：
+
+删除节点的函数要返回参数 root，因为执行函数的返回值实际上是“替换子树”的效果，也是上面说的非尾递归的形式。
+
+```js
+function removeNode(root, n) {
+  if (!root) {
+    return null;
+  }
+  if (root.val > key) {
+    root.left = deleteNode(root.left, key);
+    return root;
+  }
+  if (root.val < key) {
+    root.right = deleteNode(root.right, key);
+    return root;
+  }
+  if (root.val === key) {
+    if (!root.left && !root.right) {
+      return null;
+    }
+    if (!root.right) {
+      return root.left;
+    }
+    if (!root.left) {
+      return root.right;
+    }
+    const minNode = findMin(root.right); //先找到右子树的最小节点
+    root.right = deleteNode(root.right, minNode.val); // 从当前节点的右子树中删去这个找到的最小节点
+    minNode.right = root.right; // 这两步相当于把root替换为了minNode
+    minNode.left = root.left;
+    return minNode; // 返回的minNode将会连接到父节点上，相当于完全替换了原来的root
+  }
+  return root;
+}
+
+function findMin(node) {
+  if (!node.left) return node;
+  return findMin(node.left);
+}
+```
+
+### 验证是否是有效 BST
+
+即验证树是否保证`左 < 中 < 右`
+
+注意不能单独把左子节点提出来判断是不是小于本节点，因为这样相当于只判断了一层（紧挨着的左子节点），而不是整颗左子树
+
+```js
+const isValidBST = function (root) {
+  function dfs(root, minValue, maxValue) {
+    // 若是空树，则合法
+    if (!root) {
+      return true;
+    }
+    if (root.val <= minValue || root.val >= maxValue) return false;
+    // 接下来要遍历左子树，那就把当前节点的值作为最大值传入，保证左子树的值不大于当前节点。右子树同理
+    return (
+      dfs(root.left, minValue, root.val) && dfs(root.right, root.val, maxValue)
+    );
+  }
+  // 初始化最小值和最大值为极小或极大
+  return dfs(root, -Infinity, Infinity);
+};
+```
+
+---
+
+还有一种方法是利用二叉搜素树的中序遍历，如果遍历的过程中不是有序的（每次和前一个值做对比），就说明不是有效。
+
+### 有序数组转 BST
+
+> 把有序数组转为平衡二叉树
+
+思路类似二分查找,把中间的数作为根节点"提起来",然后范围二分为`[low,mid)`和`(mid,high]`分别给左右子树
+
+![](https://pic.imgdb.cn/item/62677250239250f7c582b679.jpg)
+
+```js
+const sortedArrayToBST = function (nums) {
+  return buildBST(0, nums.length - 1);
+  function buildBST(low, high) {
+    if (low > high) return;
+    let mid = Math.floor(low + (high - low) / 2);
+    //注意这个地方需要low+...,因为不一定是从0开始的,需要low+计算值才是真正的中间值
+    const curr = new TreeNode(nums[mid]);
+    curr.left = buildBST(low, mid - 1);
+    curr.right = buildBST(mid + 1, high);
+    return curr;
+  }
+};
+```
+
+`buildBST`方法还可以接收一个分割好的数组:
+
+```js
+function buildBST(arr) {
+  if (!arr.length) return null;
+  // 这里取arr.length / 2,这样偶数元素中间值就会划分到偏后一位,防止arr.slice(0, mid - 1)在有元素的时候仍截取到空数组
+  let mid = Math.floor(arr.length / 2);
+  const node = new TreeNode(arr[mid]);
+  node.left = buildBST(arr.slice(0, mid));
+  node.right = buildBST(arr.slice(mid + 1));
+  return node;
+}
+```
+
+#### 构造最大二叉树
+
+> 给定一个不含重复元素的整数数组。一个以此数组构建的最大二叉树定义如下：
+> 二叉树的根是数组中的最大元素。
+> 左子树是通过数组中最大值左边部分构造出的最大二叉树。
+> 右子树是通过数组中最大值右边部分构造出的最大二叉树。
+> 通过给定的数组构建最大二叉树，并且输出这个树的根节点。
+
+构造最大二叉树的思路就是在构造二叉树时，把中间节点置为数组中的最大值即可。
+
+```js
+/**
+ * @param {number[]} nums
+ * @return {TreeNode}
+ */
+var constructMaximumBinaryTree = function (nums) {
+  return buildBST(nums, 0, nums.length - 1);
+  function buildBST(nums, low, high) {
+    if (low > high) return null;
+
+    let maxVal = -1;
+    let maxIndex = -1;
+    for (let i = low; i <= high; ++i) {
+      if (nums[i] > maxVal) {
+        maxVal = nums[i];
+        maxIndex = i;
+      }
+    }
+    let curr = new TreeNode(maxVal);
+    console.log(maxVal);
+    curr.left = buildBST(nums, low, maxIndex - 1);
+    curr.right = buildBST(nums, maxIndex + 1, high);
+    return curr;
+  }
+};
+```
+
+### 二叉树的双指针（前指针）
+
+二叉树问题的解决（尤其是二叉搜素树）可以遍历成一个数组，然后用对数组的操作方式操作。因为数组通常可以比较方便的访问前后的值；
+实际上不需要额外的内存空间，也可以直接在二叉树问题遍历时取得前一个值。
+方法就是利用中序遍历：
+
+```js
+function dfs(node){
+  if(!node) return
+  dfs(node.left)
+  if(!pre){
+    ...
+  }
+  pre = node
+  dfs(node.right)
+}
+```
+
+因此可以利用这个方法解决（尤其是二叉搜索树）一些可能需要通过转成数组的问题。
+
+### 二叉搜素树的众数
+
+https://leetcode.cn/problems/find-mode-in-binary-search-tree/solution/
+
+> 给你一个含重复值的二叉搜索树（BST）的根节点 root ，找出并返回 BST 中的所有 众数（即，出现频率最高的元素）。
+> 如果树中有不止一个众数，可以按 任意顺序 返回。
+
+利用上面的方法，因为二叉搜索树的中序遍历一定是从小到大的有序数组，因此可以完全按照数组的方式去做。
+数组中怎么求众数？定义一个出现次数的变量，前一个数等于后一个，就给出现次数+1；如果出现次数大于最大出现次数，就把最大出现次数更新；如果等于最大出现次数，就把数字放入最大出现次数的数字的数组中。
+二叉树同理
+
+```js
+/**
+ * @param {TreeNode} root
+ * @return {number[]}
+ */
+var findMode = function (root) {
+  if (!root.left && !root.right) return [root.val];
+  let cnt = 1;
+  let maxTimes = 0;
+  const maxNumbers = [];
+  let pre = null;
+  function dfs(node) {
+    if (!node) return;
+    dfs(node.left);
+    if (pre && pre.val === node.val) {
+      cnt++;
+    } else {
+      cnt = 1;
+    }
+    if (cnt > maxTimes) {
+      maxTimes = cnt;
+      maxNumbers.length = 0;
+      maxNumbers.push(node.val);
+    } else if (cnt === maxTimes) {
+      maxNumbers.push(node.val);
+    }
+    pre = node;
+    dfs(node.right);
+  }
+  dfs(root);
+  return maxNumbers;
 };
 ```
 
@@ -4238,8 +4623,6 @@ var mergeTrees = function (root1, root2) {
 };
 ```
 
-
-
 ## 二叉树的序列化和反序列化
 
 https://leetcode.cn/problems/serialize-and-deserialize-binary-tree/
@@ -4406,250 +4789,6 @@ function findLast(node){ // 找到左子树的最后一个节点
   while(node.right) node = node.right
   return node
 }
-```
-
-## BST（二叉搜索树）
-
-### BST 的特点
-
-- BST 的基本特点是一个根节点的左子树上的**所有值**一定比该节点小，右子树的**所有值**一定比该节点大
-- BST 的中序遍历会返回一个从小到大的顺序排列，可以利用这一点做很多事，比如求最值等等。
-
-### BST 基本操作
-
-查找：
-
-```js
-function search(root, n) {
-  if (!root) return null;
-  if (root.val === n) return root;
-  else if (root.val < n) search(root.left, n);
-  else search(root.right, n);
-}
-```
-
-增加：
-
-```js
-function insert(root, n) {
-  if (!root) return;
-  if (n < root.val) {
-    if (!root.left) root.left = new TreeNode(n);
-    else insert(root.left, n);
-  } else {
-    if (!root.right) root.right = new TreeNode(n);
-    else insert(root.right, n);
-  }
-}
-```
-
-删除：
-
-删除节点的函数要返回参数 root，因为执行函数的返回值实际上是“替换子树”的效果，也是上面说的非尾递归的形式。
-
-```js
-function removeNode(root, n) {
-  if (!root) {
-    return null;
-  }
-  if (root.val > key) {
-    root.left = deleteNode(root.left, key);
-    return root;
-  }
-  if (root.val < key) {
-    root.right = deleteNode(root.right, key);
-    return root;
-  }
-  if (root.val === key) {
-    if (!root.left && !root.right) {
-      return null;
-    }
-    if (!root.right) {
-      return root.left;
-    }
-    if (!root.left) {
-      return root.right;
-    }
-    const minNode = findMin(root.right); //先找到右子树的最小节点
-    root.right = deleteNode(root.right, minNode.val); // 从当前节点的右子树中删去这个找到的最小节点
-    minNode.right = root.right; // 这两步相当于把root替换为了minNode
-    minNode.left = root.left;
-    return minNode; // 返回的minNode将会连接到父节点上，相当于完全替换了原来的root
-  }
-  return root;
-}
-
-function findMin(node) {
-  if (!node.left) return node;
-  return findMin(node.left);
-}
-```
-
-### 验证是否是有效 BST
-
-即验证树是否保证`左 < 中 < 右`
-
-注意不能单独把左子节点提出来判断是不是小于本节点，因为这样相当于只判断了一层（紧挨着的左子节点），而不是整颗左子树
-
-```js
-const isValidBST = function (root) {
-  function dfs(root, minValue, maxValue) {
-    // 若是空树，则合法
-    if (!root) {
-      return true;
-    }
-    if (root.val <= minValue || root.val >= maxValue) return false;
-    // 接下来要遍历左子树，那就把当前节点的值作为最大值传入，保证左子树的值不大于当前节点。右子树同理
-    return (
-      dfs(root.left, minValue, root.val) && dfs(root.right, root.val, maxValue)
-    );
-  }
-  // 初始化最小值和最大值为极小或极大
-  return dfs(root, -Infinity, Infinity);
-};
-```
-
----
-
-还有一种方法是利用二叉搜素树的中序遍历，如果遍历的过程中不是有序的（每次和前一个值做对比），就说明不是有效。
-
-### 有序数组转 BST
-
-> 把有序数组转为平衡二叉树
-
-思路类似二分查找,把中间的数作为根节点"提起来",然后范围二分为`[low,mid)`和`(mid,high]`分别给左右子树
-
-![](https://pic.imgdb.cn/item/62677250239250f7c582b679.jpg)
-
-```js
-const sortedArrayToBST = function (nums) {
-  return buildBST(0, nums.length - 1);
-  function buildBST(low, high) {
-    if (low > high) return;
-    let mid = Math.floor(low + (high - low) / 2);
-    //注意这个地方需要low+...,因为不一定是从0开始的,需要low+计算值才是真正的中间值
-    const curr = new TreeNode(nums[mid]);
-    curr.left = buildBST(low, mid - 1);
-    curr.right = buildBST(mid + 1, high);
-    return curr;
-  }
-};
-```
-
-`buildBST`方法还可以接收一个分割好的数组:
-
-```js
-function buildBST(arr) {
-  if (!arr.length) return null;
-  // 这里取arr.length / 2,这样偶数元素中间值就会划分到偏后一位,防止arr.slice(0, mid - 1)在有元素的时候仍截取到空数组
-  let mid = Math.floor(arr.length / 2);
-  const node = new TreeNode(arr[mid]);
-  node.left = buildBST(arr.slice(0, mid));
-  node.right = buildBST(arr.slice(mid + 1));
-  return node;
-}
-```
-
-#### 构造最大二叉树
-
-> 给定一个不含重复元素的整数数组。一个以此数组构建的最大二叉树定义如下：
-> 二叉树的根是数组中的最大元素。
-> 左子树是通过数组中最大值左边部分构造出的最大二叉树。
-> 右子树是通过数组中最大值右边部分构造出的最大二叉树。
-> 通过给定的数组构建最大二叉树，并且输出这个树的根节点。
-
-构造最大二叉树的思路就是在构造二叉树时，把中间节点置为数组中的最大值即可。
-
-```js
-/**
- * @param {number[]} nums
- * @return {TreeNode}
- */
-var constructMaximumBinaryTree = function (nums) {
-  return buildBST(nums, 0, nums.length - 1);
-  function buildBST(nums, low, high) {
-    if (low > high) return null;
-
-    let maxVal = -1;
-    let maxIndex = -1;
-    for (let i = low; i <= high; ++i) {
-      if (nums[i] > maxVal) {
-        maxVal = nums[i];
-        maxIndex = i;
-      }
-    }
-    let curr = new TreeNode(maxVal);
-    console.log(maxVal);
-    curr.left = buildBST(nums, low, maxIndex - 1);
-    curr.right = buildBST(nums, maxIndex + 1, high);
-    return curr;
-  }
-};
-```
-
-### 二叉树的双指针（前指针）
-
-二叉树问题的解决（尤其是二叉搜素树）可以遍历成一个数组，然后用对数组的操作方式操作。因为数组通常可以比较方便的访问前后的值；
-实际上不需要额外的内存空间，也可以直接在二叉树问题遍历时取得前一个值。
-方法就是利用中序遍历：
-
-```js
-function dfs(node){
-  if(!node) return
-  dfs(node.left)
-  if(!pre){
-    ...
-  }
-  pre = node
-  dfs(node.right)
-}
-```
-
-因此可以利用这个方法解决（尤其是二叉搜索树）一些可能需要通过转成数组的问题。
-
-### 二叉搜素树的众数
-
-https://leetcode.cn/problems/find-mode-in-binary-search-tree/solution/
-
-> 给你一个含重复值的二叉搜索树（BST）的根节点 root ，找出并返回 BST 中的所有 众数（即，出现频率最高的元素）。
-> 如果树中有不止一个众数，可以按 任意顺序 返回。
-
-利用上面的方法，因为二叉搜索树的中序遍历一定是从小到大的有序数组，因此可以完全按照数组的方式去做。
-数组中怎么求众数？定义一个出现次数的变量，前一个数等于后一个，就给出现次数+1；如果出现次数大于最大出现次数，就把最大出现次数更新；如果等于最大出现次数，就把数字放入最大出现次数的数字的数组中。
-二叉树同理
-
-```js
-/**
- * @param {TreeNode} root
- * @return {number[]}
- */
-var findMode = function (root) {
-  if (!root.left && !root.right) return [root.val];
-  let cnt = 1;
-  let maxTimes = 0;
-  const maxNumbers = [];
-  let pre = null;
-  function dfs(node) {
-    if (!node) return;
-    dfs(node.left);
-    if (pre && pre.val === node.val) {
-      cnt++;
-    } else {
-      cnt = 1;
-    }
-    if (cnt > maxTimes) {
-      maxTimes = cnt;
-      maxNumbers.length = 0;
-      maxNumbers.push(node.val);
-    } else if (cnt === maxTimes) {
-      maxNumbers.push(node.val);
-    }
-    pre = node;
-    dfs(node.right);
-  }
-  dfs(root);
-  return maxNumbers;
-};
 ```
 
 # 回溯
@@ -5936,7 +6075,6 @@ const insertionSort = (nums) => {
 };
 ```
 
-
 - 最好时间复杂度：它对应的数组本身就有序这种情况。此时内层循环只走一次，整体复杂度取决于外层循环，时间复杂度就是一层循环对应的 O(n)。
 - 最坏时间复杂度：它对应的是数组完全逆序这种情况。此时内层循环每次都要移动有序序列里的所有元素，因此时间复杂度对应的就是两层循环的 O(n^2)
 - 平均时间复杂度：O(n^2)
@@ -5977,8 +6115,6 @@ function shellSort(nums) {
 ```
 
 希尔排序是第一批冲破O(n^2)的排序算法之一，它的平均时间复杂度是O(nlogn)，空间复杂度和插入排序一样都是O(1)。
-
-
 
 ## 归并排序
 
@@ -6127,7 +6263,32 @@ N + (N - 1) + (N - 2) + ... + 1 = O(N^2)
 
 ![](https://pic.imgdb.cn/item/62dbac43f54cd3f937aa5108.jpg)
 
-为了防止这种极端情况，应该考虑排序之前用洗牌算法把数组随机化一下，或者在 partition 开始选择 pivotValue 时选择随机的一个数
+为了防止这种极端情况，应该考虑排序之前用洗牌算法把数组随机化一下，或者在 partition 开始选择 pivotValue 时选择随机的一个数。
+
+因为partition函数内每次选择的是第一个元素，那就可以在每次排序之前，先从数组中随机选一个数跟第一个交换即可。
+
+```js
+function partition(arr, left, right) {
+    // 随机一个位置和第一个元素交换
+    const rIndex = Math.floor(Math.random() * arr.length)
+    swap(arr,left,rIndex)
+    
+    let pivotValue = arr[left];
+    let i = left + 1;
+    let j = right;
+    while (i <= j) {
+      while (arr[i] <= pivotValue && i < right) i++;
+      while (arr[j] > pivotValue && j > left) j--;
+      if (i >= j) {
+        break;
+      }
+      swap(arr, i, j);
+    }
+    swap(arr, left, j);
+    // 这里返回j是因为j会停在排好序的位置上，而i则会走过一位
+    return j;
+  }
+```
 
 ## 计数排序
 
@@ -6149,6 +6310,7 @@ function countingSort(nums){
   return res
 }
 ```
+
 这种情况会造成极大的空间复杂度，比如一组数据[100,102,104,101,99]，显然没必要创建前100个空间。所以还需要找到数组的最小值，以最小值为基准处理数据：
 
 同时这种方法也解决了负数的问题。比如[-5,-4,1,2,3]，以最小值-5为基准，变成[0,1,6,7,8]的排序，最后结果再加-5即可。
@@ -6186,6 +6348,7 @@ function countingSort(nums){
 每个数字应该放入的桶的序号 = (该数字 - 最小值) / 一个桶的大小
 
 代码如下：
+
 ```js
 function bucketsSort(nums,bucketSize = 5){
   const max = Math.max(...nums)
@@ -7617,7 +7780,7 @@ var wordBreak = function (s, wordDict) {
 
 ## 买卖股票 I
 
-> 给定一个数组 prices ，它的第  i 个元素  prices[i] 表示一支给定股票第 i 天的价格。
+> 给定一个数组 prices ，它的第 i 个元素  prices[i] 表示一支给定股票第 i 天的价格。
 > 你只能选择 某一天 买入这只股票，并选择在 未来的某一个不同的日子 卖出该股票。设计一个算法来计算你所能获取的最大利润。
 > 返回你可以从这笔交易中获取的最大利润。如果你不能获取任何利润，返回 0 。
 > 示例 1：
@@ -7695,7 +7858,8 @@ var maxProfit = function (prices) {
   const dp = [[-prices[0], 0]];
   for (let i = 1; i < prices.length; i++) {
     dp[i] = [];
-    dp[i][1] = Math.max(dp[i - 1][1], prices[i] + dp[i - 1][0]); // 注意顺序稍微改了一下
+    dp[i][1] = Math.max(dp[i - 1][1], prices[i] + dp[i - 1][0]); 
+    // 注意顺序稍微改了一下
     dp[i][0] = Math.max(dp[i - 1][0], dp[i][1] - prices[i]);
   }
   return dp[prices.length - 1][1];
@@ -10129,7 +10293,8 @@ class UF {
 ![](https://pic.imgdb.cn/item/62dceb0ff54cd3f937897cd5.jpg)
 
 - 优化层面，连接和检查连接的算法都依赖于 find，因此 find 的时间复杂度会影响整个的复杂度。find 函数的基本操作是逐个向上遍历查找父节点，显然如果树高越小，find 就查找的越快。因此应该尽可能减少树的高度
-  ![](https://pic.imgdb.cn/item/62dcecc4f54cd3f937946fce.jpg)
+
+![](https://pic.imgdb.cn/item/62dcecc4f54cd3f937946fce.jpg)
 
 并查集代码如下：
 
@@ -11779,8 +11944,6 @@ https://leetcode.cn/problems/reverse-bits/
 11111111111111111111111111111111 // 4294967295
 ```
 
-
-
 所以这道题的要求是无符号整数的颠倒，即不能出现正数颠倒成负数的情况，也就是说对于最终的结果，应该在>>>0一次；同理在循环过程中n的移位也应该是>>>1而不是>>1，因为如果是后者，当n是负数时，有符号右移则会导致负数变成一个很大的正数。
 
 ```js
@@ -11793,7 +11956,6 @@ var reverseBits = function(n) {
   return res >>> 0
 };
 ```
-
 
 ## IP 地址与 int 整数的转换
 
@@ -12607,6 +12769,7 @@ var divide = function (dividend, divisor) {
 
 把这两个值相加，就可以得到结果。
 但是这两个值可能还有进位，因此转成一个循环，除了第一次的值是a和b，后面每次的和都是`两个数的异或值+两个数的进位值`，直到进位为0为止。
+
 ```js
 while(b !== 0){ // 注意这里是b!==0不是b > 0；考虑到a或b是负数的情况，extra也有可能是补码负数，只有完全为0才说明没有进位
   const extra = (a & b) << 1

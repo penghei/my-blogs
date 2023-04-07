@@ -66,6 +66,42 @@ reducer 不能直接修改 state（state 是对象或数组），而是要复制
 reducer 可以有多个，但是最终 redux 会将其合为一个，作为一个“rootReducer”。从 createStore 函数内部可以看出，参数只能是一个 reducer，调用也只调用了一次。
 如果有多个 reducer，那就需要 combineReducer 合并了。
 
+### action
+
+action是一个包含type和payload?的对象。
+action本身比较简单，但是有个问题是，为什么redux一定需要一个action？
+
+显然直接调dispatch传入状态也是完全可以的：
+
+```js
+dispatch(someState)
+```
+
+主要原因有几个：
+
+1. action体现了redux对状态的可控性、复现性。也就是说，action的存在使得redux可以更好地追踪状态的流向，可以很轻易地跟踪、捕获和预测状态变化。
+
+如果只是一个简单的数据而不是action，当通过dispatch调度时就很难确定这个状态到底是来自哪里、归属于哪个reducer、哪个状态里的修改。
+比如一个action是这样：
+
+```js
+{type: 'todos/todoAdded', payload: todoText}
+```
+
+这样很容易就能确认，这个action是为了todos状态服务的，且要修改的操作为todoAdded。
+当redux进行调试、测试时，也能很容易捕获状态以及其所指向的状态对象。
+
+2. action配合reducer内的条件语句，才能达成更好的状态修改，以保证状态不可变。
+
+假如我们只是给reducer传一个状态
+
+```js
+reducer(someState)
+```
+
+那么这个状态是干什么的呢？它应该怎么创建新的state？这个传入的参数只是一个变量，还是原来的整个state？显然这些都很难确定。
+reducer的存在就是为了服务于redux“状态不可变”的理念。redux要求reducer必须传出一个新的状态用以替代原状态，那么reducer就需要知道具体对状态是怎么操作的。
+
 ### state
 
 redux 的核心数据，也是数据的基本单位，即“状态”。状态不能手动直接改变，唯一改变的方式就是调用 dispatch，触发 reducer，并在 reducer 内部做出修改。
@@ -1851,7 +1887,7 @@ export const store = createStore(itemReducer);
 atom 就是这样一种方式。为每个 item 创建一个 atom，然后用一个整体的数据结构（atomFamily）来管理。
 比如单个 item 的状态
 
-```ts
+```tsx
 const item = atom({
   key: 'item',
   defaultValue: {}
@@ -1861,14 +1897,14 @@ function Item() {
   const [item, setItem] = useRecoilState(itemState);
   // other
   return (
-    <div>{{ item.title }}</div>
+    <div>{ item.title }</div>
   );
 }
 ```
 
 我们创建一个这样的函数，为每一个 item 根据 id 创建一个 atom
 
-```ts
+```tsx
 const itemsList = {};
 export const getItemState = id => {
   if (!itemsList[id]) {
@@ -1884,7 +1920,7 @@ function Item({ id }) {
   const [item, setItem] = useRecoilState(getItemState(id));
   // other
   return (
-    <div>{{ item.title }}</div>
+    <div>{ item.title }</div>
   );
 }
 ```

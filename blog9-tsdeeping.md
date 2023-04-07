@@ -8,7 +8,7 @@ cover: /img/typescript.png
 
 # 基本类型补充
 
-### 元组
+## 元组
 
 相当于类型的数组
 
@@ -69,7 +69,7 @@ type tupleVal2 = tuple[string]; //报错：tuple中没有string索引的值
 type tupleVal3 = tuple[any]; // "vue" | "react" | "angular"
 ```
 
-### never 类型
+## never 类型
 
 never 出现于：返回 error 或者死循环函数，或者其他一定不会被访问到的
 比如最常见的死循环函数或者抛出错误的函数：
@@ -84,7 +84,7 @@ function createError(mess: string): never {
 }
 ```
 
-### 类型断言
+## 类型断言
 
 类型断言除了 as，还可以用尖括号的形式
 
@@ -94,6 +94,23 @@ let strLength: number = (<string>someValue).length;
 ```
 
 但是容易和 jsx 混淆， 因此不建议使用
+
+## unknow
+
+unknown 类型和 any 类型都可以用来表示任意类型的值，但它们有以下几点区别：
+
+- any 类型可以随意赋值给任何类型，而 unknown 类型不能直接赋值给其他类型，除非进行类型断言或类型细化。
+
+- any 类型可以调用任何方法和属性，而 unknown 类型只能调用 any 类型或 unknown 类型上共有的方法和属性。这是因为 unknown 类型是一种更加安全的类型，它要求在使用前必须先进行类型检查或类型细化。
+
+- any 类型可以作为函数的参数和返回值类型，而 unknown 类型只能作为函数的参数类型。
+
+
+简单来说，就是：
+- unknown不能访问任何方法和属性
+- unknown不能直接使用，要先断言
+- unknown不能赋值给别人，但是别人可以赋值给它
+
 
 # 接口
 
@@ -1302,7 +1319,8 @@ type ReturnType<T extends (...args: any) => any> = T extends (
 
 1. 首先`<T extends (...args: any) => any>`限制 T 是一个任意函数；
 2. 传入的类型 T 若能够赋值给 `(...args: any) => R` 则返回类型 R，也就是说如果 T 是函数就返回该函数的返回值；但是这个返回值恰恰是要去获得的，因此需要“推断”一下。
-   infer 表示一个“推断”；没有 infer 的话，ReturnType 实际上是要实现这样的效果：
+
+infer 表示一个“推断”；没有 infer 的话，ReturnType 实际上是要实现这样的效果：
 
 ```ts
 type ReturnType<T> = T extends (...args: any[]) => R ? R : any;

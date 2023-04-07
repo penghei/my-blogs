@@ -1,6 +1,14 @@
-本文旨在梳理八股问题有条理的回答。回答不一定详细，以清晰的分点为主
-对于展开比较丰富的题目，主要是分点，梳理回答的方式
-对于答案比较直接的题目，主要参考原文，可能不会写很多的分点
+面试官好，我叫赵梓轩，来自电子科技大学，我的专业是软件工程，目前是大三。
+
+我学习前端大概有一年半左右的时间了。我第一次接触前端是通过学校工作室学长的带领，感觉到自己对前端比较感兴趣，并且后续在和其他同学参与项目的过程中都是前端开发的角色，因此选择从事前端这个方向。
+
+我曾在字节跳动实习过三个月左右的时间，实习期间主要负责机器人超管平台前端的开发工作，和后端、产品、测试等同学配合完成了多个任务排期，使得超管平台项目功能更加完善和丰富。在项目开发过程中我参与了部分技术选型，针对项目中的问题采取了一些解决方案；
+
+比如针对项目中需要绘制地图的需求，我选择了konva来实现，因为konva为canvas提供了完备的事件系统，帮助解决了需要canvas交互的问题。在开发实现地图组件功能的过程中，我遇到了一些问题，也通过各种方式顺利解决了。
+
+比如针对项目中的状态管理问题，我详细了解了redux，并调研了recoil、mobx、zustand、jotai等其他状态管理解决方案，最后综合项目的实际应用情况选择了recoil。
+
+贵公司在前端领域有着不小的名气，我对贵公司也十分向往，也很感谢贵公司能给我这次面试机会。
 
 # HTML
 
@@ -32,25 +40,33 @@
 - meta 标签的作用和常见属性
   - 概括：文档元数据，帮助浏览器解析
   - 添加关键字、描述等帮助 seo 的字段
-  - http-equiv：设置 http 头，csp
+  - http-equiv：作为本次 html 的响应头，csp
 - **viewport**
   - 基本概念
     - 移动端的窗口
     - 响应式布局的基础
     - meta 标签控制
   - 三种 viewport
-    - 布局视口：浏览器默认视口，布局的基础
-    - 视觉视口：可视区域大小
-    - 理想视口：屏幕尺寸
+    - 布局视口：浏览器默认视口，布局的基础 document.documentElement.clientWidth
+    - 视觉视口：可视区域大小 window.innerWidth
+    - 理想视口：屏幕尺寸 window.screen.width
     - 响应式基础：布局视口 = 理想视口
 - script 标签的 async 和 defer 属性效果和作用
   - async：异步下载同步执行，多个 script 不保证顺序
   - defer：异步下载异步执行，多个 script 执行顺序不变
+  - module：类似 defer，异步加载依赖，异步执行
+  - module async：类似 async，异步加载依赖，同步执行
 - html 语义化的含义和意义
   - 含义：有名字的元素
   - 意义：
     - 对开发者：可读性
     - 对机器：seo、爬虫、读屏
+- seo 优化
+  - title、description、keywords
+  - 语义化
+  - 重要内容 HTML 代码放在最前
+  - ssr
+  - 非装饰性图片必须加 alt
 
 # CSS
 
@@ -70,6 +86,11 @@
   - 效率
     - 概述：具体效率排名
     - 主要依据：最后一个选择器
+    - 原理：浏览器对不同选择器查询方式不同。不是固定的，还取决于文档结构层级等因素
+      - id 选择器：全局唯一，window 对象直接保存，最快
+      - class、属性选择器：只需要遍历元素属性，也很快
+      - 元素选择器：因为数量大，可能很慢
+      - 联合选择器：同理，需要匹配多级，很慢
   - 匹配顺序：倒序
     - 原因：减少匹配次数
 - 伪类和伪元素有什么区别，常见的有哪些
@@ -92,6 +113,7 @@
       - 相对单位
         - em：用于字体/用于元素
         - 百分比：用于字体/用于元素
+        - auto
     - 颜色单位：rgb rgba hsl hsla
 - 常见的块级元素、行内块、行内元素都有哪些，什么特点？
   - 概括：
@@ -121,8 +143,12 @@
     - 组成：
       - 每个块级盒子都会参与构建
       - 部分块级盒子会直接生成
-    - 触发：一些属性
-    - 性质：一些性质
+    - 触发
+      - overflow除visible
+      - 浮动和绝对定位
+      - flex和grid
+    - 性质
+      - 不被覆盖、不被抽空、内部外边距折叠
   - IFC 是什么
     - 概念：行内盒子的布局形式，更多的是行内盒子之间的
     - 相对于 BFC 的特点：一个盒子（line-box）包裹行内元素
@@ -308,7 +334,8 @@
       - 闭包
     - 解决方案
       - 减少闭包
-      - 清除闭包函数
+      - 清除闭包变量
+        - weakMap，key为闭包函数，value为闭包变量
       - 及时清除监听器
   - 产生原理
     - 执行上下文
@@ -443,11 +470,18 @@
 - 事件对象是什么，怎么产生的，有什么用，自定义事件是什么。浏览器的事件模型
 - 浏览器默认事件有哪些，怎么阻止
 - 怎么封装一个 ajax（xhr 的用法）
+  - open/send/onload/onerror
 - 怎么使用 fetch
 - 防抖和节流怎么实现
 - webcomponents 是啥
 - shadowdom 是啥
 - 一个 HTML 页面的生命周期
+  - readystate:interactive
+  - readystate:loading
+  - DOMContentLoaded
+  - img onload
+  - readystate:complete
+  - window.onload
 - ArrayBuffer 是什么，有什么用
 - Blob 和 File 是什么，有什么用
 - Generator 相关
@@ -527,13 +561,21 @@
 - HTTP 的常见字段
   - 四类字段
     - 请求
+      - Accept相关
+      - User-Agent
+      - Cookie
     - 响应
+      - Date
+      - Last-Modified、Etag
     - 通用
+      - Connection
+      - Upgrade
     - 实体
+      - Content-Encoding、Type、Language、Length
 - HTTP 的方法有哪些
   - get head post put delete options
 - **HTTP 状态码**
-  - 100 101
+  - 101
   - 200
   - 301 302 304
   - 400 401 403 404 405 408 413 414 429
@@ -543,18 +585,16 @@
     - 增加 tls 层
     - 增加 tls 握手
     - 数字证书
-  - https 安全依据
-    - 非对称和对称结合的加密算法
-    - 数字证书
+  - https 防范目标和方式
+    - 窃听风险：混合加密
+    - 篡改风险：数字签名（指纹算法）
+    - 冒充风险：数字证书
   - https 握手
     - 步骤
-      - client hello
-      - server hello
-      - 发送证书
-      - 取出公钥并生成密钥发给服务端
-      - 解析得到密钥
-      - server done
-      - client done
+      - client hello（client random、加密套件、算法）
+      - server hello（server random、证书、选择的加密算法）
+      - client done（pre-master，生成screct，公钥加密报文）
+      - server done（收到pre-master，生成screct，告知客户端握手完成）
 - **HTTP1.0 1.1 2.0 3.0 都有哪些变化**
   - 1.0
     - 基本头
@@ -573,7 +613,7 @@
     - 多路复用
     - 请求优先级
     - 服务端推送
-    - 头部压缩
+    - 头部压缩（HPACK，双方维护一个表存储报文头，如果报文头已经在表中存在，就只发送索引号）
     - 一个 tcp 连接
     - 问题：依赖 tcp，tcp 的队头阻塞
   - 3.0
@@ -610,6 +650,7 @@
     - 报文长度
     - 检验和
     - 报文体
+    - 8个字节
 - TCP 的特点
   - 面向连接
   - 一对一传输
@@ -617,22 +658,40 @@
   - 可靠传输
   - 拥塞控制
 - TCP 的报文段结构
-  - seq 和 ack
-  - 接收窗口
-  - 标志字段
-    - FIN ACK SYN
-  - 报文体
+  - 16位源端口、16位目的端口
+  - 32位seq和ack
+  - 6个标志位
+  - 16位窗口大小
+  - 16位检验和
+  - 16位紧急指针
+  - 保留的选项字段
+  - 通常是20个字节（不包括选项）
 - **TCP 的三次握手四次挥手**
   - 三次握手
     - 全过程
+      - seq和ack
+        - seq=x
+        - ack=x+1，seq=y
+        - ack=y+1，seq=x+1
     - 为什么三次，不是两次
+      - 防止历史连接初始化
+      - 保证seq和ack的交换
+      - 防止浪费资源
   - 四次挥手
     - 全过程
+      - FIN_WAIT1
+      - CLOSE_WAIT
+      - FIN_WAIT2
+      - LAST_ACK
+      - TIME_WAIT
     - 为什么四次
+      - 可能是三次：ACK延迟发送+没有数据
     - 为什么等待 2 个 MSL
 - TCP 的可靠数据传输实现
   - 重传机制
     - 超时重传
+      - 初始时间确定：测算和>2RTT
+      - 超时加倍
     - 快速重传
       - 为什么是 3 个冗余 ack
 - TCP 的流量控制实现
@@ -655,11 +714,17 @@
     - 冗余 ack->快速恢复
 - IP 协议中的子网掩码和前缀是什么
 - 特殊的 IP 地址
+  - IP全0和全1（源地址、广播地址）
+  - 主机号全0：标识本子网
+  - 主机号全1：标识全部主机
+- TTL的作用
+  - 防止无限转发
+  - 丢弃数据包时向源主机发送通知帮助确定故障位置
 - 链路层有什么作用
 - **从浏览器输入 url 到显示页面的过程**
   - url 解析
-  - 检查缓存
-  - dns 解析
+  - 检查缓存（资源缓存）
+  - dns 解析（检查客户端dns缓存、本地dns服务器缓存）
   - 获取 mac 地址
   - 从上到下封装报文
   - 发送到服务器
@@ -667,6 +732,7 @@
   - https 握手
   - 发送 httpget 请求
   - 响应 html
+  - 根据http头缓存资源
   - 浏览器网络进程交给渲染进程
   - 解析 html
   - 构建 dom 树、cssom
@@ -691,6 +757,21 @@
 - CSRF 攻击和防范
   - 概念
   - 基本原理：模拟用户发起请求
+  - 方式：
+    - 诱导登录假网站，携带cookie发送请求
+      - get：使用图片
+      - post：构造表单
+  - 防范
+    - cookie samsite
+    - Referer头
+    - 验证码
+- DDos攻击
+  - SYN攻击
+    - 方式：大量发送链接请求，占满半连接队列
+    - 防范：增大队列，或让半连接队列满时也可以建立连接
+  - HTTP Flood、UDP Flood
+    - 防范思路：增大带宽、限制速率等
+
 
 # 浏览器
 
@@ -730,7 +811,7 @@
 核心概念
 
 - chunk
-  - 三种chunk
+  - 三种 chunk
   - hash
 - module
 - bundle
@@ -747,20 +828,20 @@
     - 数组
   - 多个配置文件
     - webpack.common.js/webpack.development.js/webpack.production.js
-    - merge函数合并配置
-    - webpack --config选定配置文件
+    - merge 函数合并配置
+    - webpack --config 选定配置文件
 - 基本配置项及其配置方式，比如 entry 的多种配置方式及其效果
   - entry
     - 四种形式
       - 对象
         - 配置项：import、dependOn、runtime、filename
       - 数组
-      - 函数：make阶段调用
+      - 函数：make 阶段调用
       - 字符串
   - output
-    - 输出hash和缓存
+    - 输出 hash 和缓存
   - module
-    - rules配置loader
+    - rules 配置 loader
   - resolve
   - plugins
   - devServer
@@ -769,45 +850,45 @@
 优化：
 
 - 开发环境
-    - 构建速度
-      - 减小解析范围
-        - loader
-        - resolve
-        - 极端：noParse/externals
-      - 多进程
-        - thread-loader
-        - 压缩过程的并行
-      - 关闭某些生产环境的优化
-        - splitChunk
-        - minisize
-        - useExports
-      - cache
-      - devtools
+  - 构建速度
+    - 减小解析范围
+      - loader
+      - resolve
+      - 极端：noParse/externals
+    - 多进程
+      - thread-loader
+      - 压缩过程的并行
+    - 关闭某些生产环境的优化
+      - splitChunk
+      - minisize
+      - useExports
+    - cache
+    - devtools
 - 生产环境
-    - 构建产物
-      - 压缩代码
-        - terserwebpackplugin-压缩js
-        - MiniCssExtractPlugin-分离并压缩css
-      - tree-shaking
-        - 效果和目的
-        - 开启方式
-        - 基本原理
-        - 注意事项
-          - 减少导入赋值
-          - 使用es6的库
-          - 禁止babel编译import
-      - 代码分割
-        - 三种方式
-          - 多入口手动分离
-          - 动态导入
-          - splitChunk
-            - `'all'`配置在所有chunk之间共享模块
-            - maxSize和minSize
-            - cacheGroup
+  - 构建产物
+    - 压缩代码
+      - terserwebpackplugin-压缩 js
+      - MiniCssExtractPlugin-分离并压缩 css
+    - tree-shaking
+      - 效果和目的
+      - 开启方式
+      - 基本原理
+      - 注意事项
+        - 减少导入赋值
+        - 使用 es6 的库
+        - 禁止 babel 编译 import
+    - 代码分割
+      - 三种方式
+        - 多入口手动分离
+        - 动态导入
+        - splitChunk
+          - `'all'`配置在所有 chunk 之间共享模块
+          - maxSize 和 minSize
+          - cacheGroup
 - 其他
-  - http缓存
+  - http 缓存
     - contenthash
-    - 利用splitChunk对不经常变动的模块分包
+    - 利用 splitChunk 对不经常变动的模块分包
       - runtime
       - 第三方库单独打包
 
@@ -817,15 +898,15 @@
 - 基本工作流程，三步的具体工作内容
   - 初始化
     - 收集参数
-    - 创建compiler对象
+    - 创建 compiler 对象
     - 启动编译流程
   - 构建
     - 从入口进入
-    - 调用loader翻译模块，生成模块ast
-    - 解析导入导出，递归生成module
+    - 调用 loader 翻译模块，生成模块 ast
+    - 解析导入导出，递归生成 module
   - 生成
-    - 创建chunkgraph
-    - 从入口开始递归生成各个chunk
+    - 创建 chunkgraph
+    - 从入口开始递归生成各个 chunk
     - 生成代码，输出文件
 - hook 机制，hook 是什么，怎么用 hook，webpack 是怎么用 hook 的，有什么用，我们能用到什么
 - loader：原理，以及自己编写的 loader 的原理，使用了哪些 api 和上下文
@@ -837,11 +918,11 @@
     - 使用上的区别
     - 原理上的区别
   - 原理
-    - 注入runtime
-    - 建立 浏览器-devserver ws连接
-    - 文件变化 -> hash事件 -> 浏览器请求manifest
-    - devserver返回manifest -> 浏览器请求对应的更新文件 -> express返回该文件
-    - 执行module.hot.accept更新
+    - 注入 runtime
+    - 建立 浏览器-devserver ws 连接
+    - 文件变化 -> hash 事件 -> 浏览器请求 manifest
+    - devserver 返回 manifest -> 浏览器请求对应的更新文件 -> express 返回该文件
+    - 执行 module.hot.accept 更新
 
 使用经验：
 
@@ -856,29 +937,30 @@
 - 优化方式
   - **网络优化**
     - 网络请求优化
-      - http优化
-        - 1.1版本优化
+      - http 优化
+        - 1.1 版本优化
           - 减少资源数量
           - 减少请求数量
           - 充分利用缓存
           - 减小请求大小
-        - 2.0版本优化
-          - 减小请求大小
-          - 增大请求数量
-      - 使用http2.0/3.0
-      - dns预解析
+          - 细分域名
+        - 2.0 版本优化
+          - 不要关心请求数量
+          - 减小请求大小，轻量，细粒度，增强缓存
+      - 使用 http2.0/3.0
+      - dns 预解析
       - 预连接
       - cdn
-      - http报文体压缩
-      - js请求的防抖节流
-    - http缓存优化
-      - webpack配置缓存的方式
+      - http 报文体压缩
+      - js 请求的防抖节流
+    - http 缓存优化
+      - webpack 配置缓存的方式
       - 服务端配置合理的缓存
   - **静态资源优化**
     - 预加载
-      - 手动添加preload、prefetch库
-      - webpack动态导入
-      - js预加载
+      - 手动添加 preload、prefetch 库
+      - webpack 动态导入
+      - js 预加载
       - react-loadable/React.lazy
     - 懒加载
       - 判断进入可视区域
@@ -886,34 +968,52 @@
     - 图片
       - 小图合并
       - 图片压缩
-      - 采用webp格式
+      - 采用 webp 格式
       - 媒体查询、响应式图片采用低分辨率
+      - jpg和png
+        - jpg：有损压缩，体积更小，不支持透明度
+        - png：无损压缩，质量更高
+    - 缓存
+      - http缓存
+      - localstorage
+      - service worker
   - **运行时优化（代码优化）**
     - js
-      - 减少dom操作、集中dom操作
-      - script标签位置
-      - 代码质量优化
+      - 减少 dom 操作、集中 dom 操作
+      - script 标签位置
+      - 代码质量优化，更优的算法、数据结构
+      - 非阻塞渲染，对于高性能开销的任务做时间分片、WebWorker等
     - css
       - 不使用@import
-      - css代码性能
+      - css 代码性能
         - 减少缩写
         - 少用浮动、绝对定位
         - 减少重绘重排
-      - css选择器性能
+      - css 选择器性能
         - 少用低性能选择器
         - 少用通配符
     - 减少重绘重排
-      - 不用table布局，用弹性布局
-      - 改变class而不是style
-      - css动画
-      - gpu加速
+      - 不用 table 布局，用弹性布局
+      - 改变 class 而不是 style
+      - css 动画
+      - gpu 加速，合理利用gpu能力，比如transform代替位移
       - 减少影响文档流
-      - 操作dom集中
-    - webpack优化
-    - react优化
+    - webpack 优化
+      - 开发环境
+      - 生产环境
+    - react 优化
+      - 减少render次数
+        - 避免不必要渲染
+          - memo
+          - 给子元素的props维持单一引用
+          - useRef代替部分useState
+          - 使用css替代条件渲染
+      - 降低render消耗
+        - 分离组件，减小单组件渲染开销
+        - useMemo、useCallback保存高消耗
 - 性能指标
-  - RAIL性能模型
-  - web用户指标
+  - RAIL 性能模型
+  - web 用户指标
     - FP
     - FCP
     - FMP
@@ -923,7 +1023,7 @@
     - **CLS**
   - 检测方式
     - PerformanceEntry
-    - web-vitals库
+    - web-vitals 库
 - 性能检测工具
   - lighthouse
   - chrome devtools
@@ -973,6 +1073,7 @@
   - 引入原因
     - 方便控制
     - 减小阻塞，中断渲染
+      - 把更新过程拆成每个 fiber，需要可以随时中断 render。commit 不可中断
     - 双缓冲树 复用
   - fiber 结构
     - 属性
@@ -1050,3 +1151,226 @@
     - SyncLane InputContinuousLane DefaultLane IdleLane
   - scheduler 优先级
     - ImmediateSchedulerPriority UserBlockingSchedulerPriority NormalSchedulerPriority IdleSchedulerPriority
+
+# React（使用）
+
+- React 优化
+  - 核心思想：降低渲染成本，或者尽量避免渲染
+- React 高阶组件是什么，怎么用
+  - 功能
+    - 强化 props
+    - 渲染拦截
+    - 外层包装
+- React18 带来了哪些更新？
+  - concurrent 模式
+  - Transition
+  - 新的 hooks
+    - useId：用于生成唯一 id，这个 id 在服务端和客户端渲染时生成的相同，可以保证水合过程的稳定
+    - useSyncExternalStore：可以从外部获取一个状态
+    - useInsertionEffect：为了解决 CSS-in-JS 库解决在渲染中注入样式的性能问题，在 before mutation 阶段调用
+  - Suspense 的更新（未完全实现）
+    - 可以使用除了 lazy 之外的部分实现
+  - 自动批量更新
+  - ssr api 的更新
+- React 错误边界
+- React-Router 简单原理，基本实现原理，两种路由方式的区别，以及基本使用
+- React 状态管理库：
+  - flux 理念
+    - action -> dispatcher -> store -> view -> action -> dispatcher
+  - Redux：基本理念、基本组成部分及其实现、常用的几个 api 和实现，怎么和 react 结合的，具体使用
+    - 基本理念
+      - 单向数据流
+      - 数据不可变（state）
+    - 基本结构
+      - store
+      - state
+      - reducer
+      - dispatch
+      - action（为什么需要 action？）
+      - subscriber
+    - middleware 机制
+    - react-redux
+      - react 和 redux 连接的方式
+        - provider 添加订阅，状态改变触发 listeners
+        - useSelector 获取最新 state
+        - useSyncExternalStore
+        - connect
+    - 现代使用
+      - createSlice
+  - Recoil：几个特点、atom 和 selector 两个核心概念、和 redux 的不同
+    - 基本特点
+      - 状态原子化
+      - 有向图 数据流
+      - 对 Concurrentmode 的支持
+    - 和 redux 的差别
+      - 状态更细分
+      - 状态连接更随意
+      - 轻量
+      - 对 Concurrent 支持好
+      - 使用层面：更简单，对 ts 支持更好
+
+# 深层思考问题
+
+- 状态管理库
+  - 为什么 redux 要这么设计，需要 action？
+  - 选择状态管理库的依据？
+    - 使用：减小心智负担
+      - 使用简单
+      - 对 ts 支持好，对 react hook 支持好
+      - 业内通用解决方案
+      - 维护程度、npm 下载量
+  - 假如让你设计一个状态管理库，需要注意哪些方面
+    - 数据的存储方式
+    - 怎么触发数据的更新
+      - redux：dispatch
+      - mobx：直接修改
+      - recoil/jotai：hooks
+    - 状态更新怎么反映到 react 更新
+      - props
+      - context
+      - useSyncExternalStore
+    - 状态和派生状态
+      - selector
+    - 和 react 配合时的优化，避免无谓的更新？
+  - 为什么选用 recoil 而不是其他
+    - 项目实际情况
+      - 组件复用比较少，需要共享的数据比较少
+      - 组件状态零碎，顶层的状态有些组件需要，有些不需要
+    - 比较
+      - redux 的优劣
+        - 模板代码太多，toolkit 治标不治本
+        - 对类型支持不够好
+        - 状态杂糅
+      - mobx、jotai、zustand 的优劣
+        - mobx：没有使用 hooks、响应式逻辑不符合 react 单向数据流，不好调试
+        - jotai、zustand：维护一般，使用者少
+      - recoil 的优势
+        - 状态原子化，方便控制和管理
+        - 模板代码少
+        - 对类型支持好，hooks 支持好
+        - facebook 官方，质量保证
+- canvas、konva
+
+- 组件库的设计
+  - 整体设计
+    - 每个组件的独立性要强，维护自己的状态，低耦合
+    - 通用状态或配置可以通过 context 下发，比如国际化、rtl、主题等
+    - 组件的 props 作为配置存在，默认 props、传入的 props、全局 context 合并为组件配置
+      - props 类型
+        - 通用的：classname、style、children
+    - 样式
+      - 使用预处理器变量、函数、mixin 等特性。
+        - 比如，对于 button 组件，先维护一个各种变量的组件，比如名字为`@btn-size-mini-border-width`；然后在实际的样式文件中，通过 less 的 mixin，传入不同的值，类似模板字符串的形式使用样式`~'@{btn-@{type}-color-bg}'`。连字符的中间项可以替换，比如这里`mini`对应的值可能是 1px，那么假如把 mini 换成 large，那就是大按钮的样式，值可能为 2px。总之只需要预设好样式，然后在 less 中使用 mixin 填入对应的字符即可。样式和具体组件还需要借助 classname 库配合
+    - 父子组件
+      - 数据传递
+        - cloneElement 注入 props
+        - provider 下发深层 context
+        - forwardRef
+  - 具体组件设计
+    - 表单：参考https://github.com/varHarrie/varharrie.github.io/issues/28
+    
+
+# 设计模式
+
+- 工厂模式
+- 单例模式
+- 装饰器
+- 原型
+- 适配器
+- 代理
+- 策略
+- 观察者和发布订阅
+ - 两者区别
+
+# 项目
+
+- 超管
+  - 难点
+    - canvas
+      - 使用konva的一个问题：事件委托的实现问题
+        - 具体问题：实现实时地图和实时点位的功能，依赖冒泡，但是冒泡和dom中不一样
+        - 个人尝试：
+          - 嵌套
+          - 包裹
+          - 直接放在layer上：有其他事件
+        - 解决方式：
+          - 先查看官方文档：没有对事件流的讲解，只提到了冒泡这个东西，没说规则
+          - github issues：没有相关的
+          - 查看源码
+            - 首先单独创建一个项目，调试源代码，搞清事件执行的关键函数
+            - 搞清“parent”是啥：必须通过add手动添加，必须是container
+          - 解决：采用一个container包裹地图和点位，在group上监听
+      - 地图的拖拽实现
+        - 具体问题：地图的底图很大，不能全部显示，只能显示一部分，然后需要实现移动展示全部
+        - 个人尝试
+          - 使用整个canvas放底图：性能太差
+          - 固定canvas大小，然后利用translate实现拖拽
+        - 解决方式
+          - 先单独创建项目自己尝试
+          - 查阅一些资料和其他的解决方案，综合使用
+        - 具体解决：
+          - 实现拖拽效果，具体参考项目
+          - 实现点位的可视区域绘制
+          - 边界限制，防止移出可视区域
+    - 代码规范不易遵守，经常忘记：采用eslint，自己编写plugin
+      - 编写plugin
+        - 方式：ast
+        - 途径：官方文档
+        - 发布：bnpm
+        - 应用：组内使用，部门分享
+        - 延伸：配置，可以自定义希望的格式，比如自定义setState的格式
+    - 状态管理问题：调研多个状态管理库，调研公司内使用
+      - 状态管理库
+        - 基础思路：从聚合化到原子化，项目需要原子化
+        - redux：模板代码多、类型支持一般、状态聚合
+        - mobx
+        - recoil
+        - zustand、jotai
+- 秒杀
+  - 优化
+    - 开发环境
+      - eval-cheap-module-source-map
+      - cache
+      - 减小范围
+      - 关闭生产模式优化
+        - splitChunk
+        - minisize
+    - 生产环境
+      - 核心：降低请求次数，减小请求体积，减少白屏时间
+      - 代码分割
+        - splitChunk
+        - 路由
+        - 动态导入
+      - 代码压缩
+        - js
+        - 分离css，压缩css
+      - tree-shaking
+      - 资源压缩
+        - 图片：webp、压缩
+      - 缓存：hash
+  - loader
+
+
+# 新知识
+
+- Vite和Turbopack
+  - 了解途径：React周报、公司内部的周报、掘金社区
+  - 学习方式
+    - 先看官方文档
+    - 再看社区内容，比如掘金、谷歌
+    - 动手实践，尝试官方文档的描述
+  - Turbopack
+    - 特点和为什么快
+      - 类似webpack的开发环境打包，但是能自动分析所需依赖
+      - rust编写，打包更快
+      - swc等工具，编译更快
+      - 独特的函数级缓存，函数执行结果不会再执行
+      - 按请求编译，需要什么编译什么
+    - 使用
+      - 目前只能在nextjs中尝试
+  - Vite
+  - Recoil
+
+
+
+

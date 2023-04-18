@@ -51,7 +51,7 @@ export class Circle extends Shape<CircleConfig> {
 
 每个具体图形都继承自 Shape 类，Shape 类包含一些基本的方法和属性。在 Shape 和 Node 两个基类上面只负责调用，具体的实现放到具体的 Shape 实现上面。
 
-在shape基类中，konva会获取每个图形的_sceneFunc函数，然后放到自己的drawScene函数中
+在 shape 基类中，konva 会获取每个图形的\_sceneFunc 函数，然后放到自己的 drawScene 函数中
 
 ```ts
 drawScene(can?: SceneCanvas, top?: Node) {
@@ -134,7 +134,6 @@ drawScene(can?: SceneCanvas, top?: Node) {
   return this;
 }
 ```
-
 
 # konva 事件
 
@@ -305,7 +304,7 @@ _getIntersection(pos: Vector2d): { shape?: Shape; antialiased?: boolean } {
 ```
 
 当 Shape 初始化的时候，会生成一个随机的颜色，以这个颜色作为 key 存入到 shapes 数组里面。
-也就是说，**每个shape都是用一个独特的颜色标识的，只要能找到这个颜色，就能找到这个shape**
+也就是说，**每个 shape 都是用一个独特的颜色标识的，只要能找到这个颜色，就能找到这个 shape**
 
 ```ts
 constructor(config?: Config) {
@@ -325,21 +324,22 @@ constructor(config?: Config) {
 }
 ```
 
-因此当事件触发，执行到_getIntersection时，通过getImageData获取到这个位置上的元素的颜色，然后就能找到对应的shape了。
+因此当事件触发，执行到\_getIntersection 时，通过 getImageData 获取到这个位置上的元素的颜色，然后就能找到对应的 shape 了。
 
-### hitCanvas和sceneCanvas
+### hitCanvas 和 sceneCanvas
 
 Konva 在创建 Layer 的时候会创建两个 Canvas，一个用于 sceneCanvas 用于绘制 Shape，另一个 hitCanvas 在内存里面，用于判断是否被点击。
+
 ```js
 canvas = new SceneCanvas();
 hitCanvas = new HitCanvas({
   pixelRatio: 1,
 });
 ```
-每次在 sceneCanvas 上面绘制的时候，同样会在内存中的 hitCanvas 里面绘制一遍，并且将上面随机生成的色值作为 fill 和 stroke 的颜色填充。因此sceneCanvas显示的是正常的颜色，而hitCanvas显示的是用于表示shape的随机的颜色。
 
-上面获取imageData，实际上是获取的hitCanvas上的imageData。
+每次在 sceneCanvas 上面绘制的时候，同样会在内存中的 hitCanvas 里面绘制一遍，并且将上面随机生成的色值作为 fill 和 stroke 的颜色填充。因此 sceneCanvas 显示的是正常的颜色，而 hitCanvas 显示的是用于表示 shape 的随机的颜色。
 
+上面获取 imageData，实际上是获取的 hitCanvas 上的 imageData。
 
 ### \_fireAndBubble 触发事件
 
@@ -388,27 +388,26 @@ _fire(eventType, evt) {
 }
 ```
 
-
 # react-konva 和 react 的结合
 
-react-konva的实现利用了react的react-reconciler来自定义渲染。React将组件分为Host类型和Custom类型，Host类型默认使用的是浏览器的document api进行渲染，但可以通过Reconciler来自定义HostComponent渲染，比如覆写appendChild方法、自定义元素instance实例等。
+react-konva 的实现利用了 react 的 react-reconciler 来自定义渲染。React 将组件分为 Host 类型和 Custom 类型，Host 类型默认使用的是浏览器的 document api 进行渲染，但可以通过 Reconciler 来自定义 HostComponent 渲染，比如覆写 appendChild 方法、自定义元素 instance 实例等。
 
-[官方文档](https://github.com/facebook/react/tree/main/packages/react-reconciler)有关于Reconciler的介绍，并且有一些简单的例子。
+[官方文档](https://github.com/facebook/react/tree/main/packages/react-reconciler)有关于 Reconciler 的介绍，并且有一些简单的例子。
 
-类似的实现方案有很多，比如Remax、react-pdf等
+类似的实现方案有很多，比如 Remax、react-pdf 等
 
-简单来说，就是自己创建一个Reconciler，用以代替react的`ReactDOM.render`方法来渲染。比如：
+简单来说，就是自己创建一个 Reconciler，用以代替 react 的`ReactDOM.render`方法来渲染。比如：
 
 ```js
 import ReactReconciler from "react-reconciler";
 
 const HostConfig = {
-  
+
 };
 const ReactReconcilerInstance = ReactReconciler(hostConfig);
 const canvasRender = {
   render(){
-    
+
   }
 }
 export default canvasRender
@@ -421,10 +420,9 @@ const canvasDom = document.getElementById('canvas-root') as HTMLCanvasElement;
 CanvasRender.render(<App />, canvasDom)
 ```
 
-hostconfig就是关于Reconciler上的自定义方法、属性等。这些方法都是为渲染自定义组件而用的，其中有几个主要的方法：
+hostconfig 就是关于 Reconciler 上的自定义方法、属性等。这些方法都是为渲染自定义组件而用的，其中有几个主要的方法：
 
-- createInstance: 为element创建实例。这个实例不一定是dom元素，对于konva来说，实例就是konva中的每个节点，比如圆形、方形等图案、stage、layer等。
-
+- createInstance: 为 element 创建实例。这个实例不一定是 dom 元素，对于 konva 来说，实例就是 konva 中的每个节点，比如圆形、方形等图案、stage、layer 等。
 
 ```ts
 export function createInstance(type, props, internalInstanceHandle) {
@@ -438,7 +436,7 @@ export function createInstance(type, props, internalInstanceHandle) {
   const propsWithOnlyEvents = {};
 
   for (var key in props) {
-    var isEvent = key.slice(0, 2) === 'on';
+    var isEvent = key.slice(0, 2) === "on";
     if (isEvent) {
       propsWithOnlyEvents[key] = props[key];
     } else {
@@ -454,8 +452,8 @@ export function createInstance(type, props, internalInstanceHandle) {
 }
 ```
 
-除了创建的实例，一般还要有一个用于更新该实例的函数。当react触发更新时，就调用更新函数来更新这个实例。
-可以把createInstance看做是element的挂载阶段执行的步骤，commitUpdate则是更新时要执行的步骤。
+除了创建的实例，一般还要有一个用于更新该实例的函数。当 react 触发更新时，就调用更新函数来更新这个实例。
+可以把 createInstance 看做是 element 的挂载阶段执行的步骤，commitUpdate 则是更新时要执行的步骤。
 
 ```ts
 export function commitUpdate(
@@ -471,9 +469,9 @@ export function commitUpdate(
 }
 ```
 
-- 一些需要在commit阶段实现的方法，包括对文本节点、其他节点的插入、删除、更新的操作。
+- 一些需要在 commit 阶段实现的方法，包括对文本节点、其他节点的插入、删除、更新的操作。
 
-比如appendChild方法，用于代替domcument.appendChild方法，告知react怎么执行appendChild操作：
+比如 appendChild 方法，用于代替 domcument.appendChild 方法，告知 react 怎么执行 appendChild 操作：
 
 ```ts
 export function appendChild(parentInstance, child) {
@@ -487,10 +485,10 @@ export function appendChild(parentInstance, child) {
 }
 ```
 
-类似的还有insertBefore、removeChild等。这些方法很多只是按照类型填充，如果不需要，直接返回null、boolean或某个特定值就可以。konva的实现可以参考[它的源码](https://github1s.com/konvajs/react-konva/blob/HEAD/src/ReactKonvaHostConfig.ts)
+类似的还有 insertBefore、removeChild 等。这些方法很多只是按照类型填充，如果不需要，直接返回 null、boolean 或某个特定值就可以。konva 的实现可以参考[它的源码](https://github1s.com/konvajs/react-konva/blob/HEAD/src/ReactKonvaHostConfig.ts)
 
 当这些方法都填充完毕，最后就能实现自定义的渲染。
-不过，konva并不是直接替换根部的ReactDOM，而是编写了一个StageWrap组件，手动调用KonvaRenderer上的方法
+不过，konva 并不是直接替换根部的 ReactDOM，而是编写了一个 StageWrap 组件，手动调用 KonvaRenderer 上的方法
 
 ```ts
 const StageWrap = (props) => {
@@ -549,7 +547,7 @@ const StageWrap = (props) => {
   });
 
   // 返回一个stage
-  return React.createElement('div', {
+  return React.createElement("div", {
     ref: container,
     accessKey: props.accessKey,
     className: props.className,
@@ -560,5 +558,3 @@ const StageWrap = (props) => {
   });
 };
 ```
-
-

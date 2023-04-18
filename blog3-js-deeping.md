@@ -3083,6 +3083,7 @@ Promise 对象有以下两个特点。
 
 - Promise 对象代表一个异步操作，有三种状态：`pending`（进行中）、`fulfilled`（已成功）和 `rejected`（已失败）。只有异步操作的结果，可以决定当前是哪一种状态，任何其他操作都无法改变这个状态。
 - 一旦状态改变，就不会再变，任何时候都可以得到这个结果。Promise 对象的状态改变，只有两种可能：从 pending 变为 fulfilled 和从 pending 变为 rejected。只要这两种情况发生，状态就凝固了，不会再变了，会一直保持这个结果，这时就称为 resolved（已定型）。
+- 错误处理：Promise的错误不能被trycatch捕获，包括reject的错误、手动throw的错误。也不能被window.onerror捕获。唯一可以用trycatch捕获的情况是async函数内的await语句之后的promise。
 
 ## 基本用法
 

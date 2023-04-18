@@ -203,6 +203,13 @@ script 标签还有一些特殊的属性：
 > ![](https://pic.imgdb.cn/item/6400ca41f144a01007503551.jpg)
 
 - crossorigin：如果采用这个属性，就会采用跨域的方式加载外部脚本，即 HTTP 请求的头信息会加上 origin 字段。
+  script标签本来就是可以跨域进行请求的，即可以执行不同源的脚本，这也是jsonp的原理。
+  不过script执行跨域脚本有一些限制：比如不能捕获到跨域脚本内部出现的具体错误，而只能得到一个“script error”的错误。并且请求script的请求头中也不携带origin字段。
+  如果有crossorigin，则会按照CORS的规则去请求。具体来说request会带上origin头，然后会要求服务器进行cors校验，后面就和简单请求的cors流程相同了。如果服务端没有做cors的相关响应头设置的话，那么请求就会抛出跨域错误，同时也不会执行脚本。
+  crossorigin的取值有：
+  - anonymous：默认值，表示使用cors，但不会发送cookie到不同源。
+  - use-credentials：可以跨域发送cookie等
+  除了script，img、video等元素都有crossorigin属性，他们的执行原则和script标签相同。
 - integrity：给出外部脚本的哈希值，防止脚本被篡改。只有哈希值相符的外部脚本，才会执行。
 - nonce：一个密码随机数，由服务器在 HTTP 头信息里面给出，每次加载脚本都不一样。它相当于给出了内嵌脚本的白名单，只有在白名单内的脚本才能执行。
 - referrerpolicy：HTTP 请求的 Referer 字段的处理方法。

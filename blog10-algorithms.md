@@ -52,11 +52,11 @@ for (let i = 0; i < n; i *= 2) {
 第二个迭代很明显每次执行都会 i\*2，这时就是一个对数复杂度，即 $O(log_{2}n)$ （通常忽略底数）
 
 对于比较复杂的迭代问题，比如双指针、滑动窗口，虽然看起来有很多复杂的步骤，但是只用关注核心的指针移动就可以。
-无论多复杂的逻辑，如果遍历过程中指针没有回退而是一直向前走，那么复杂度就是简单的O(N)
+无论多复杂的逻辑，如果遍历过程中指针没有回退而是一直向前走，那么复杂度就是简单的 O(N)
 
 ## 递归的时间复杂度
 
-递归算法的时间复杂度本质上是要看: **递归的次数 \* 递归函数本身的复杂度**。如果把递归看成是一棵树，那就是节点数*每个节点的复杂度。
+递归算法的时间复杂度本质上是要看: **递归的次数 \* 递归函数本身的复杂度**。如果把递归看成是一棵树，那就是节点数\*每个节点的复杂度。
 递归其实是另一种迭代，因此很多算法的递归形式其实和迭代形式的复杂度差不多。
 比如计算 x 的 n 次方，用递归形式描述为：
 
@@ -117,7 +117,7 @@ function fn3(x, n) {
 ---
 
 有些递归会展开成二叉树或多叉树的形式，比如回溯相关的题目，以及部分用递归来解的动态规划。
-一棵深度（按根节点深度为 1）为 k 的N叉树最多可以有 $(N^k - 1)/(K - 1)$ 个节点，时间复杂度为O(K^N)。（把1/K - 1看作常数）
+一棵深度（按根节点深度为 1）为 k 的 N 叉树最多可以有 $(N^k - 1)/(K - 1)$ 个节点，时间复杂度为 O(K^N)。（把 1/K - 1 看作常数）
 
 以斐波那契数列为例，最基本的不做任何优化的算法复杂度为 $O(2^n)$ ，就是最大的指数时间复杂度
 ![](https://pic.imgdb.cn/item/6291bdb90947543129471d30.jpg)
@@ -203,8 +203,9 @@ function concatArray(arr1, arr2) {
    - 若三个数相加之和小于 0，说明左侧的数偏小了，左指针右移
 
 关键在于去重：
-- 对于基准数k的去重，用一个数组记录重复数即可
-- 对于i和j的去重，当和为0时就顺便把和当前i和j相同的数字都跳过。比如找到了一个组合为[-1,0,1]，那么就把数组中的0和1都跳过
+
+- 对于基准数 k 的去重，用一个数组记录重复数即可
+- 对于 i 和 j 的去重，当和为 0 时就顺便把和当前 i 和 j 相同的数字都跳过。比如找到了一个组合为[-1,0,1]，那么就把数组中的 0 和 1 都跳过
 
 ```js
 function triNumberSum(nums) {
@@ -212,24 +213,23 @@ function triNumberSum(nums) {
   const cache = []; // 存储防止重复
   const newArr = [];
   for (let k = 0; k < nums.length - 2; k++) {
-      let i = k + 1;
-      let j = nums.length - 1;
-      if (cache.includes(nums[k])) {
-          continue;
-      }
-      while (i < j) {
-          const sum = nums[i] + nums[j] + nums[k];
-          if (sum === 0) {
-              newArr.push([nums[i], nums[j], nums[k]]);
-              cache.push(nums[k]);
-              while (i < j && nums[j] === nums[j - 1]) j--;
-              while (i < j && nums[i] === nums[i + 1]) i++;
-              i++;
-              j--;
-          } 
-          else if (sum > 0) j--
-          else i++;
-      }
+    let i = k + 1;
+    let j = nums.length - 1;
+    if (cache.includes(nums[k])) {
+      continue;
+    }
+    while (i < j) {
+      const sum = nums[i] + nums[j] + nums[k];
+      if (sum === 0) {
+        newArr.push([nums[i], nums[j], nums[k]]);
+        cache.push(nums[k]);
+        while (i < j && nums[j] === nums[j - 1]) j--;
+        while (i < j && nums[i] === nums[i + 1]) i++;
+        i++;
+        j--;
+      } else if (sum > 0) j--;
+      else i++;
+    }
   }
   return newArr;
 }
@@ -241,9 +241,7 @@ function triNumberSum(nums) {
 ---
 
 从三数求和开始，后序的求和就可以递推得来。
-比如四数求和（同一个数组的四数求和），就可以固定一个数num，然后另外三个数用三数求和的函数计算得到target-num即可。有了四数求和的结果，五数、六数直到n数都是可行的。
-
-
+比如四数求和（同一个数组的四数求和），就可以固定一个数 num，然后另外三个数用三数求和的函数计算得到 target-num 即可。有了四数求和的结果，五数、六数直到 n 数都是可行的。
 
 ## 有序数组的平方
 
@@ -313,12 +311,12 @@ var removeElement = function (nums, val) {
  * @return {number}
  */
 var removeElement = function (nums, val) {
-  let i = 0
-  let j = i + 1
+  let i = 0;
+  let j = i + 1;
   // 让j每次覆盖i+1也可以
-  for(;j < nums.length;i++,j++){
-    while(nums[j] === val) j++
-    nums[i + 1] = nums[j]
+  for (; j < nums.length; i++, j++) {
+    while (nums[j] === val) j++;
+    nums[i + 1] = nums[j];
   }
   return i;
 };
@@ -353,7 +351,7 @@ var removeDuplicates = function (nums) {
 };
 ```
 
-如果希望把重复的元素完全删掉，那么就让i在要删除的元素前面停下来就可以
+如果希望把重复的元素完全删掉，那么就让 i 在要删除的元素前面停下来就可以
 
 ## 移动零
 
@@ -414,13 +412,14 @@ var intersection = function (nums1, nums2) {
 
 ---
 
-方法2：排序+双指针
+方法 2：排序+双指针
 思路：给两个数组排序，然后用双指针（i，j）分别从两个数组的开头开始，向后移动。
-- 如果`nums1[i] > nums2[j]`，就j++
-- 如果`nums1[i] < nums2[j]`，就i++。总之就是移动较小的那个数字。
-- 如果`nums1[i] === nums2[j]`，就记录，然后i和j同时++。
 
-另外考虑到去掉重复的数字，还可以设置一个变量pre表示前一个作为交集的数字。当`nums1[i] === nums2[j]`时，就把pre设置为nums1[i]；后面如果再遇见值为pre的nums1[i]就跳过，否则就记录并更改pre。
+- 如果`nums1[i] > nums2[j]`，就 j++
+- 如果`nums1[i] < nums2[j]`，就 i++。总之就是移动较小的那个数字。
+- 如果`nums1[i] === nums2[j]`，就记录，然后 i 和 j 同时++。
+
+另外考虑到去掉重复的数字，还可以设置一个变量 pre 表示前一个作为交集的数字。当`nums1[i] === nums2[j]`时，就把 pre 设置为 nums1[i]；后面如果再遇见值为 pre 的 nums1[i]就跳过，否则就记录并更改 pre。
 
 ## 旋转数组（轮转数组）
 
@@ -613,11 +612,11 @@ var carPooling = function (trips, capacity) {
 
 基本的前缀和就不再赘述，这里说一个前缀和解题的常用套路，即和哈希表结合。
 
-因为即使用前缀和求子数组和，如果分别遍历双指针前缀，最后的复杂度还是O(n^2)，没有意义；如果和哈希表结合，就可以实现O(n)的复杂度。
+因为即使用前缀和求子数组和，如果分别遍历双指针前缀，最后的复杂度还是 O(n^2)，没有意义；如果和哈希表结合，就可以实现 O(n)的复杂度。
 
 方法类似于两数之和：遍历一次数组，每次加上当前值，然后用哈希表存起来当前位置的前缀和。每次查找`当前前缀和 - 子数组目标和`在哈希表中是否出现即可。原理就是`当前前缀和 - 之前的前缀和 = 子数组和`。
 
-至于哈希表的value存什么，根据情况可以是索引（求子数组长度）或者是次数（求子数组和出现次数）
+至于哈希表的 value 存什么，根据情况可以是索引（求子数组长度）或者是次数（求子数组和出现次数）
 
 ```js
 for(let i = 1;i < nums.length;i++){
@@ -626,7 +625,7 @@ for(let i = 1;i < nums.length;i++){
         ...
     }
     if(!map.has(pre)) map.set(pre,...)
-    else map.set(pre,...)                          
+    else map.set(pre,...)
 }
 
 ```
@@ -642,17 +641,17 @@ https://leetcode.cn/problems/contiguous-array/
 > 说明: [0, 1] 是具有相同数量 0 和 1 的最长连续子数组。
 
 这道题需要转化一下思路：
-我们把0变为-1，这样这道题就变成了：找到一个最长的子数组使得其内部的和为0。
+我们把 0 变为-1，这样这道题就变成了：找到一个最长的子数组使得其内部的和为 0。
 这显然就是**前缀和**问题。想到子数组求和问题就应该考虑到前缀和、差分数组等方法。
-但是具体实现中也有特殊技巧。如果直接用前缀和（即双指针确定两个边界）遍历所有和为0的情况然后找出最大长度，就会超时。
+但是具体实现中也有特殊技巧。如果直接用前缀和（即双指针确定两个边界）遍历所有和为 0 的情况然后找出最大长度，就会超时。
 题解的实现是并不直接采用前缀和数组，而是这样：
 
-- 设置一个map用于记录子数组的各种可能的和
+- 设置一个 map 用于记录子数组的各种可能的和
 
-- 遍历数组，和每一项相加，然后把和存到map中
+- 遍历数组，和每一项相加，然后把和存到 map 中
 
-  - 如果map中没有，就存下这个和为键，值为当前的索引，表示从第一项开始到这一项的和
-  - 如果map中有，就取出这个和对应的值（也就是第一次得到这个和的索引）。这时，**过了几项之后和依然不变，就说明这两个范围之间的所有值的和是0**；也就是找到了一个和为0的子数组，记录长度即可
+  - 如果 map 中没有，就存下这个和为键，值为当前的索引，表示从第一项开始到这一项的和
+  - 如果 map 中有，就取出这个和对应的值（也就是第一次得到这个和的索引）。这时，**过了几项之后和依然不变，就说明这两个范围之间的所有值的和是 0**；也就是找到了一个和为 0 的子数组，记录长度即可
 
   > ```
   > 比如数组[1,1,-1,-1,1,1,1]
@@ -665,18 +664,18 @@ https://leetcode.cn/problems/contiguous-array/
 
 ```js
 var findMaxLength = function (nums) {
-    let maxLen = 0
-    let sum = 0
-    const map = new Map()
-    map.set(0, -1)
-    for (let i = 0; i < nums.length; i++) {
-        sum += nums[i] === 0 ? -1 : 1 // 加的还是-1和1
-        if (map.has(sum)) {
-            const len = i - map.get(sum)
-            maxLen = Math.max(maxLen,len)
-        } else map.set(sum, i)
-    }
-    return maxLen
+  let maxLen = 0;
+  let sum = 0;
+  const map = new Map();
+  map.set(0, -1);
+  for (let i = 0; i < nums.length; i++) {
+    sum += nums[i] === 0 ? -1 : 1; // 加的还是-1和1
+    if (map.has(sum)) {
+      const len = i - map.get(sum);
+      maxLen = Math.max(maxLen, len);
+    } else map.set(sum, i);
+  }
+  return maxLen;
 };
 ```
 
@@ -826,44 +825,45 @@ var triangleNumber = function(nums) {
 > 输出：2
 
 这道题如果不限制空间，最好的方法当然是哈希表。
-但是限制额外空间，就需要一种特殊的方法。这个方法在判断成环链表中出现过，就是floyd判圈算法。
+但是限制额外空间，就需要一种特殊的方法。这个方法在判断成环链表中出现过，就是 floyd 判圈算法。
 
 > 详细解释可以参考环形链表的两道题：
-> https://leetcode.cn/problems/linked-list-cycle/
-> https://leetcode.cn/problems/linked-list-cycle-ii/
+> https://leetcode.cn/problems/linked-list-cycle/ > https://leetcode.cn/problems/linked-list-cycle-ii/
 
 这个算法大概是这样：
 ![](https://pic1.imgdb.cn/item/6346a72c16f2c2beb1b7ef82.jpg)
 
-设定两个指针fast和slow，fast每次走两步，slow每次走一步。由于链表有环，fast和slow最终会相遇；此时fast一定在环中走了n圈；
-在上面这张图中，我们假设在紫色点处两个指针相遇；这时slow指针走的长度为`a + b`，fast可能走了n圈，因此为`n * (b + c) + a`。又因为fast走的长度一定是slow的两倍，因此可以得到下面这个关系：
+设定两个指针 fast 和 slow，fast 每次走两步，slow 每次走一步。由于链表有环，fast 和 slow 最终会相遇；此时 fast 一定在环中走了 n 圈；
+在上面这张图中，我们假设在紫色点处两个指针相遇；这时 slow 指针走的长度为`a + b`，fast 可能走了 n 圈，因此为`n * (b + c) + a`。又因为 fast 走的长度一定是 slow 的两倍，因此可以得到下面这个关系：
 ![](https://pic1.imgdb.cn/item/6346a7fd16f2c2beb1b9ce7c.jpg)
 即：从相遇点到入环点的距离加上 n-1 圈的环长，恰好等于从链表头部到入环点的距离。
 
 所以这里就可以得到两个题的题解：
-- 如果slow和fast相遇，就说明一定有环
+
+- 如果 slow 和 fast 相遇，就说明一定有环
 - 入环点应该是可以计算的。计算方法见下：
 
-计算入环点其实就是计算a值，起点加上a就是入环点。
-- 设置一个ptr指针，从头开始走
-- slow指针从fast和slow相遇的位置开始
+计算入环点其实就是计算 a 值，起点加上 a 就是入环点。
+
+- 设置一个 ptr 指针，从头开始走
+- slow 指针从 fast 和 slow 相遇的位置开始
 - 两个指针每次都走一步。当他们相遇时，就到了入环点的位置。
 
-为什么呢？显然他们相遇时，ptr指针一定只走了a长度（一旦入环就不会再相遇）。从上面的公式可以看出，长度a应该等于`c + (n-1)(b+c)`，即长度c和n-1圈。也就是说当slow和ptr相遇时，slow指针可能会走n-1圈（相当于没走），然后再走一个距离c，就恰好在入环点位置相遇。
+为什么呢？显然他们相遇时，ptr 指针一定只走了 a 长度（一旦入环就不会再相遇）。从上面的公式可以看出，长度 a 应该等于`c + (n-1)(b+c)`，即长度 c 和 n-1 圈。也就是说当 slow 和 ptr 相遇时，slow 指针可能会走 n-1 圈（相当于没走），然后再走一个距离 c，就恰好在入环点位置相遇。
 
 说回这道题，这道题的关键是怎么理解成上面说的环形链表问题，也就是怎么找到一个“环”
-在链表中，每一个节点都有相连的下一个节点。但是数组中没有明确的相连关系；因此我们定义一个映射`x -> f(x)`为`n -> nums[n]`，即对于每个n，它的下一项应该是数组中的第n个数；
+在链表中，每一个节点都有相连的下一个节点。但是数组中没有明确的相连关系；因此我们定义一个映射`x -> f(x)`为`n -> nums[n]`，即对于每个 n，它的下一项应该是数组中的第 n 个数；
 这里是最重要的一点，即`n -> nums[n]`这个映射
 
 ![](https://pic1.imgdb.cn/item/6346aa0916f2c2beb1be258e.jpg)
 
-如果数组中有相同的数，就会导致不同的n对应同一个nums[n]（不同位置上的数相同），转换成链表形式就是成环
+如果数组中有相同的数，就会导致不同的 n 对应同一个 nums[n]（不同位置上的数相同），转换成链表形式就是成环
 ![](https://pic1.imgdb.cn/item/6346aa6516f2c2beb1bef6ba.jpg)
 
 所以问题就转化成了，找到这个链表的入环点，就是重复的那个数字。
 
-同样设置两个指针fast和slow；注意这里，链表中我们可以表示为slow = slow.next，因为链表的映射为`p -> p.next`；这里我们的映射是`n -> nums[n]`，所以这个指针的“下一项”就是`slow = nums[slow]`。
-fast同理，即`fast = nums[nums[fast]]`，相当于两次映射
+同样设置两个指针 fast 和 slow；注意这里，链表中我们可以表示为 slow = slow.next，因为链表的映射为`p -> p.next`；这里我们的映射是`n -> nums[n]`，所以这个指针的“下一项”就是`slow = nums[slow]`。
+fast 同理，即`fast = nums[nums[fast]]`，相当于两次映射
 
 ![](https://pic1.imgdb.cn/item/6346aaff16f2c2beb1c04f5c.jpg)
 
@@ -872,22 +872,22 @@ fast同理，即`fast = nums[nums[fast]]`，相当于两次映射
 
 ```js
 var findDuplicate = function (nums) {
-    let slow = 0;
-    let fast = 0;
-    slow = nums[slow]; // slow的下一个（走一步）
-    fast = nums[nums[fast]]; // fast的下一个（走两步）
-    while (slow !== fast) {
-        slow = nums[slow];
-        fast = nums[nums[fast]];
-    }
-    // pre指针找到入环点
-    let pre = 0;
-    let post = slow;
-    while (pre !== post) {
-        pre = nums[pre];
-        post = nums[post];
-    }
-    return pre;
+  let slow = 0;
+  let fast = 0;
+  slow = nums[slow]; // slow的下一个（走一步）
+  fast = nums[nums[fast]]; // fast的下一个（走两步）
+  while (slow !== fast) {
+    slow = nums[slow];
+    fast = nums[nums[fast]];
+  }
+  // pre指针找到入环点
+  let pre = 0;
+  let post = slow;
+  while (pre !== post) {
+    pre = nums[pre];
+    post = nums[post];
+  }
+  return pre;
 };
 ```
 
@@ -896,10 +896,10 @@ var findDuplicate = function (nums) {
 ## 回文字符串
 
 > 给定一个非空字符串 s，最多删除一个字符。判断是否能成为回文字符串。
->    示例：
->    输入: "abaca"
->    输出: True
->    解释: 你可以删除 c 字符。
+> 示例：
+> 输入: "abaca"
+> 输出: True
+> 解释: 你可以删除 c 字符。
 
 思路：利用回文字符串的“对称性”，即字符串从两头分别遍历，每个字符都相等（直到两个遍历指针相碰）
 
@@ -1029,7 +1029,8 @@ function getNext(s) {
       // 当然有可能前面一直没有相同的,那就回退到0,表示这个位置没有相同前后缀,下次再从头开始
       j = next[j - 1];
     }
-    if (s[i] === s[j]) {// 找到了相同的前后缀
+    if (s[i] === s[j]) {
+      // 找到了相同的前后缀
       j++;
     }
     next[i] = j;
@@ -1096,7 +1097,7 @@ var repeatedSubstringPattern = function (s) {
 
 简单写一下思路：
 
-1. 解法 1：枚举，从第一个元素开始作为子串。假设子串长度为 n，那么把子串重复`length / n`次就可以和s相同；如果不同就继续增加子串长度，直到相同或遍历到`length / 2`为止。
+1. 解法 1：枚举，从第一个元素开始作为子串。假设子串长度为 n，那么把子串重复`length / n`次就可以和 s 相同；如果不同就继续增加子串长度，直到相同或遍历到`length / 2`为止。
 2. 解法 2: 查找`s+s`去掉首位元素的中间部分有没有 s，这个方法的原理参考题解。最重要的在于提供了一个思路，就是`s+s`中间部分依次取 n 个字符可以得到 s 的多种“翻转”情况，比如：
 
 ```
@@ -1317,26 +1318,23 @@ var reorganizeString = function (s) {
 };
 ```
 
-
-
 ## 两两删除相同字符并加入一个新字符
 
 > 给定一个只包含小写字母字符串，每次可以选择两个相同的字符删除，并在字符串结尾新增任意一个小写字母。
 > 请问最少多少次操作后，所有的字母都不相同？
-> 
-> 示例1
+>
+> 示例 1
 > "abab"
-> 
+>
 > 输出
 > 2
-> 
+>
 > 说明
 > 第一次操作将两个'a'变成一个'f'，字符串变成"bbf"。
 > 第二次操作将两个'b'变成一个'b'，字符串变成"fb"。
-> 操作方式不是唯一的，但可以证明，最少操作次数为2。
+> 操作方式不是唯一的，但可以证明，最少操作次数为 2。
 
-
-首先通过一个长度为26的数组记录下每个字母出现的次数；对于出现次数>=2的字符，将其删去，然后选择一个未被放入字符串的字符放入。
+首先通过一个长度为 26 的数组记录下每个字母出现的次数；对于出现次数>=2 的字符，将其删去，然后选择一个未被放入字符串的字符放入。
 
 ```
 比如对于"abab"，数组为[2,2,0,0...,0]
@@ -1344,49 +1342,50 @@ var reorganizeString = function (s) {
 删掉a，同上，这时从头开始遍历，b已经变为0，因此可以再放入b，数组为[0,1,1]，没有重复元素了。
 ```
 
-但是这种方法有个问题，如果所有字母都出现一遍之后，仍有>=2的字母怎么办？即比如所有位置上都为1，然后有几个位置上的值>=2
-这时其实放入哪个字母都可以。我们就放入那个多的字母，比如字母c有三个，那就删去两个，再放入1个，相当于删了一个。依次类推，最后就能保证全为1.
+但是这种方法有个问题，如果所有字母都出现一遍之后，仍有>=2 的字母怎么办？即比如所有位置上都为 1，然后有几个位置上的值>=2
+这时其实放入哪个字母都可以。我们就放入那个多的字母，比如字母 c 有三个，那就删去两个，再放入 1 个，相当于删了一个。依次类推，最后就能保证全为 1.
 
 总结一下，一共有两种情况：
-1. 第一轮删除可以完成，即数组中所有值都为0或1
-2. 第一轮删除不能完成，即数组中所有值都为1或更大。
+
+1. 第一轮删除可以完成，即数组中所有值都为 0 或 1
+2. 第一轮删除不能完成，即数组中所有值都为 1 或更大。
 
 第二种情况，删除次数就应该等于`多出来的总字母数量 - 1 = 此时的字符串长度 - 26`。
 
 综合两种情况，代码如下：
+
 ```js
-function minOperations( str ) {
-    const letters = new Array(26).fill(0);
-    const getIndex = (char) => char.charCodeAt(0) - "a".charCodeAt(0);
-    const isAllOne = (arr) => {
-        for(const num of arr){
-            if(num !== 1) return false
+function minOperations(str) {
+  const letters = new Array(26).fill(0);
+  const getIndex = (char) => char.charCodeAt(0) - "a".charCodeAt(0);
+  const isAllOne = (arr) => {
+    for (const num of arr) {
+      if (num !== 1) return false;
+    }
+    return true;
+  };
+  for (const char of str) {
+    letters[getIndex(char)]++;
+  }
+  let cnt = 0;
+  for (let i = 0; i < letters.length; i++) {
+    while (letters[i] >= 2) {
+      if (isAllOne(letters)) break;
+      letters[i] -= 2;
+      for (let j = 0; j < letters.length; j++) {
+        if (letters[j] === 0) {
+          letters[j]++;
+          break;
         }
-        return true
+      }
+      cnt++;
     }
-    for (const char of str) {
-        letters[getIndex(char)]++;
-    }
-    let cnt = 0;
-    for (let i = 0; i < letters.length;i++) {
-        while (letters[i] >= 2) {
-          if(isAllOne(letters)) break
-            letters[i] -= 2;
-            for(let j = 0;j < letters.length;j++){
-              if(letters[j] === 0){
-                letters[j]++
-                break
-              }
-            }
-            cnt++;
-        }
-        if(i === letters.length - 1) i = 0
-    }
-    // cnt是第一轮的操作次数，此时的字符串长度 - 26是第二轮需要的操作次数
-    return cnt + letters.reduce((a,b) => a + b) - 26
+    if (i === letters.length - 1) i = 0;
+  }
+  // cnt是第一轮的操作次数，此时的字符串长度 - 26是第二轮需要的操作次数
+  return cnt + letters.reduce((a, b) => a + b) - 26;
 }
 ```
-
 
 # 链表
 
@@ -1418,11 +1417,11 @@ const mergeTwoLists = function (l1, l2) {
 };
 ```
 
-## 合并K个升序链表
+## 合并 K 个升序链表
 
 https://leetcode.cn/problems/merge-k-sorted-lists/
 
-题目就是给你K个链表，把他们按照升序合并。
+题目就是给你 K 个链表，把他们按照升序合并。
 
 思路有好几种，最简单的依次合并就不写了。
 
@@ -1430,84 +1429,85 @@ https://leetcode.cn/problems/merge-k-sorted-lists/
 
 ```js
 var mergeKLists = function (lists) {
-    function merge2Lists(l1, l2) {
-        if(!l1 && !l2) return null
-        else if(!l1 && l2) return l2
-        else if(l1 && !l2) return l1
-        const dummy = new ListNode(-Infinity)
-        let curr = dummy
-        while (l1 && l2) {
-            if (l1.val < l2.val) {
-                const next = l1.next
-                curr.next = l1
-                l1.next = null
-                l1 = next
-            } else {
-                const next = l2.next
-                curr.next = l2
-                l2.next = null
-                l2 = next
-            }
-            curr = curr.next
-        }
-        if (l1 && !l2) {
-            curr.next = l1
-        } else if (!l1 && l2) {
-            curr.next = l2
-        }
-        return dummy.next
+  function merge2Lists(l1, l2) {
+    if (!l1 && !l2) return null;
+    else if (!l1 && l2) return l2;
+    else if (l1 && !l2) return l1;
+    const dummy = new ListNode(-Infinity);
+    let curr = dummy;
+    while (l1 && l2) {
+      if (l1.val < l2.val) {
+        const next = l1.next;
+        curr.next = l1;
+        l1.next = null;
+        l1 = next;
+      } else {
+        const next = l2.next;
+        curr.next = l2;
+        l2.next = null;
+        l2 = next;
+      }
+      curr = curr.next;
     }
-    function mergeList(lists) {
-        if (lists.length <= 1) return lists[0] || null
-        const mergedLists = []
-        for (let i = 0; i < lists.length;) {
-            if (lists[i + 1] !== undefined) { // 可能是空链表null，不能直接if(list[i+1])
-                mergedLists.push(merge2Lists(lists[i], lists[i + 1]))
-                i += 2
-            } else {
-                mergedLists.push(lists[i])
-                i++
-            }
-        }
-        return mergeList(mergedLists)
+    if (l1 && !l2) {
+      curr.next = l1;
+    } else if (!l1 && l2) {
+      curr.next = l2;
     }
-    return mergeList(lists)
+    return dummy.next;
+  }
+  function mergeList(lists) {
+    if (lists.length <= 1) return lists[0] || null;
+    const mergedLists = [];
+    for (let i = 0; i < lists.length; ) {
+      if (lists[i + 1] !== undefined) {
+        // 可能是空链表null，不能直接if(list[i+1])
+        mergedLists.push(merge2Lists(lists[i], lists[i + 1]));
+        i += 2;
+      } else {
+        mergedLists.push(lists[i]);
+        i++;
+      }
+    }
+    return mergeList(mergedLists);
+  }
+  return mergeList(lists);
 };
 ```
 
 第二种方法是用优先队列。合并链表的过程可以看作是每次取这些链表的头节点的最小值，然后连接到一个新链表上。因此关键就是取最小值；如果每次都比较得到最小值的话时间复杂度会比较高
-因此可以维护一个优先队列，初始化放入所有头节点，每次出队一个节点就是这些节点的最小值，然后再把这个出队的节点的next放入，依次循环直到null为止。
-优先队列的数据结构js没有，但是可以类比最小栈写一个最小队列当作优先队列用，也就是一个能在O(1)时间内返回最小值的队列
+因此可以维护一个优先队列，初始化放入所有头节点，每次出队一个节点就是这些节点的最小值，然后再把这个出队的节点的 next 放入，依次循环直到 null 为止。
+优先队列的数据结构 js 没有，但是可以类比最小栈写一个最小队列当作优先队列用，也就是一个能在 O(1)时间内返回最小值的队列
 
 ```js
 class PQueue {
-    constructor(compareFn = (val1, val2) => val1 - val2) {
-        this.queue = []
-        this.compareFn = compareFn
-        this.size = 0
-    }
-    push(val) {
-        this.size++
-        if (!this.queue.length) this.queue.push(val)
-        else {
-            let left = 0
-            let right = this.queue.length - 1
-            // 二分查找找第一个大于它的数的左边界，然后插入这个数
-            while (left <= right) {
-                const mid = Math.floor((left + right) / 2)
-                if (this.compareFn(this.queue[mid], val) < 0) {
-                    left = mid + 1
-                } else {
-                    right = mid - 1
-                }
-            }
-            this.queue.splice(left, 0, val)
+  constructor(compareFn = (val1, val2) => val1 - val2) {
+    this.queue = [];
+    this.compareFn = compareFn;
+    this.size = 0;
+  }
+  push(val) {
+    this.size++;
+    if (!this.queue.length) this.queue.push(val);
+    else {
+      let left = 0;
+      let right = this.queue.length - 1;
+      // 二分查找找第一个大于它的数的左边界，然后插入这个数
+      while (left <= right) {
+        const mid = Math.floor((left + right) / 2);
+        if (this.compareFn(this.queue[mid], val) < 0) {
+          left = mid + 1;
+        } else {
+          right = mid - 1;
         }
+      }
+      this.queue.splice(left, 0, val);
     }
-    shift() {
-        this.size--
-        return this.queue.shift()
-    }
+  }
+  shift() {
+    this.size--;
+    return this.queue.shift();
+  }
 }
 
 /**
@@ -1515,23 +1515,22 @@ class PQueue {
  * @return {ListNode}
  */
 var mergeKLists = function (lists) {
-    const queue = new PQueue((node1, node2) => node1?.val - node2?.val)
-    for (const node of lists) {
-        queue.push(node)
+  const queue = new PQueue((node1, node2) => node1?.val - node2?.val);
+  for (const node of lists) {
+    queue.push(node);
+  }
+  const dummy = new ListNode();
+  let curr = dummy;
+  while (queue.size) {
+    const minNode = queue.shift();
+    if (minNode) {
+      queue.push(minNode.next);
+      curr.next = minNode;
+      curr = curr.next;
     }
-    const dummy = new ListNode()
-    let curr = dummy
-    while (queue.size) {
-        const minNode = queue.shift()
-        if (minNode) {
-            queue.push(minNode.next)
-            curr.next = minNode
-            curr = curr.next
-        }
-    }
-    return dummy.next
+  }
+  return dummy.next;
 };
-
 ```
 
 ## 删除所有重复元素（dummy 节点）
@@ -1571,7 +1570,7 @@ const deleteDuplicates = function (head) {
 };
 ```
 
-## 快慢指针-链表的倒数第 n 个结点   
+## 快慢指针-链表的倒数第 n 个结点
 
 > 给定一个链表，删除链表的倒数第 n 个结点，并且返回链表的头结点。
 
@@ -1801,9 +1800,10 @@ var getIntersectionNode = function (headA, headB) {
 上面那个方法太麻烦了，实际上哈希表就可以。第一次遍历记录所有节点，第二次检查是否有相同节点即可。
 
 另外一个方法：
-- 设置两个指针p1和p2，分别从两个链表开头开始走，一直向后走到其中一个为空为止
-  - 当p1或p2有一个为空，比如p1为空，就将其设为head2然后继续。p2则设为head1
-  - 当p1 === p2或p1和p2都为空，则说明存在交点/不存在交点。
+
+- 设置两个指针 p1 和 p2，分别从两个链表开头开始走，一直向后走到其中一个为空为止
+  - 当 p1 或 p2 有一个为空，比如 p1 为空，就将其设为 head2 然后继续。p2 则设为 head1
+  - 当 p1 === p2 或 p1 和 p2 都为空，则说明存在交点/不存在交点。
 
 证明参考官方题解:`https://leetcode.cn/problems/intersection-of-two-linked-lists/solution/xiang-jiao-lian-biao-by-leetcode-solutio-a8jn/`
 
@@ -1910,7 +1910,7 @@ https://leetcode.cn/problems/sort-list
 > 给你链表的头结点 head ，请将其按 升序 排列并返回 排序后的链表 。
 > 必须在 O(n log n) 时间复杂度和常数级空间复杂度下，对链表进行排序
 
-这道题本身不难，难点在于要求的时间和空间复杂度。为了达到 O(nlogn)，只能采用归并和快排两种方式，并且归并还应该是迭代归并的自底向上形式，不能是传统的递归归并（递归的空间复杂度是O(logn)，n为链表长度，不符合常数空间复杂度要求）
+这道题本身不难，难点在于要求的时间和空间复杂度。为了达到 O(nlogn)，只能采用归并和快排两种方式，并且归并还应该是迭代归并的自底向上形式，不能是传统的递归归并（递归的空间复杂度是 O(logn)，n 为链表长度，不符合常数空间复杂度要求）
 
 递归归并和数组的排序方法基本一样，但是需要一个分割链表的函数。有了这个函数之后其他部分几乎完全一样。
 
@@ -2149,7 +2149,7 @@ class LRUCache {
     } else {
       const node = this.map.get(key);
       this.dbLinkList.deleteNode(node);
-      this.dbLinkList.insertHead(node);// 相似的逻辑，这里传的是oldNode
+      this.dbLinkList.insertHead(node); // 相似的逻辑，这里传的是oldNode
       return node.val;
     }
   }
@@ -2160,11 +2160,11 @@ class LRUCache {
 
 ## 括号匹配问题
 
->    给定一个只包括 `'('`，`')'`，`'{'`，`'}'`，`'['`，`']'` 的字符串，判断字符串是否有效。
->    有效字符串需满足：
->    左括号必须用相同类型的右括号闭合。
->    左括号必须以正确的顺序闭合。
->    注意空字符串可被认为是有效字符串。
+> 给定一个只包括 `'('`，`')'`，`'{'`，`'}'`，`'['`，`']'` 的字符串，判断字符串是否有效。
+> 有效字符串需满足：
+> 左括号必须用相同类型的右括号闭合。
+> 左括号必须以正确的顺序闭合。
+> 注意空字符串可被认为是有效字符串。
 
 比较基础的栈问题，先把左括号入栈，然后当遇见右括号时，根据预设的匹配关系出栈左括号，如果不匹配就返回 false
 
@@ -2231,7 +2231,7 @@ var removeDuplicates = function (s) {
 > 有效的运算符包括 + , - , \* , / 。每个运算对象可以是整数，也可以是另一个逆波兰表达式。
 > 说明：
 > 整数除法只保留整数部分。 给定逆波兰表达式总是有效的。换句话说，表达式总会得出有效数值且不存在除数为 0 的情况。
-> 
+>
 > 示例 1：
 > 输入: ["2", "1", "+", "3", " * "]
 > 输出: 9
@@ -2542,13 +2542,13 @@ const maxSlidingWindow = function (nums, k) {
 
 https://leetcode.cn/problems/sum-of-subarray-minimums/
 
-> 给定一个整数数组 arr，找到 min(b) 的总和，其中 b 的范围为 arr 的每个（连续）子数组。
+> 给定一个整数数组 arr，找到 min(b)  的总和，其中 b 的范围为 arr 的每个（连续）子数组。
 > 由于答案可能很大，因此 返回答案模 10^9 + 7 。 
 > 示例 1：
 > 输入：arr = [3,1,2,4]
 > 输出：17
 > 解释：
-> 子数组为 [3]，[1]，[2]，[4]，[3,1]，[1,2]，[2,4]，[3,1,2]，[1,2,4]，[3,1,2,4]。 
+> 子数组为 [3]，[1]，[2]，[4]，[3,1]，[1,2]，[2,4]，[3,1,2]，[1,2,4]，[3,1,2,4]。
 > 最小值为 3，1，2，4，1，1，2，1，1，1，和为 17。
 
 这道题其实是一道很好的题目，也提供了一个很好的思路；
@@ -2556,7 +2556,7 @@ https://leetcode.cn/problems/sum-of-subarray-minimums/
 其中单调栈是一种不是很能看出来的方法，因为单调栈在这里并不是核心思路，只是更方便计算。
 
 这道题的核心思路，在于**找出最小值的辐射范围**。什么是辐射范围？即一个数在多大范围的数组形成的子数组中都能作为最小值。
-比如示例1的数字1，任何子数组只要有它，它就是最小值，因此它的辐射范围就是区间`[0,3]`；其他几个数的辐射范围分别是：
+比如示例 1 的数字 1，任何子数组只要有它，它就是最小值，因此它的辐射范围就是区间`[0,3]`；其他几个数的辐射范围分别是：
 
 ```
 3  [0,0]   即只有第一个数
@@ -2570,55 +2570,56 @@ https://leetcode.cn/problems/sum-of-subarray-minimums/
 所以关键就在于怎么这个辐射范围。最简单粗暴的方法当然是用双指针，从当前数的位置出发，向左向右找到**第一个小于当前数的位置**，就是该数的辐射范围。注意这里就出现了关键，即，找到每个数最近小于它的数（这里看起来就很像每日温度），有这样类似的问题，就可以采取单调栈。
 
 我们设两个栈分别用于存储每个数的左边第一个小于的位置和右边第一个小于的位置，即每个数的左边界和右边界；
+
 - 右边界的计算：正向遍历数组，设置一个递增栈；如果当前数比栈顶元素小，就依次出栈，出栈元素的“第一个最小元素位置”就是当前数的位置。
 - 左边界的计算：反向遍历数组，同样是递增栈，操作和右边界一样。
 
 另外，在单调栈中有一个等于的情况，即当前元素和栈顶元素相等；
-例如 `5 8 5`这种情况出现时，在正序单增中，我们如果把`5 5`都放入的话，那么对于第一个5来说，第二个5不是边界，可以继续往后走找到下一个更小的。如果在倒序也这样，就会出现`5 8 5`这一个子序列的贡献次数被记录两次的情况。所以我们只需要在正序记录，倒叙不记录。
+例如 `5 8 5`这种情况出现时，在正序单增中，我们如果把`5 5`都放入的话，那么对于第一个 5 来说，第二个 5 不是边界，可以继续往后走找到下一个更小的。如果在倒序也这样，就会出现`5 8 5`这一个子序列的贡献次数被记录两次的情况。所以我们只需要在正序记录，倒叙不记录。
 
 代码：
+
 ```js
 var sumSubarrayMins = function (arr) {
-    const stack = []
-    const left = []
-    const right = []
+  const stack = [];
+  const left = [];
+  const right = [];
 
-    // 左边界
-    for (let i = arr.length - 1; i >= 0; i--) {
-      // 递增栈，如果当前元素比栈顶小或等于就出栈
-        while (stack.length && arr[i] <= arr[stack[stack.length - 1]]) {
-            const top = stack.pop()
-            left[top] = i
-        }
-        stack.push(i)
+  // 左边界
+  for (let i = arr.length - 1; i >= 0; i--) {
+    // 递增栈，如果当前元素比栈顶小或等于就出栈
+    while (stack.length && arr[i] <= arr[stack[stack.length - 1]]) {
+      const top = stack.pop();
+      left[top] = i;
     }
-    // 没有找到的就看作-1
-    while (stack.length) {
-        left[stack.pop()] = -1
-    }
+    stack.push(i);
+  }
+  // 没有找到的就看作-1
+  while (stack.length) {
+    left[stack.pop()] = -1;
+  }
 
-    // 右边界
-    for (let i = 0; i < arr.length; i++) {
-       // 注意这里没有等于.其实左右边界有一个有等于就行，主要是为了考虑到等于的情况
-        while (stack.length && arr[i] < arr[stack[stack.length - 1]]) {
-            const top = stack.pop()
-            right[top] = i
-        }
-        stack.push(i)
+  // 右边界
+  for (let i = 0; i < arr.length; i++) {
+    // 注意这里没有等于.其实左右边界有一个有等于就行，主要是为了考虑到等于的情况
+    while (stack.length && arr[i] < arr[stack[stack.length - 1]]) {
+      const top = stack.pop();
+      right[top] = i;
     }
-    while (stack.length) {
-        right[stack.pop()] = arr.length
-    }
+    stack.push(i);
+  }
+  while (stack.length) {
+    right[stack.pop()] = arr.length;
+  }
 
-    console.log(left, right)
-    let sum = 0
-    for (let i = 0; i < arr.length; i++) {
-        sum += arr[i] * (i - left[i]) * (right[i] - i)
-    }
-    return sum % (10 ** 9 + 7)
+  console.log(left, right);
+  let sum = 0;
+  for (let i = 0; i < arr.length; i++) {
+    sum += arr[i] * (i - left[i]) * (right[i] - i);
+  }
+  return sum % (10 ** 9 + 7);
 };
 ```
-
 
 ## 字符串解码
 
@@ -2723,14 +2724,15 @@ class MyQueue {
 
 ---
 
-用队列实现栈，也是类似的思路。要求队列只能使用push、shift、top（返回栈顶元素）和empty四种方法，实现一个栈。整体思路不难，但是细节有不少
+用队列实现栈，也是类似的思路。要求队列只能使用 push、shift、top（返回栈顶元素）和 empty 四种方法，实现一个栈。整体思路不难，但是细节有不少
 
-还是创建两个队列q1和q2，每个操作的逻辑如下：
-- push：直接向q1 push。但是有一个特殊情况，就是下面的pop操作把q1清空后，即q1为空时就向q2 push
-- pop：根据q1和q2是否为空来判断：
-  - 如果q1不空且q2为空，那就把所有q1的元素依次shift并push到q2中。这样最后一个元素就是“栈顶”元素，返回这个元素即可。这一步执行完后q1就变成空的
-  - 如果q1为空且q2不空，和上一步同理，把q2依次shift并push到q1中。也就是说pop的过程就是两个队列相互倒值的过程，这样才能取出队列的最后一个数，也就说栈顶元素。这个过程中q1和q2必然有一个是空的，如果不是就说明栈中没有值或者出错了。
-- top：返回非空的那个队列的最后一项就可以。如果必须用标准操作，就调用pop得到值，然后再放回非空的那个队列中就可以。
+还是创建两个队列 q1 和 q2，每个操作的逻辑如下：
+
+- push：直接向 q1 push。但是有一个特殊情况，就是下面的 pop 操作把 q1 清空后，即 q1 为空时就向 q2 push
+- pop：根据 q1 和 q2 是否为空来判断：
+  - 如果 q1 不空且 q2 为空，那就把所有 q1 的元素依次 shift 并 push 到 q2 中。这样最后一个元素就是“栈顶”元素，返回这个元素即可。这一步执行完后 q1 就变成空的
+  - 如果 q1 为空且 q2 不空，和上一步同理，把 q2 依次 shift 并 push 到 q1 中。也就是说 pop 的过程就是两个队列相互倒值的过程，这样才能取出队列的最后一个数，也就说栈顶元素。这个过程中 q1 和 q2 必然有一个是空的，如果不是就说明栈中没有值或者出错了。
+- top：返回非空的那个队列的最后一项就可以。如果必须用标准操作，就调用 pop 得到值，然后再放回非空的那个队列中就可以。
 
 代码如下：
 
@@ -2741,13 +2743,13 @@ class MyStack {
     this.queue2 = [];
   }
   push(val) {
-    if (!this.queue1.length && this.queue2.length) this.queue2.push(val)
-    else this.queue1.push(val)
+    if (!this.queue1.length && this.queue2.length) this.queue2.push(val);
+    else this.queue1.push(val);
   }
   pop() {
     if (this.queue1.length && !this.queue2.length) {
       if (this.queue1.length < 2) return this.queue1.shift();
-      const len = this.queue1.length
+      const len = this.queue1.length;
       for (let i = 0; i < len - 1; i++) {
         const top = this.queue1.shift();
         this.queue2.push(top);
@@ -2755,18 +2757,18 @@ class MyStack {
       return this.queue1.shift();
     } else if (this.queue2.length && !this.queue1.length) {
       if (this.queue2.length < 2) return this.queue2.shift();
-      const len = this.queue2.length
+      const len = this.queue2.length;
       for (let i = 0; i < len - 1; i++) {
         const top = this.queue2.shift();
         this.queue1.push(top);
       }
       return this.queue2.shift();
-    }else return null
+    } else return null;
   }
   top() {
     const res = this.pop();
-    if(!this.queue1.length && this.queue2.length) this.queue2.push(res)
-    else this.queue1.push(res)
+    if (!this.queue1.length && this.queue2.length) this.queue2.push(res);
+    else this.queue1.push(res);
     return res;
   }
   empty() {
@@ -2774,7 +2776,6 @@ class MyStack {
   }
 }
 ```
-
 
 ## 验证栈序列
 
@@ -2809,7 +2810,7 @@ var validateStackSequences = function (pushed, popped) {
 };
 ```
 
-# 滑动窗口 
+# 滑动窗口
 
 ## 基本思路
 
@@ -3252,7 +3253,7 @@ https://leetcode.cn/problems/find-minimum-in-rotated-sorted-array-ii/
 
 > 为什么不需要 mid 和 left 判断？因为 mid 和 left 不能得出最小值
 > 比如 nums[mid] > nums[left]，这时 left 和 mid 可能都在左半边或者右半边，不能确定最小值到底在左还是在右，还需要借助 mid 和 right 判断
-> 如果需要借助 mid 和 right 的话，就会发现 left 在两种情况下取值都相同（即 nums[mid] >  nums[left]），所以就可以无视掉直接判断右边就好。
+> 如果需要借助 mid 和 right 的话，就会发现 left 在两种情况下取值都相同（即 nums[mid] > nums[left]），所以就可以无视掉直接判断右边就好。
 
 有了这两种情况就可以得出应该缩小的范围：
 
@@ -3381,7 +3382,7 @@ https://leetcode.cn/problems/capacity-to-ship-packages-within-d-days/
 > 传送带上的第 i  个包裹的重量为  weights[i]。每一天，我们都会按给出重量（weights）的顺序往传送带上装载包裹。我们装载的重量不会超过船的最大运载重量。
 > 返回能在 days 天内将传送带上的所有包裹送达的船的最低运载能力。
 > 示例 1：
-> 
+>
 > 输入：weights = [1,2,3,4,5,6,7,8,9,10], days = 5
 > 输出：15
 > 解释：
@@ -3391,8 +3392,8 @@ https://leetcode.cn/problems/capacity-to-ship-packages-within-d-days/
 > 第 3 天：8
 > 第 4 天：9
 > 第 5 天：10
-> 
-> 请注意，货物必须按照给定的顺序装运，因此使用载重能力为 14 的船舶并将包装分成 (2, 3, 4, 5), (1, 6, 7), (8), (9), (10) 是不允许的。 
+>
+> 请注意，货物必须按照给定的顺序装运，因此使用载重能力为 14 的船舶并将包装分成 (2, 3, 4, 5), (1, 6, 7), (8), (9), (10) 是不允许的。
 
 这道题看起来和二分查找没有任何关系。但是这类问题经过分析可以发现，基本满足一个大概的趋势：能形成单调的、有平台的函数，即大概是这个样子：
 ![](https://pic.imgdb.cn/item/62d574c7f54cd3f9377a1b2c.jpg)
@@ -3703,7 +3704,6 @@ function dfs(node) {
 
 如果最简单的二叉树（只有三个节点）可以执行，那么任何情况下的二叉树都可以执行。因此这类问题可以先从最简单的考虑。如果最简单的情况可以保证递归的完整，那么之后的逻辑就不用考虑递归的内部，而是只把递归当成一个“取值”的步骤，正常处理其他逻辑。
 
-
 ## 平衡二叉树
 
 ### 基础数据结构
@@ -3935,7 +3935,7 @@ const balanceBST = function (root) {
 - BST 的基本特点是一个根节点的左子树上的**所有值**一定比该节点小，右子树的**所有值**一定比该节点大
 - BST 的中序遍历会返回一个从小到大的顺序排列，可以利用这一点做很多事，比如求最值等等。
 
-二叉搜索树的主要作用是便于查找。类似二分查找，一颗比较平衡的二叉搜索树的查找的理想时间复杂度是O(logn)；但在最坏的情况下，二叉搜索树可能会退化为链表，此时查找的时间复杂度将变为O(n)。
+二叉搜索树的主要作用是便于查找。类似二分查找，一颗比较平衡的二叉搜索树的查找的理想时间复杂度是 O(logn)；但在最坏的情况下，二叉搜索树可能会退化为链表，此时查找的时间复杂度将变为 O(n)。
 因此比较好的方式是采用平衡的二叉搜索树。即，将二叉搜索树和二叉平衡树结合起来，保证二叉搜索树效率最大化。
 
 ### BST 基本操作
@@ -4633,9 +4633,9 @@ https://leetcode.cn/problems/serialize-and-deserialize-binary-tree/
 1. 序列化不能只输出有效值。对于 null 也需要输出，否则反序列化不能识别哪些地方应该是 null。输出 null 只需要在递归边界时记录一个`'null'`即可，这时不仅是只有一个单子树的另一边会变成 null，叶子节点也会多出两个为 null 的节点。
 
 2. 反序列化的思路：不能采取之前的分治法，因为这里要求构建的二叉树应该完全和序列化的相同。可以有下面这个思路：
-  1. 设置一个指针，依次从前到后走遍序列化的每一项
-  2. 如果当前指向的值是 null，那么就返回 null，让指针+1
-  3. 如果不是 null，创建节点，左右子节点分别是继续递归的返回值。
+3. 设置一个指针，依次从前到后走遍序列化的每一项
+4. 如果当前指向的值是 null，那么就返回 null，让指针+1
+5. 如果不是 null，创建节点，左右子节点分别是继续递归的返回值。
 
 这个思路中，节点的选择依赖于指针。每次递归都会使指针向前走一项，因此按照先序遍历的特点，按顺序一定是`根->左->右`的顺序，恰好可以构建
 
@@ -4763,8 +4763,9 @@ https://leetcode.cn/problems/flatten-binary-tree-to-linked-list/
 
 题目是把一个二叉树原地变为一个只有右子树的长串链表，并且顺序应该是先序遍历的顺序。
 
-思路就是，设flatten函数表示展平node节点的所有子节点为一条右子树链；
+思路就是，设 flatten 函数表示展平 node 节点的所有子节点为一条右子树链；
 对于一个节点，我们分别用这个函数得到展平后的左右子树，然后：
+
 1. 把左子树删掉
 2. 把左子树连到该节点的右子树位置
 3. 用一个函数找到左子树的最后一个节点
@@ -4774,20 +4775,21 @@ https://leetcode.cn/problems/flatten-binary-tree-to-linked-list/
 代码如下：
 
 ```js
-var flatten = function(root) {
-  if(!root) return null
-  const left = flatten(root.left)
-  const right = flatten(root.right)
-  root.left = null // 注意这里要先删掉，不然会重复
-  root.right = left // 先连左子树再连右子树；如果要求是后序顺序就先连右子树
-  const end = findLast(root)
-  end.right = right
-  return root
+var flatten = function (root) {
+  if (!root) return null;
+  const left = flatten(root.left);
+  const right = flatten(root.right);
+  root.left = null; // 注意这里要先删掉，不然会重复
+  root.right = left; // 先连左子树再连右子树；如果要求是后序顺序就先连右子树
+  const end = findLast(root);
+  end.right = right;
+  return root;
 };
 
-function findLast(node){ // 找到左子树的最后一个节点
-  while(node.right) node = node.right
-  return node
+function findLast(node) {
+  // 找到左子树的最后一个节点
+  while (node.right) node = node.right;
+  return node;
 }
 ```
 
@@ -5256,10 +5258,10 @@ var combinationSum2 = function (candidates, target) {
       return;
     }
     for (let i = begin; i < candidates.length; i++) {
-      if (candidates[i] === candidates[i-1] && i > begin) continue 
-        curr.push(candidates[i]);
-        dfs(sum + candidates[i], i+1);
-        curr.pop();
+      if (candidates[i] === candidates[i - 1] && i > begin) continue;
+      curr.push(candidates[i]);
+      dfs(sum + candidates[i], i + 1);
+      curr.pop();
     }
   }
   dfs(0, 0);
@@ -5330,38 +5332,40 @@ var letterCombinations = function (digits) {
 https://leetcode.cn/problems/numbers-with-same-consecutive-differences/
 
 > 返回所有长度为 n 且满足其每两个连续位上的数字之间的差的绝对值为 k 的 非负整数 。
-> 请注意，除了 数字 0 本身之外，答案中的每个数字都 不能 有前导零。例如，01 有一个前导零，所以是无效的；但 0 是有效的。
+> 请注意，除了 数字 0 本身之外，答案中的每个数字都 不能 有前导零。例如，01 有一个前导零，所以是无效的；但 0  是有效的。
 > 你可以按 任何顺序 返回答案。 
 > 示例 1：
 > 输入：n = 3, k = 7
 > 输出：[181,292,707,818,929]
 > 解释：注意，070 不是一个有效的数字，因为它有前导零。
 
-思路：回溯，纵向走每一位的数字，横向走从0-9的数字；
+思路：回溯，纵向走每一位的数字，横向走从 0-9 的数字；
+
 - 如果前面的没有数字，就放入当前数
-- 如果前面有数字，就计算当前数和前面的差，如果等于k就放入，否则就continue
+- 如果前面有数字，就计算当前数和前面的差，如果等于 k 就放入，否则就 continue
 
 代码：
+
 ```js
 var numsSameConsecDiff = function (n, k) {
-  const res = []
-  const nums = []
+  const res = [];
+  const nums = [];
   function dfs() {
-      if (nums.length === n) {
-          res.push(+nums.join(''))
-          return
+    if (nums.length === n) {
+      res.push(+nums.join(""));
+      return;
+    }
+    for (let i = 0; i < 10; i++) {
+      if (i === 0 && nums.length === 0) continue; // 跳过前导0
+      if (nums.length === 0 || Math.abs(i - nums[nums.length - 1]) === k) {
+        nums.push(i);
+        dfs();
+        nums.pop();
       }
-      for (let i = 0; i < 10; i++) {
-          if(i === 0 && nums.length === 0) continue // 跳过前导0
-          if (nums.length === 0 || Math.abs(i - nums[nums.length - 1]) === k) {
-              nums.push(i)
-              dfs()
-              nums.pop()
-          }
-      }
+    }
   }
-  dfs()
-  return res
+  dfs();
+  return res;
 };
 ```
 
@@ -5865,25 +5869,25 @@ var closedIsland = function (grid) {
 
 https://leetcode.cn/problems/surrounded-regions/
 
-
 这道题和上面的封闭岛屿数量很像。唯一的区别是，这里填充的时候不能填充和边界相连的部分，因此关键点就是怎么找到这些“和边界相连的'O'”
 
-题解的思路是，从边界的每个位置出发，正常回溯，把所有O都替换为不同于X的其他字符（比如说'A'），表示这些O是特殊的边界区域。然后在后序的填充时，跳过这些字符（'A'）即可。
+题解的思路是，从边界的每个位置出发，正常回溯，把所有 O 都替换为不同于 X 的其他字符（比如说'A'），表示这些 O 是特殊的边界区域。然后在后序的填充时，跳过这些字符（'A'）即可。
 
 ```js
 // fill函数就是上面常规的dfs填充函数
-for(let i = 0;i < n;i++){ // 填充和左右边界相连的区域
-    fillA(i,0)
-    fillA(i,m-1)
+for (let i = 0; i < n; i++) {
+  // 填充和左右边界相连的区域
+  fillA(i, 0);
+  fillA(i, m - 1);
 }
-for(let j = 0;j < m;j++){ // 填充和上下边界相连的区域
-    fillA(0,j)
-    fillA(n-1,j)
+for (let j = 0; j < m; j++) {
+  // 填充和上下边界相连的区域
+  fillA(0, j);
+  fillA(n - 1, j);
 }
 ```
 
 代码太长就不放了，但是这个思路一定要记好。
-
 
 ## 括号生成
 
@@ -5899,7 +5903,7 @@ https://leetcode.cn/problems/generate-parentheses/
 思路和上面的回溯有点不一样，递归的时候需要判断当前放入括号是否合理。关键就在于，怎么判断当前应该放入哪个括号。
 
 - 首先左括号和右括号各自的数量都不能大于 n
-- 其次，为了右括号能和左括号匹配，右括号的数量不能大于左括号。 
+- 其次，为了右括号能和左括号匹配，右括号的数量不能大于左括号。
 
 所以在回溯过程中，要记录左右括号的数量，满足上面的条件再加入。
 
@@ -5923,15 +5927,17 @@ var generateParenthesis = function (n) {
 };
 ```
 
-## 24点问题
+## 24 点问题
 
-给出4个1-10的数字，通过加减乘除运算，得到数字为24就算胜利,除法指实数除法运算,运算符仅允许出现在两个数字之间,本题对数字选取顺序无要求，但每个数字仅允许使用一次，且需考虑括号运算
-此题允许数字重复，如3 3 4 4为合法输入，此输入一共有两个3，但是每个数字只允许使用一次，则运算过程中两个3都被选取并进行对应的计算操作。
+给出 4 个 1-10 的数字，通过加减乘除运算，得到数字为 24 就算胜利,除法指实数除法运算,运算符仅允许出现在两个数字之间,本题对数字选取顺序无要求，但每个数字仅允许使用一次，且需考虑括号运算
+此题允许数字重复，如 3 3 4 4 为合法输入，此输入一共有两个 3，但是每个数字只允许使用一次，则运算过程中两个 3 都被选取并进行对应的计算操作。
 输入描述：
-读入4个[1,10]的整数，数字允许重复，测试用例保证无异常数字。
+读入 4 个[1,10]的整数，数字允许重复，测试用例保证无异常数字。
 
 这道题有两个关键：
+
 1. 一开始想的回溯方向是回溯遍历所有可能的运算符组合，即三个位置的运算符，然后根据运算符计算具体的值。但是这种方法显然没考虑到括号的情况。
+
 正确的思考路线是以数字为回溯对象，每次遍历四个数字，然后对当前的已有的运算结果执行四种运算（加减乘除）。
 
 2. 这道题其实是一个排列问题，即，这四个数的顺序是完全可以乱的，而且顺序不同结果也不同。比如`7 2 1 10`这四个数，下面这几种情况的运算结果是不一样的：
@@ -5944,28 +5950,28 @@ var generateParenthesis = function (n) {
 这也就说明这道题其实是排列问题，因为即使选择的运算符相同，数字顺序不同结果也不同。
 
 ```js
-function solution(nums){
-    let flag = false
-    const visited = new Array(nums.length).fill(false)
-    function dfs(level,sum){
-        if(level === 3){
-            if(sum === 24){
-                flag = true
-            }
-            return
-        }
-        for(let i = 0;i < 4;i++){
-            if(visited[i]) continue
-            visited[i] = true
-            dfs(level+1,sum + nums[i])
-            dfs(level+1,sum - nums[i])
-            dfs(level+1,sum * nums[i])
-            dfs(level+1,sum / nums[i])
-            visited[i] = false
-        }
+function solution(nums) {
+  let flag = false;
+  const visited = new Array(nums.length).fill(false);
+  function dfs(level, sum) {
+    if (level === 3) {
+      if (sum === 24) {
+        flag = true;
+      }
+      return;
     }
-    dfs(0,nums[0])
-    return flag
+    for (let i = 0; i < 4; i++) {
+      if (visited[i]) continue;
+      visited[i] = true;
+      dfs(level + 1, sum + nums[i]);
+      dfs(level + 1, sum - nums[i]);
+      dfs(level + 1, sum * nums[i]);
+      dfs(level + 1, sum / nums[i]);
+      visited[i] = false;
+    }
+  }
+  dfs(0, nums[0]);
+  return flag;
 }
 ```
 
@@ -6067,7 +6073,7 @@ const insertionSort = (nums) => {
   for (let i = 1; i < nums.length; i++) {
     let j = i;
     while (nums[j] < nums[j - 1] && j > 0) {
-      swap(nums,j,j-1)
+      swap(nums, j, j - 1);
       j--;
     }
   }
@@ -6083,10 +6089,10 @@ const insertionSort = (nums) => {
 
 希尔排序是插入排序的改进。简单插入排序很循规蹈矩，不管数组分布是怎么样的，依然一步一步的对元素进行比较，移动，插入。
 
-希尔排序采用的是“分组”的形式，每次选择一个增量gap，根据gap将数组分组。
-gap初始化为length/2，即每个数和它相隔gap的那个数分为一组。初始显然是两个数一组，并且一共有length/2组。分组之后，在组内进行插入排序。
-而后每次将gap/2，即gap=gap/2；这时gap缩小了一倍，同样在组内进行插入排序
-最后直到gap=1，即整个数组为1组，再进行一次插入排序。虽然这次是对整个数组的插入排序，但是由于数组已经基本有序，所以基本上只需要微调几个位置即可，时间复杂度会很低。
+希尔排序采用的是“分组”的形式，每次选择一个增量 gap，根据 gap 将数组分组。
+gap 初始化为 length/2，即每个数和它相隔 gap 的那个数分为一组。初始显然是两个数一组，并且一共有 length/2 组。分组之后，在组内进行插入排序。
+而后每次将 gap/2，即 gap=gap/2；这时 gap 缩小了一倍，同样在组内进行插入排序
+最后直到 gap=1，即整个数组为 1 组，再进行一次插入排序。虽然这次是对整个数组的插入排序，但是由于数组已经基本有序，所以基本上只需要微调几个位置即可，时间复杂度会很低。
 
 ![](https://pic1.imgdb.cn/item/635e111c16f2c2beb1389b20.jpg)
 
@@ -6110,11 +6116,11 @@ function shellSort(nums) {
       }
     }
   }
-  return nums
+  return nums;
 }
 ```
 
-希尔排序是第一批冲破O(n^2)的排序算法之一，它的平均时间复杂度是O(nlogn)，空间复杂度和插入排序一样都是O(1)。
+希尔排序是第一批冲破 O(n^2)的排序算法之一，它的平均时间复杂度是 O(nlogn)，空间复杂度和插入排序一样都是 O(1)。
 
 ## 归并排序
 
@@ -6143,7 +6149,7 @@ const mergeSort = (nums) => {
 
 归并排序的时间复杂度是 `O(nlog(n))`；由于每次合并都是创建一个新数组，所以空间复杂度也是`O(nlogn)`。
 
-另外还有一种归并是迭代归并，可以保证O(1)的空间复杂度，详情参考上面的链表排序部分
+另外还有一种归并是迭代归并，可以保证 O(1)的空间复杂度，详情参考上面的链表排序部分
 
 ## 快排
 
@@ -6265,81 +6271,81 @@ N + (N - 1) + (N - 2) + ... + 1 = O(N^2)
 
 为了防止这种极端情况，应该考虑排序之前用洗牌算法把数组随机化一下，或者在 partition 开始选择 pivotValue 时选择随机的一个数。
 
-因为partition函数内每次选择的是第一个元素，那就可以在每次排序之前，先从数组中随机选一个数跟第一个交换即可。
+因为 partition 函数内每次选择的是第一个元素，那就可以在每次排序之前，先从数组中随机选一个数跟第一个交换即可。
 
 ```js
 function partition(arr, left, right) {
-    // 随机一个位置和第一个元素交换
-    const rIndex = Math.floor(Math.random() * arr.length)
-    swap(arr,left,rIndex)
-    
-    let pivotValue = arr[left];
-    let i = left + 1;
-    let j = right;
-    while (i <= j) {
-      while (arr[i] <= pivotValue && i < right) i++;
-      while (arr[j] > pivotValue && j > left) j--;
-      if (i >= j) {
-        break;
-      }
-      swap(arr, i, j);
+  // 随机一个位置和第一个元素交换
+  const rIndex = Math.floor(Math.random() * arr.length);
+  swap(arr, left, rIndex);
+
+  let pivotValue = arr[left];
+  let i = left + 1;
+  let j = right;
+  while (i <= j) {
+    while (arr[i] <= pivotValue && i < right) i++;
+    while (arr[j] > pivotValue && j > left) j--;
+    if (i >= j) {
+      break;
     }
-    swap(arr, left, j);
-    // 这里返回j是因为j会停在排好序的位置上，而i则会走过一位
-    return j;
+    swap(arr, i, j);
   }
+  swap(arr, left, j);
+  // 这里返回j是因为j会停在排好序的位置上，而i则会走过一位
+  return j;
+}
 ```
 
 ## 计数排序
 
-计数排序是利用数组进行排序的方式，它通过将原数组的每一项的值作为新数组的index，新数组的index对应的值表示该数的出现次数，最后遍历一遍新数组；由于遍历数组是按照从小到大的顺序来的，因此就相当于对原数组进行了排序。
+计数排序是利用数组进行排序的方式，它通过将原数组的每一项的值作为新数组的 index，新数组的 index 对应的值表示该数的出现次数，最后遍历一遍新数组；由于遍历数组是按照从小到大的顺序来的，因此就相当于对原数组进行了排序。
 
 ```js
-function countingSort(nums){
-  const bucket = new Array(Math.max(...nums)+1).fill(0)
-  const res = []
-  for(const num of nums){
-    bucket[num]++
+function countingSort(nums) {
+  const bucket = new Array(Math.max(...nums) + 1).fill(0);
+  const res = [];
+  for (const num of nums) {
+    bucket[num]++;
   }
-  for(let i = 0;i < bucket.length;i++){
-    while(bucket[i] > 0){
-      res.push(i)
-      bucket[i]--
+  for (let i = 0; i < bucket.length; i++) {
+    while (bucket[i] > 0) {
+      res.push(i);
+      bucket[i]--;
     }
   }
-  return res
+  return res;
 }
 ```
 
-这种情况会造成极大的空间复杂度，比如一组数据[100,102,104,101,99]，显然没必要创建前100个空间。所以还需要找到数组的最小值，以最小值为基准处理数据：
+这种情况会造成极大的空间复杂度，比如一组数据[100,102,104,101,99]，显然没必要创建前 100 个空间。所以还需要找到数组的最小值，以最小值为基准处理数据：
 
-同时这种方法也解决了负数的问题。比如[-5,-4,1,2,3]，以最小值-5为基准，变成[0,1,6,7,8]的排序，最后结果再加-5即可。
+同时这种方法也解决了负数的问题。比如[-5,-4,1,2,3]，以最小值-5 为基准，变成[0,1,6,7,8]的排序，最后结果再加-5 即可。
 
 ```js
-function countingSort(nums){
-  const max = Math.max(...nums)
-  const min = Math.min(...nums)
-  const bucket = new Array(max - min + 1).fill(0)
-  const res = []
-  for(const num of nums){
-    bucket[num-min]++
+function countingSort(nums) {
+  const max = Math.max(...nums);
+  const min = Math.min(...nums);
+  const bucket = new Array(max - min + 1).fill(0);
+  const res = [];
+  for (const num of nums) {
+    bucket[num - min]++;
   }
-  for(let i = 0;i < bucket.length;i++){
-    while(bucket[i] > 0){
-      res.push(i+min)
-      bucket[i]--
+  for (let i = 0; i < bucket.length; i++) {
+    while (bucket[i] > 0) {
+      res.push(i + min);
+      bucket[i]--;
     }
   }
-  return res
+  return res;
 }
 ```
 
-计数排序限制很多，只能处理整数的排序，并且当数据跨度过大时将会占用很大空间。但它是一个O(n)时间复杂度的排序方法，比前面的归并、快速都要更快。
+计数排序限制很多，只能处理整数的排序，并且当数据跨度过大时将会占用很大空间。但它是一个 O(n)时间复杂度的排序方法，比前面的归并、快速都要更快。
 
 ## 桶排序
 
 桶排序是计数排序的升级版，它的基本原理是根据某个映射关系，将数字分到不同的桶中。
-桶之间有一定顺序，比如第一个桶是0-9，第二个桶是10-19，依次类推；
+桶之间有一定顺序，比如第一个桶是 0-9，第二个桶是 10-19，依次类推；
 然后对桶内元素排序，这个排序可以选择上面的各种方法，通常选择插入排序；
 最后将桶内元素按顺序输出即可。
 
@@ -6350,23 +6356,26 @@ function countingSort(nums){
 代码如下：
 
 ```js
-function bucketsSort(nums,bucketSize = 5){
-  const max = Math.max(...nums)
-  const min = Math.min(...nums)
-  const res = []
+function bucketsSort(nums, bucketSize = 5) {
+  const max = Math.max(...nums);
+  const min = Math.min(...nums);
+  const res = [];
   // 公式1
-  const buckets = Array.from(new Array(Math.floor((max-min)/bucketSize)),()=>[])
-  for(const num of nums){
+  const buckets = Array.from(
+    new Array(Math.floor((max - min) / bucketSize)),
+    () => []
+  );
+  for (const num of nums) {
     // 公式2
-    buckets[Math.floor((num-min)/bucketSize)].push(num)
+    buckets[Math.floor((num - min) / bucketSize)].push(num);
   }
-  for(const bucket of buckets){
-    insertionSort(bucket)
-    for(const num of bucket){
-      res.push(num)
+  for (const bucket of buckets) {
+    insertionSort(bucket);
+    for (const num of bucket) {
+      res.push(num);
     }
   }
-  return res
+  return res;
 }
 ```
 
@@ -6374,7 +6383,8 @@ function bucketsSort(nums,bucketSize = 5){
 
 基数排序和上面两个排序一样，都用了桶的概念。
 基数排序的“桶”是每个数字的某一个位上的数，即先按照个位数排序，再按照十位数排序，依次类推直到最高位。
-那么就需要创建0-9这十个桶，分别用于收集某一位的值为0-9的数字。
+那么就需要创建 0-9 这十个桶，分别用于收集某一位的值为 0-9 的数字。
+
 - 第一次排序遍历每个数的个位数，按照个位数上的数字分别放入桶。
 - 按照队列的方式（shift）将桶内元素弹出，依次排成新的数组
 - 对新的数组的十位上操作，再次重复第一步和第二步，最后直到最高位
@@ -6421,7 +6431,7 @@ unction radixSort(nums){
 
 实际上就是一个数组，详细解释可以参考 https://leetcode.cn/problems/kth-largest-element-in-an-array/solution/xie-gei-qian-duan-tong-xue-de-ti-jie-yi-kt5p2/
 
-堆的时间复杂度为O(nlogk)，其中k是取的次数。空间复杂度是O(k)，因为堆里最多就是k个数
+堆的时间复杂度为 O(nlogk)，其中 k 是取的次数。空间复杂度是 O(k)，因为堆里最多就是 k 个数
 
 ```js
 const swap = (arr, i, j) => ([arr[i], arr[j]] = [arr[j], arr[i]]);
@@ -6449,7 +6459,8 @@ var findKthLargest = function (nums, k) {
     if (right < size && nums[right] > nums[mid] && nums[right] > nums[left]) {
       mid = right;
     }
-    if (mid !== i) { // 如果发生了交换
+    if (mid !== i) {
+      // 如果发生了交换
       swap(nums, mid, i);
       heapify(nums, mid, size);
     }
@@ -6461,16 +6472,16 @@ var findKthLargest = function (nums, k) {
     heapify(nums, 0, size);
   }
   // 到这里就是完整的堆排序
-  
+
   return nums[0];
 };
 ```
 
 2. 快速选择算法，即“快排的二分查找版本”。利用快排的 partition 函数，这个函数会确定一个元素的确定位置，并返回这个元素的正确位置。那么我们就可以这样：
-  1. 先通过 partition 计算出一个位置 p，然后判断 p 和要找的 TopK 的 k 的大小关系。比如现在有 10 个元素，计算的 p=5，说明从小到大第 5 个元素已经排好位置；如果选择第二大的元素，那么 k=10-2=8，即从小到大第 8 个元素。这时`p<k`，说明应该在 p 的右边继续查找
-  2. 设置新的边界，类似二分查找一样，即`left=p+1`，或`right=p-1`，直到`p=n-k`为止。这个过程可以是递归，也可以是二分查找那样的循环
+1. 先通过 partition 计算出一个位置 p，然后判断 p 和要找的 TopK 的 k 的大小关系。比如现在有 10 个元素，计算的 p=5，说明从小到大第 5 个元素已经排好位置；如果选择第二大的元素，那么 k=10-2=8，即从小到大第 8 个元素。这时`p<k`，说明应该在 p 的右边继续查找
+1. 设置新的边界，类似二分查找一样，即`left=p+1`，或`right=p-1`，直到`p=n-k`为止。这个过程可以是递归，也可以是二分查找那样的循环
 
-快速选择算法的平均时间复杂度为O(n)，最坏情况是O(n^2)
+快速选择算法的平均时间复杂度为 O(n)，最坏情况是 O(n^2)
 
 代码如下：
 
@@ -6695,7 +6706,8 @@ var jump = function (nums) {
 var jump = function (nums) {
   if (nums.length === 1) return 0;
   let jumps = 0;
-  for (let i = 0; i < nums.length; ) { // i就表示当前的位置
+  for (let i = 0; i < nums.length; ) {
+    // i就表示当前的位置
     const end = i + nums[i];
     if (end >= nums.length - 1) return jumps + 1;
     let maxIndex = 0;
@@ -6951,24 +6963,25 @@ https://leetcode.cn/problems/bomb-enemy/
 这道题可以用暴力法解并且不会超时，即每一个空格都计算能轰炸的人数，最后找出最大值即可。
 
 但是观察可以发现，同一行的某些位置在本行的轰炸人数应该是相同的，同一列也是同理；对于一行来说，一个位置的轰炸数量应该是可以由它前面的一个位置得出的：
+
 - 0，当前面一个是墙时
 - dp[i-1] + 1，当前面是敌人时
 - dp[i-1]，当前面是空格时
 
 但是一个位置上的值不仅由其所在的行决定，还有它所在的列的值。也就是说如果我们设`dp[i][j]`表示(i,j)位置能轰炸的人数，这个值不能仅从本行或本列得出，也不能给本行或本列的下一个位置使用，更不能从斜向（比如`dp[i-1][j-1]`）得出。
-因此，可以分开计算每行和每列的值，然后把值加到dp数组中。这样dp的每一项不是直接由其他dp推导来，而是相当于很多个数组的和；
+因此，可以分开计算每行和每列的值，然后把值加到 dp 数组中。这样 dp 的每一项不是直接由其他 dp 推导来，而是相当于很多个数组的和；
 
 ![](https://pic1.imgdb.cn/item/6346bc5616f2c2beb1ec303f.jpg)
 
-比如上图的第2行。我们只看第2行，设第2行的第i个位置上能击杀的敌人数为dp[i]，则
+比如上图的第 2 行。我们只看第 2 行，设第 2 行的第 i 个位置上能击杀的敌人数为 dp[i]，则
 
 ```js
-if(grid[i-1] === 'E'){
-  dp[i] = dp[i-1] + 1
-}else if(grid[i-1] === '0'){
-  dp[i] = dp[i-1]
-}else{
-  dp[i] = 0
+if (grid[i - 1] === "E") {
+  dp[i] = dp[i - 1] + 1;
+} else if (grid[i - 1] === "0") {
+  dp[i] = dp[i - 1];
+} else {
+  dp[i] = 0;
 }
 ```
 
@@ -6977,25 +6990,25 @@ if(grid[i-1] === 'E'){
 但是这还没完，这里其实只是从左向右计算的结果（即只考虑左边对右边的影响），还需要从右向左计算一次。对于每个位置来说，两次计算的和才是这一行的最终结果。
 
 ```js
-if(grid[i+1] === 'E'){
-  dp[i] = dp[i+1] + 1
-}else if(grid[i+1] === '0'){
-  dp[i] = dp[i+1]
-}else{
-  dp[i] = 0
+if (grid[i + 1] === "E") {
+  dp[i] = dp[i + 1] + 1;
+} else if (grid[i + 1] === "0") {
+  dp[i] = dp[i + 1];
+} else {
+  dp[i] = 0;
 }
 ```
 
-那么对于其他行、其他列也是同理。得出这个位置的dp值后，把他加到一个最终的结果数组中；当所有的行和列都遍历完之后，得到的结果数组的每一项都是最后的结果。
+那么对于其他行、其他列也是同理。得出这个位置的 dp 值后，把他加到一个最终的结果数组中；当所有的行和列都遍历完之后，得到的结果数组的每一项都是最后的结果。
 
-在题解中，并不需要这个确切的dp数组，因为数组的值最后还是会一一赋给结果数组。所以题解设置了一个变量；当向一个方向遍历时，如果遇到了敌人就++，如果遇到了墙就清零，如果遇到空位就不操作。
+在题解中，并不需要这个确切的 dp 数组，因为数组的值最后还是会一一赋给结果数组。所以题解设置了一个变量；当向一个方向遍历时，如果遇到了敌人就++，如果遇到了墙就清零，如果遇到空位就不操作。
 
 ```js
-let cnt = 0
-for(let j = 0;j < m;j++){
-  if(grid[i][j] === 'E') cnt++
-  else if(grid[i][j] === 'W') cnt = 0
-  dp[i][j] += cnt
+let cnt = 0;
+for (let j = 0; j < m; j++) {
+  if (grid[i][j] === "E") cnt++;
+  else if (grid[i][j] === "W") cnt = 0;
+  dp[i][j] += cnt;
 }
 //再从右向左计算一次
 // 本行计算完后再计算下一行
@@ -7004,52 +7017,58 @@ for(let j = 0;j < m;j++){
 ```
 
 代码：
+
 ```js
 var maxKilledEnemies = function (grid) {
-    const n = grid.length;
-    const m = grid[0].length;
-    const dp = Array.from(new Array(n), () => new Array(m).fill(0));
+  const n = grid.length;
+  const m = grid[0].length;
+  const dp = Array.from(new Array(n), () => new Array(m).fill(0));
+  for (let i = 0; i < n; i++) {
+    let cnt = 0; // cnt是根据前一项得出的，相当于一个只保留当前位置值的dp数组
+    for (let j = 0; j < m; j++) {
+      // 本行从左往右
+      if (grid[i][j] === "E") cnt++;
+      else if (grid[i][j] === "W") cnt = 0;
+      dp[i][j] += cnt; // 每个位置都加最新的cnt
+    }
+    cnt = 0;
+    for (let j = m - 1; j >= 0; j--) {
+      // 本行从右往左
+      if (grid[i][j] === "E") cnt++;
+      else if (grid[i][j] === "W") cnt = 0;
+      dp[i][j] += cnt;
+    }
+  }
+  for (let j = 0; j < m; j++) {
+    // 列
+    let cnt = 0;
     for (let i = 0; i < n; i++) {
-        let cnt = 0; // cnt是根据前一项得出的，相当于一个只保留当前位置值的dp数组
-        for (let j = 0; j < m; j++) { // 本行从左往右
-            if (grid[i][j] === "E") cnt++;
-            else if (grid[i][j] === "W") cnt = 0;
-            dp[i][j] += cnt; // 每个位置都加最新的cnt
-        }
-        cnt = 0;
-        for (let j = m - 1; j >= 0; j--) { // 本行从右往左
-            if (grid[i][j] === "E") cnt++;
-            else if (grid[i][j] === "W") cnt = 0;
-            dp[i][j] += cnt;
-        }
+      // 本列从上到下
+      if (grid[i][j] === "E") cnt++;
+      else if (grid[i][j] === "W") cnt = 0;
+      dp[i][j] += cnt;
     }
-    for (let j = 0; j < m; j++) { // 列
-        let cnt = 0;
-        for (let i = 0; i < n; i++) { // 本列从上到下
-            if (grid[i][j] === "E") cnt++;
-            else if (grid[i][j] === "W") cnt = 0;
-            dp[i][j] += cnt;
-        }
-        cnt = 0;
-        for (let i = n - 1; i >= 0; i--) { // 本列从下到上
-            if (grid[i][j] === "E") cnt++;
-            else if (grid[i][j] === "W") cnt = 0;
-            dp[i][j] += cnt;
-        }
+    cnt = 0;
+    for (let i = n - 1; i >= 0; i--) {
+      // 本列从下到上
+      if (grid[i][j] === "E") cnt++;
+      else if (grid[i][j] === "W") cnt = 0;
+      dp[i][j] += cnt;
     }
-    console.log(dp)
-    let max = 0
-    for (let i = 0; i < dp.length; i++) { // 只统计空位的结果
-        for (let j = 0; j < dp[0].length; j++) {
-            if (grid[i][j] === '0') {
-                max = Math.max(max, dp[i][j])
-            }
-        }
+  }
+  console.log(dp);
+  let max = 0;
+  for (let i = 0; i < dp.length; i++) {
+    // 只统计空位的结果
+    for (let j = 0; j < dp[0].length; j++) {
+      if (grid[i][j] === "0") {
+        max = Math.max(max, dp[i][j]);
+      }
     }
-    return max
+  }
+  return max;
 };
 ```
-
 
 ## 下降路径最小和
 
@@ -7270,7 +7289,7 @@ const len = weight.length;
 const dp = Array(size + 1).fill(0);
 for (let i = 1; i <= len; i++) {
   for (let j = size; j >= weight[i - 1]; j--) {
-    dp[j] = Math.max(dp[j], value[i - 1] + dp[j - weight[i - 1]]);
+    dp[j] = Math.max(dp[j], value[i] + dp[j - weight[i]]);
   }
 }
 return dp[size];
@@ -7338,7 +7357,7 @@ var canPartition = function (nums) {
 
 还有一种设置 dp 的方法，更好理解一些。
 设 dp[j]表示[0,i]的元素组合，得到的和的**不大于 j 的最大值**；如果 dp[j] === j，就说明不大于 j 的最大值刚好可以是 j，也就是满足了题目的“相等要求”。
-最后只需要判断最后一项的值等不等于target即可。
+最后只需要判断最后一项的值等不等于 target 即可。
 
 这种方法实际上还是在算组合最大值，只是判断最大值是不是恰好等于 j。从逻辑上来说更好理解一些
 
@@ -7362,7 +7381,6 @@ var canPartition = function (nums) {
   }
   return dp[dp.length - 1] === target;
 };
-
 ```
 
 ### 最后一块石头的重量 II
@@ -7699,37 +7717,36 @@ https://leetcode.cn/problems/perfect-squares/
 
 > 给你一个整数 n ，返回 和为 n 的完全平方数的最少数量 。
 > 完全平方数 是一个整数，其值等于另一个整数的平方；换句话说，其值等于一个整数自乘的积。例如，1、4、9 和 16 都是完全平方数，而 3 和 11 不是
-> 示例 1：
+> 示例  1：
 > 输入：n = 12
-> 输出：3 
+> 输出：3
 > 解释：12 = 4 + 4 + 4
 
-这道题也是一个典型的完全背包，让你在[1,4,9....10000]这些数中选可重复的数凑成目标数n，求凑成的最少数字数量（类似最少零钱问题）
+这道题也是一个典型的完全背包，让你在[1,4,9....10000]这些数中选可重复的数凑成目标数 n，求凑成的最少数字数量（类似最少零钱问题）
 
-按照完全背包的方法，组合题外层遍历物品（数字），内层遍历背包容量（n）。因为是求最小值，所以初始化dp全为Infinity，且dp[0] = 0即可。
+按照完全背包的方法，组合题外层遍历物品（数字），内层遍历背包容量（n）。因为是求最小值，所以初始化 dp 全为 Infinity，且 dp[0] = 0 即可。
 
 ```js
 var numSquares = function (n) {
-    if (n === 1) return 1;
-    const nums = new Array(100).fill(0).map((val, index) => (index + 1) ** 2);
-    if (nums.includes(n)) return 1;
-    let end = 0;
-    while (nums[end] <= n) end++;
+  if (n === 1) return 1;
+  const nums = new Array(100).fill(0).map((val, index) => (index + 1) ** 2);
+  if (nums.includes(n)) return 1;
+  let end = 0;
+  while (nums[end] <= n) end++;
 
-    const dp = new Array(n + 1).fill(Infinity);
-    dp[0] = 0
+  const dp = new Array(n + 1).fill(Infinity);
+  dp[0] = 0;
 
-    for (const num of nums) {
-        for (let j = num; j <= n; j++) {
-            dp[j] = Math.min(dp[j], dp[j - num] + 1)
-        }
+  for (const num of nums) {
+    for (let j = num; j <= n; j++) {
+      dp[j] = Math.min(dp[j], dp[j - num] + 1);
     }
-    return dp[n]
+  }
+  return dp[n];
 };
 ```
 
 这道题如果用暴力回溯则会超时
-
 
 ### 单词拆分
 
@@ -7858,7 +7875,7 @@ var maxProfit = function (prices) {
   const dp = [[-prices[0], 0]];
   for (let i = 1; i < prices.length; i++) {
     dp[i] = [];
-    dp[i][1] = Math.max(dp[i - 1][1], prices[i] + dp[i - 1][0]); 
+    dp[i][1] = Math.max(dp[i - 1][1], prices[i] + dp[i - 1][0]);
     // 注意顺序稍微改了一下
     dp[i][0] = Math.max(dp[i - 1][0], dp[i][1] - prices[i]);
   }
@@ -7880,8 +7897,7 @@ var maxProfit = function (prices) {
 上面两个基本的买卖股票只有卖出和买入两个状态，卖出状态的 dp 值只能从自己或买入推出来，买入同理；
 这里其实就是添加了两个和冷冻期的状态，然后分别推出四个状态的 dp 方程。每个状态下的 dp 都和其他一些状态有关系，综合起来就可以得到每个状态的每个值，最终结果就可以得到。
 
-一共设置四个状态 j： 
-
+一共设置四个状态 j：
 
 0. 买入状态，即持有股票状态
 1. 卖出但不在冷冻期状态，即前两天就已经卖出了，现在可以随时买入而不受冷冻期的限制
@@ -7890,7 +7906,7 @@ var maxProfit = function (prices) {
 
 注意后两个状态都是不可持续的，即`dp[i][2]`和`dp[i][3]`都不能从`dp[i-1][2]`或`dp[i-1][3]`推出来，只能从其他状态得到
 
-接下来就是分别得到这四个状态的转移方程： 
+接下来就是分别得到这四个状态的转移方程：
 
 买入有可能是三种情况：
 
@@ -7948,7 +7964,7 @@ var maxProfit = function (prices) {
 
 ---
 
-实际上状态1和3可以合并为一个状态，即“卖出且不在冷冻期”，和“卖出并在冷冻期”、“买入”这三个状态就可以。
+实际上状态 1 和 3 可以合并为一个状态，即“卖出且不在冷冻期”，和“卖出并在冷冻期”、“买入”这三个状态就可以。
 
 设:
 
@@ -7959,11 +7975,10 @@ var maxProfit = function (prices) {
 那么方程为：
 
 ```js
-dp[i][0] = Math.max(dp[i-1][0],dp[i-1][2]-price[i])
-dp[i][1] = dp[i-1][0] + price[i]
-dp[i][2] = Math.max(dp[i-1][2],dp[i-1][1])
+dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][2] - price[i]);
+dp[i][1] = dp[i - 1][0] + price[i];
+dp[i][2] = Math.max(dp[i - 1][2], dp[i - 1][1]);
 ```
-
 
 ## 打家劫舍 I
 
@@ -8013,21 +8028,20 @@ var rob = function (nums) {
 ---
 
 另外一种思路是利用递归，其实更类似于暴力回溯的方式。
-设置一个rob的递归函数，rob传入开始偷的位置，返回从这个房间开始偷得到的最大值：
+设置一个 rob 的递归函数，rob 传入开始偷的位置，返回从这个房间开始偷得到的最大值：
 
 ```js
-var rob = function (nums){
-  function dfs(i){
-    if(i >= nums.length){
-      return 0
+var rob = function (nums) {
+  function dfs(i) {
+    if (i >= nums.length) {
+      return 0;
     }
-    return Math.max(nums[i] + dfs(i+2),dfs(i+1))
+    return Math.max(nums[i] + dfs(i + 2), dfs(i + 1));
   }
-}
+};
 ```
 
-这个方式在普通线性中不如dp数组好理解，但是在打家劫舍III的树形结构中，只需要把dfs(i+1)/dfs(i+2)的判断换为dfs(left)、dfs(left.left/right)即可
-
+这个方式在普通线性中不如 dp 数组好理解，但是在打家劫舍 III 的树形结构中，只需要把 dfs(i+1)/dfs(i+2)的判断换为 dfs(left)、dfs(left.left/right)即可
 
 ## 打家劫舍 II
 
@@ -8074,31 +8088,31 @@ const robRange = (nums, start, end) => {
 
 https://leetcode.cn/problems/house-robber-iii/
 
-打家劫舍III和前两个题不同的在于变成了树形遍历。
-如果直接按照前两个的思路使用dp就会出问题，因为树形的遍历和数组的线性结构不一致。
+打家劫舍 III 和前两个题不同的在于变成了树形遍历。
+如果直接按照前两个的思路使用 dp 就会出问题，因为树形的遍历和数组的线性结构不一致。
 因此更好的方式是类回溯递归。对于一个节点：
-- 如果偷这个节点，那就不偷紧挨着的两个（root.left和root.right），而是直接偷更后面的四个（root.left.left/root.left.right/root.right.left/root.right.right）
-- 如果不偷这个节点，那就偷紧挨的两个，直接递归root.left和root.right即可，表示从这两个节点开始计算
 
-另外，还需要一个map存储节点，如果下次遍历到这个节点就直接返回偷的值而不用递归。因为每个点对应的偷的值应该是固定的，不用重复计算。
+- 如果偷这个节点，那就不偷紧挨着的两个（root.left 和 root.right），而是直接偷更后面的四个（root.left.left/root.left.right/root.right.left/root.right.right）
+- 如果不偷这个节点，那就偷紧挨的两个，直接递归 root.left 和 root.right 即可，表示从这两个节点开始计算
+
+另外，还需要一个 map 存储节点，如果下次遍历到这个节点就直接返回偷的值而不用递归。因为每个点对应的偷的值应该是固定的，不用重复计算。
 
 ```js
 var rob = function (root) {
-    const map = new Map()
-    function dfs(root) {
-        if (!root) return 0;
-        if(map.has(root)) return map.get(root)
-        let steal = root.val
-        if (root.left) steal += dfs(root.left.left) + dfs(root.left.right)
-        if (root.right) steal += dfs(root.right.left) + dfs(root.right.right)
-        const unsteal = dfs(root.left) + dfs(root.right);
-        map.set(root,Math.max(steal, unsteal))
-        return Math.max(steal, unsteal);
-    }
-    return dfs(root)
+  const map = new Map();
+  function dfs(root) {
+    if (!root) return 0;
+    if (map.has(root)) return map.get(root);
+    let steal = root.val;
+    if (root.left) steal += dfs(root.left.left) + dfs(root.left.right);
+    if (root.right) steal += dfs(root.right.left) + dfs(root.right.right);
+    const unsteal = dfs(root.left) + dfs(root.right);
+    map.set(root, Math.max(steal, unsteal));
+    return Math.max(steal, unsteal);
+  }
+  return dfs(root);
 };
 ```
-
 
 ## 最大子数组和（最大子序和）
 
@@ -8144,29 +8158,29 @@ https://leetcode.cn/problems/maximum-product-subarray
 
 区别在于，由于积有“负负得正”的性质，所以对于一个位置上的数来说，如果这个数是负数，并不一定代表它只能单独起一个子数组，它还可以和前面某个乘积为负数的结果相乘得到正数
 
-因此，可以考虑维护两个dp数组，dp1表示以当前数结尾的子数组的积的最**大**值，dp2表示当前数结尾的子数组的积的最**小**值。
+因此，可以考虑维护两个 dp 数组，dp1 表示以当前数结尾的子数组的积的最**大**值，dp2 表示当前数结尾的子数组的积的最**小**值。
 每遍历到一个数
-  - 如果这个数是负数，就考虑和dp2[i-1]相乘，得到的乘积还要和dp1[i-1]比较，如果由于“负负得正”使得乘积更大了，那就替换dp1[i]。
-  - 如果这个数是正数，dp1[i]正常由`dp1[i-1]*nums[i]`得到，dp2[i]也要考虑`dp2[i-1]*nums[i]`的结果得到新的更小的值。
 
-因此实际代码中，dp1和dp2每次递推都是同时和另外一个数组的`nums[i] * dpn[i-1]`比较，一起比较取得最大/最小值即可：
+- 如果这个数是负数，就考虑和 dp2[i-1]相乘，得到的乘积还要和 dp1[i-1]比较，如果由于“负负得正”使得乘积更大了，那就替换 dp1[i]。
+- 如果这个数是正数，dp1[i]正常由`dp1[i-1]*nums[i]`得到，dp2[i]也要考虑`dp2[i-1]*nums[i]`的结果得到新的更小的值。
+
+因此实际代码中，dp1 和 dp2 每次递推都是同时和另外一个数组的`nums[i] * dpn[i-1]`比较，一起比较取得最大/最小值即可：
 
 ```js
 var maxProduct = function (nums) {
-    const dp1 = new Array(nums.length); // 以i为最后一个位置的子数组的积的最大值
-    const dp2 = new Array(nums.length); // 以i为最后一个位置的子数组的积的最小值
-    dp1[0] = nums[0];
-    dp2[0] = nums[0];
-    for (let i = 1; i < nums.length; i++) {
-      // 最大值可能有两个来源，一个是从dp2“负负得正”得来，一个是从dp1“正正得正”得来
-      // 最小值同理
-        dp1[i] = Math.max(nums[i], nums[i] * dp1[i - 1], nums[i] * dp2[i - 1]);
-        dp2[i] = Math.min(nums[i], nums[i] * dp2[i - 1], nums[i] * dp1[i - 1]);
-    }
-    return Math.max(...dp1);
+  const dp1 = new Array(nums.length); // 以i为最后一个位置的子数组的积的最大值
+  const dp2 = new Array(nums.length); // 以i为最后一个位置的子数组的积的最小值
+  dp1[0] = nums[0];
+  dp2[0] = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    // 最大值可能有两个来源，一个是从dp2“负负得正”得来，一个是从dp1“正正得正”得来
+    // 最小值同理
+    dp1[i] = Math.max(nums[i], nums[i] * dp1[i - 1], nums[i] * dp2[i - 1]);
+    dp2[i] = Math.min(nums[i], nums[i] * dp2[i - 1], nums[i] * dp1[i - 1]);
+  }
+  return Math.max(...dp1);
 };
 ```
-
 
 ## 最长上升子序列
 
@@ -8267,7 +8281,6 @@ var findNumberOfLIS = function (nums) {
 };
 ```
 
-
 ## 最长连续递增子序列
 
 > 给定一个未经排序的整数数组，找到最长且 连续递增的子序列，并返回该序列的长度。连续递增的子序列 可以由两个下标 l 和 r（l < r）确定，如果对于每个 l <= i < r，都有 nums[i] < nums[i + 1] ，那么子序列 [nums[l], nums[l + 1], ..., nums[r - 1], nums[r]] 就是连续递增子序列。
@@ -8301,9 +8314,9 @@ var findLengthOfLCIS = function (nums) {
 这里`dp[i][j]`表示：以下标`i - 1`为结尾的 A，和以下标`j - 1`为结尾的 B，最长重复子数组长度为`dp[i][j]`。
 
 - 当`A[i - 1] === B[j - 1]`相等的时候，`dp[i][j] = dp[i - 1][j - 1] + 1`
-- 其他情况下（i和j不相等），`dp[i][j]`为0。归零的目的主要是相当于“从头开始”
+- 其他情况下（i 和 j 不相等），`dp[i][j]`为 0。归零的目的主要是相当于“从头开始”
 
-> 比如说序列[3,5,4,2,1]和[3,2,1,4,5]，在i-1 = 1和j-1 = 1时发现对应的数字不相等，这时如果不设dp为0，那么后面的就可能会继续在1的基础上计算；但是很显然3 5 4 2和3 2这两个序列的子数组长度不能算作是2，因为不连续；所以就必须在对应的值不相同的时候直接把dp归为0，类似于最长递增子数组的那种“重新开始数”的方式
+> 比如说序列[3,5,4,2,1]和[3,2,1,4,5]，在 i-1 = 1 和 j-1 = 1 时发现对应的数字不相等，这时如果不设 dp 为 0，那么后面的就可能会继续在 1 的基础上计算；但是很显然 3 5 4 2 和 3 2 这两个序列的子数组长度不能算作是 2，因为不连续；所以就必须在对应的值不相同的时候直接把 dp 归为 0，类似于最长递增子数组的那种“重新开始数”的方式
 
 > 这里取`i-1`和`j-1`主要是为了方便计算，直接取 i、j 也可以，但是要提前初始化`dp[i][0]`和 dp`[0][j]`
 
@@ -8506,9 +8519,9 @@ var numDistinct = function (s, t) {
 ## 两个字符串的删除操作
 
 > 给定两个单词 word1 和 word2，找到使得 word1 和 word2 相同所需的最小步数，每步可以删除任意一个字符串中的一个字符。
-> 
+>
 > 示例：
-> 
+>
 > 输入: "sea", "eat"
 > 输出: 2
 > 解释: 第一步将"sea"变为"ea"，第二步将"eat"变为"ea"
@@ -8516,36 +8529,39 @@ var numDistinct = function (s, t) {
 这道题其实是编辑距离问题的一个情况，即删除情况。
 
 这道题有两个思路：
-1. 设`dp[i][j]`为以i-1为结尾的s和以t-1为结尾的t，两个串要相等需要删除的字符数量。
+
+1. 设`dp[i][j]`为以 i-1 为结尾的 s 和以 t-1 为结尾的 t，两个串要相等需要删除的字符数量。
 2. 计算两个串的最长公共子序列长度，然后任意一个串的长度减去公共子序列的长度就可以
 
 以第一个思路为例，还是比较`s[i-1]`和`t[i-1]`
+
 - 如果相等，那么说明不用删除这个位置，那删除的数量就继承前面的一个的`dp[i-1][j-1]`
 - 如果不等，那么有三种情况：
   - 删除`s[i-1]`，然后步数+1，即`dp[i-1][j] + 1`
   - 删除`t[j-1]`，同理
   - 两个都删，这时相当于两步，即`dp[i-1][j-1] + 2`
-然后取这三种情况的最小值即可
+    然后取这三种情况的最小值即可
 
-注意dp的大小和遍历上限：
-由于元素可能被完全删除，即删成空串，因此dp的长宽应该比单词长度大一个单位，第一行表示s的空串和t的比较，第一列表示t的空串和s的比较。
+注意 dp 的大小和遍历上限：
+由于元素可能被完全删除，即删成空串，因此 dp 的长宽应该比单词长度大一个单位，第一行表示 s 的空串和 t 的比较，第一列表示 t 的空串和 s 的比较。
 
 ![](https://pic.imgdb.cn/item/6412d64debf10e5d53d26df0.jpg)
 
-
 然后是初始化。这个需要初始化第一行和第一列，
-- `dp[i][0]`: 表示字符串s需要删除多少个字符，才能到达空串（即以索引-1为结尾的t串，就是空串），即有多少删多少
-- `dp[0][j]`：同理。t需要删除所有，才能到达空串（以-1为结尾的s串）
+
+- `dp[i][0]`: 表示字符串 s 需要删除多少个字符，才能到达空串（即以索引-1 为结尾的 t 串，就是空串），即有多少删多少
+- `dp[0][j]`：同理。t 需要删除所有，才能到达空串（以-1 为结尾的 s 串）
 
 代码如下：
+
 ```js
 /**
  * @param {string} word1
  * @param {string} word2
  * @return {number}
  */
-var minDistance = function(word1, word2) {
-    const dp = Array.from(new Array(word1.length + 1), () =>
+var minDistance = function (word1, word2) {
+  const dp = Array.from(new Array(word1.length + 1), () =>
     new Array(word2.length + 1).fill(0)
   );
   for (let i = 0; i <= word1.length; i++) dp[i][0] = i;
@@ -8565,9 +8581,6 @@ var minDistance = function(word1, word2) {
 };
 ```
 
-
-
-
 ## 编辑距离
 
 > 给你两个单词 word1 和 word2，请你计算出将 word1 转换成 word2 所使用的最少操作数 。
@@ -8575,53 +8588,57 @@ var minDistance = function(word1, word2) {
 > 插入一个字符
 > 删除一个字符
 > 替换一个字符
-> 
+>
 > 示例 1：
 > 输入：word1 = "horse", word2 = "ros"
 > 输出：3
 > 解释： horse -> rorse (将 'h' 替换为 'r') rorse -> rose (删除 'r') rose -> ros (删除 'e')
 
-
 上面那道题其实是编辑距离的一种情况，即删除情况。现在新增了两种情况，也就是在上面那道题的基础上，增加插入字符、替换字符的操作。
 
 - 插入字符：不用新增判断，因为插入字符和删除字符相当于是一样的。
 
-word2添加一个元素，相当于word1删除一个元素
-例如 word1 = "ad" ，word2 = "a"，word1删除元素'd' 和 word2添加一个元素'd'，变成word1="a", word2="ad"，最终的操作数是一样的。
+word2 添加一个元素，相当于 word1 删除一个元素
+例如 word1 = "ad" ，word2 = "a"，word1 删除元素'd' 和 word2 添加一个元素'd'，变成 word1="a", word2="ad"，最终的操作数是一样的。
 
 - 删除字符：上面那道题的三种情况
-- 替换字符：也是按照替换word1、替换word2的思路。相当于是在之前匹配的基础上，把word1的位置上的字符替换成word2上的，或者反过来也行。`dp[i][j] = dp[i-1][j-1] + 1`
+- 替换字符：也是按照替换 word1、替换 word2 的思路。相当于是在之前匹配的基础上，把 word1 的位置上的字符替换成 word2 上的，或者反过来也行。`dp[i][j] = dp[i-1][j-1] + 1`
 
 因此代码就是在上面那道题基础上增加一个替换字符的情况：
+
 ```js
 var minDistance = function (word1, word2) {
-    let dp = Array.from(Array(word1.length + 1), () => Array(word2.length + 1).fill(0));
+  let dp = Array.from(Array(word1.length + 1), () =>
+    Array(word2.length + 1).fill(0)
+  );
 
-    for (let i = 1; i <= word1.length; i++) {
-        dp[i][0] = i;
-    }
+  for (let i = 1; i <= word1.length; i++) {
+    dp[i][0] = i;
+  }
 
+  for (let j = 1; j <= word2.length; j++) {
+    dp[0][j] = j;
+  }
+
+  for (let i = 1; i <= word1.length; i++) {
     for (let j = 1; j <= word2.length; j++) {
-        dp[0][j] = j;
+      if (word1[i - 1] === word2[j - 1]) {
+        dp[i][j] = dp[i - 1][j - 1];
+      } else {
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + 1
+        );
+      }
     }
+  }
 
-    for (let i = 1; i <= word1.length; i++) {
-        for (let j = 1; j <= word2.length; j++) {
-            if (word1[i - 1] === word2[j - 1]) {
-                dp[i][j] = dp[i - 1][j - 1];
-            } else {
-                dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + 1);
-            }
-        }
-    }
-
-    return dp[word1.length][word2.length];
+  return dp[word1.length][word2.length];
 };
 ```
 
-
-
-## 回文子串数量 
+## 回文子串数量
 
 > 给定一个字符串，你的任务是计算这个字符串中有多少个回文子串。
 > 具有不同开始位置或结束位置的子串，即使是由相同的字符组成，也会被视作不同的子串。
@@ -8866,7 +8883,11 @@ var maximalSquare = function (matrix) {
       if (matrix[i] && matrix[i][j] !== "0") {
         if (dp[i - 1][j] && dp[i][j - 1] && dp[i - 1][j - 1]) {
           dp[i][j] =
-            (Math.sqrt(Math.min(+dp[i - 1][j], +dp[i][j - 1], +dp[i - 1][j - 1])) + 1) ** 2;
+            (Math.sqrt(
+              Math.min(+dp[i - 1][j], +dp[i][j - 1], +dp[i - 1][j - 1])
+            ) +
+              1) **
+            2;
         } else dp[i][j] = 1;
       }
       max = Math.max(max, dp[i - 1][j - 1]);
@@ -8875,7 +8896,6 @@ var maximalSquare = function (matrix) {
   return max;
 };
 ```
-
 
 # 哈希表
 
@@ -9059,14 +9079,14 @@ var eraseOverlapIntervals = function (intervals) {
 
 这个思路还可以用于解决`https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/`这道题，其实都是一个思路的问题。
 
-## 不含AAA或BBB的字符串
+## 不含 AAA 或 BBB 的字符串
 
 https://leetcode.cn/problems/string-without-aaa-or-bbb/
 
-> 给定两个整数 a 和 b ，返回 任意 字符串 s ，要求满足：
-> s 的长度为 a + b，且正好包含a 个 'a' 字母与 b 个 'b' 字母；
-> 子串 'aaa' 没有出现在 s 中；
-> 子串 'bbb' 没有出现在 s 中。
+> 给定两个整数 a  和 b ，返回   任意   字符串 s ，要求满足：
+> s  的长度为 a + b，且正好包含 a  个 'a'  字母与  b  个 'b'  字母；
+> 子串  'aaa'  没有出现在 s  中；
+> 子串  'bbb' 没有出现在 s  中。
 > 示例 1：
 > 输入：a = 1, b = 2
 > 输出："abb"
@@ -9074,50 +9094,53 @@ https://leetcode.cn/problems/string-without-aaa-or-bbb/
 
 这个题有两种解法，一种是贪心，还有一个是取巧的解法。
 
-先说贪心的解法。既然a和b可以最多有两个相连，那么就应该考虑选取a和b中个数更多的一个优先放入，如果放入连续两个在考虑放入其他的。即：
-1. 循环放入a和b，每次放入之前，先计算a和b哪个多
-2. 如果总字符长度大于2，并且前两个字符相同，那就放另一个；
-  - 其他情况下（前两个字符不同，或长度小于2）就放入第一步计算出的更多的那个。
+先说贪心的解法。既然 a 和 b 可以最多有两个相连，那么就应该考虑选取 a 和 b 中个数更多的一个优先放入，如果放入连续两个在考虑放入其他的。即：
+
+1. 循环放入 a 和 b，每次放入之前，先计算 a 和 b 哪个多
+2. 如果总字符长度大于 2，并且前两个字符相同，那就放另一个；
+
+- 其他情况下（前两个字符不同，或长度小于 2）就放入第一步计算出的更多的那个。
 
 代码如下：
 
 ```js
 var strWithout3a3b = function (a, b) {
-    let res = "";
-    let index = 0;
-    while (a > 0 || b > 0) {
-        let aorb = a > b // 计算a多还是b多
-        if (index >= 2 && res[index - 1] === res[index - 2]) {
-          // 前两个重复就放另一个
-            if (res[index - 1] === "b") {
-                a--;
-                res += "a";
-            } else if (res[index - 1] === "a") {
-                b--;
-                res += "b";
-            }
-        } else {
-          // 其他情况就放更多的那个
-            if (aorb) {
-                res += "a";
-                a--;
-            } else {
-                res += "b";
-                b--;
-            }
-        }
-        index++
+  let res = "";
+  let index = 0;
+  while (a > 0 || b > 0) {
+    let aorb = a > b; // 计算a多还是b多
+    if (index >= 2 && res[index - 1] === res[index - 2]) {
+      // 前两个重复就放另一个
+      if (res[index - 1] === "b") {
+        a--;
+        res += "a";
+      } else if (res[index - 1] === "a") {
+        b--;
+        res += "b";
+      }
+    } else {
+      // 其他情况就放更多的那个
+      if (aorb) {
+        res += "a";
+        a--;
+      } else {
+        res += "b";
+        b--;
+      }
     }
-    return res;
+    index++;
+  }
+  return res;
 };
 ```
 
 ---
 
 第二种方法比较取巧。每次放入的不是'a'或'b'，而是'ab'、'aab'和'abb'。
-- 如果a和b一样多，就放入ab
-- 如果a比b多，就放入aab
-- 如果b比a多，就放入abb
+
+- 如果 a 和 b 一样多，就放入 ab
+- 如果 a 比 b 多，就放入 aab
+- 如果 b 比 a 多，就放入 abb
 
 最后直到放完为止
 
@@ -9126,23 +9149,22 @@ var strWithout3a3b = function (a, b) {
   let res = "";
   while (a > 0 || b > 0) {
     if (a > b) {
-        res += "aab";
-        a-=2;
-        b--
-    } else if(a < b) {
-        res += "abb";
-        b-=2;
-        a--;
+      res += "aab";
+      a -= 2;
+      b--;
+    } else if (a < b) {
+      res += "abb";
+      b -= 2;
+      a--;
     } else {
-      res += 'ab'
-      a--
-      b--
+      res += "ab";
+      a--;
+      b--;
     }
   }
-  return res
-}
+  return res;
+};
 ```
-
 
 # 分治法
 
@@ -9433,7 +9455,6 @@ var hasPath = function (maze, start, destination) {
 ```
 
 如果是 dfs，其实也是这个思路。每次递归的 dfs 参数还是按照这个方式来的（即撞墙），其他的部分和常规 dfs 一样
-
 
 ### 迷宫 II
 
@@ -10203,7 +10224,7 @@ function BFS(graph){
 }
 ```
 
-BFS的成环判断也是这个思路。如果当前节点在之前存储的走过的节点中出现过，就说明成环了。
+BFS 的成环判断也是这个思路。如果当前节点在之前存储的走过的节点中出现过，就说明成环了。
 
 ---
 
@@ -10499,23 +10520,21 @@ var lastRemaining = function (n, m) {
 
 数学解法：约瑟夫环，采用倒推的思路。
 
-因为最后数组中只剩下一个数，因此这个数的序号一定是0。
+因为最后数组中只剩下一个数，因此这个数的序号一定是 0。
 
-然后从0开始倒推，每次的新序号就是`(上一次的序号+去掉的第m个数的m)%当前数组大小`
+然后从 0 开始倒推，每次的新序号就是`(上一次的序号+去掉的第m个数的m)%当前数组大小`
 
 参考https://leetcode.cn/problems/yuan-quan-zhong-zui-hou-sheng-xia-de-shu-zi-lcof/solution/javajie-jue-yue-se-fu-huan-wen-ti-gao-su-ni-wei-sh/
 
 ```js
 var lastRemaining = function (n, m) {
-    let res = 0
-    for(let i = 2;i <= n;i++){
-        res = (res + m) % i
-    }
-    return res
+  let res = 0;
+  for (let i = 2; i <= n; i++) {
+    res = (res + m) % i;
+  }
+  return res;
 };
 ```
-
-
 
 ## 汉诺塔问题
 
@@ -10529,8 +10548,10 @@ https://leetcode.cn/problems/hanota-lcci/
 > 你需要原地修改栈。
 
 两个思路：
-1. 递归，即每次考虑相当于两个盘子的移动。比如n=2的最基本情况；当n>2时，把上面多于一个的盘子看作一个整体，即一部分是1个最底端的盘子，另一部分是上面的n-1个盘子，然后按照移动两个的方法移动这两部分。我们不用考虑上面n-1个是如何移动的，递归会自然做到。
-具体来说，就是：
+
+1. 递归，即每次考虑相当于两个盘子的移动。比如 n=2 的最基本情况；当 n>2 时，把上面多于一个的盘子看作一个整体，即一部分是 1 个最底端的盘子，另一部分是上面的 n-1 个盘子，然后按照移动两个的方法移动这两部分。我们不用考虑上面 n-1 个是如何移动的，递归会自然做到。
+   具体来说，就是：
+
 - n = 1 时，直接把盘子从 A 移到 C；
 - n > 1 时，
   1. 先把上面 n - 1 个盘子从 A 移到 B（子问题，递归）；
@@ -10538,10 +10559,12 @@ https://leetcode.cn/problems/hanota-lcci/
   3. 再将 B 上 n - 1 个盘子从 B 移到 C（子问题，递归）。
 
 上面这个逻辑就和代码几乎完全对应。代码如下：
+
 ```js
 var hanota = function (A, B, C) {
   const n = A.length;
-  function move(n, A, B, C) { // move函数表示把n个盘子按照合法顺序从A移到C
+  function move(n, A, B, C) {
+    // move函数表示把n个盘子按照合法顺序从A移到C
     if (n === 1) {
       C.push(A.pop());
     }
@@ -10553,7 +10576,7 @@ var hanota = function (A, B, C) {
 };
 ```
 
-递归解法几乎隐藏了确切的移动方式，只是通过对最基本的n=2的形式的扩充。而迭代解法则使用具体的移动策略完成
+递归解法几乎隐藏了确切的移动方式，只是通过对最基本的 n=2 的形式的扩充。而迭代解法则使用具体的移动策略完成
 
 迭代的讲解具体参考：https://leetcode.cn/problems/hanota-lcci/solution/by-1105389168-tijv/
 
@@ -10561,39 +10584,37 @@ var hanota = function (A, B, C) {
 
 ```js
 var hanota = function (A, B, C) {
-    if (A.length === 1) {
-        C.push(A.pop());
-        return;
-    }
-    const lists = [];
-    const n = A.length;
-    if (n % 2 === 0) lists.push(A, B, C);
-    else lists.push(A, C, B);
+  if (A.length === 1) {
+    C.push(A.pop());
+    return;
+  }
+  const lists = [];
+  const n = A.length;
+  if (n % 2 === 0) lists.push(A, B, C);
+  else lists.push(A, C, B);
 
-    let curr = 0;
-    while (C.length < n) {
-        const next = (curr + 1) % 3;
-        const prev = (curr + 2) % 3;
-        lists[next].push(lists[curr].pop()); // 把当前的最小的移动到下一个
-        if (lists[prev].length === 0) {
-            lists[prev].push(lists[curr].pop()); // 如果有空的，就移动到空的上
-        } else {
-          // 否则另外两个里顶端较小的一个移到较大的一个上
-            if (
-                lists[prev][lists[prev].length - 1] >
-                lists[curr][lists[curr].length - 1]
-            ) {
-                lists[prev].push(lists[curr].pop());
-            } else {
-                lists[curr].push(lists[prev].pop());
-            }
-        }
-        curr = next
+  let curr = 0;
+  while (C.length < n) {
+    const next = (curr + 1) % 3;
+    const prev = (curr + 2) % 3;
+    lists[next].push(lists[curr].pop()); // 把当前的最小的移动到下一个
+    if (lists[prev].length === 0) {
+      lists[prev].push(lists[curr].pop()); // 如果有空的，就移动到空的上
+    } else {
+      // 否则另外两个里顶端较小的一个移到较大的一个上
+      if (
+        lists[prev][lists[prev].length - 1] >
+        lists[curr][lists[curr].length - 1]
+      ) {
+        lists[prev].push(lists[curr].pop());
+      } else {
+        lists[curr].push(lists[prev].pop());
+      }
     }
+    curr = next;
+  }
 };
 ```
-
-
 
 ## 字符串乘法
 
@@ -10733,7 +10754,6 @@ var simplifyPath = function (path) {
 };
 ```
 
-
 ## 简单计算器
 
 https://leetcode.cn/problems/basic-calculator-ii/
@@ -10780,6 +10800,58 @@ var calculate = function (s) {
     }
   }
   return stack.reduce((pre, cur) => pre + cur);
+};
+```
+
+## 完全计算器
+
+完全计算器就是在简单计算器的基础上，增加了括号。基本思路还是简单计算器的方法，但对括号要做递归处理。
+我们把括号内的算式视为一个运算的结果，这个结果由递归计算得出；然后将剩下的部分当做和简单计算器一样的方法去计算即可。
+
+代码如下：
+
+```js
+var calculate = function (s) {
+  var helper = function (s) {
+    var stack = [];
+    var sign = "+";
+    var num = 0;
+
+    while (s.length > 0) {
+      var c = s.shift();
+      if (!isNaN(c)) {
+        num = +c;
+      }
+      // 遇到左括号开始递归计算 num
+      // 把括号内的计算结果看做是一个值，即helper的返回值
+      if (c === "(") {
+        num = helper(s);
+      }
+      // 然后下面就和简单计算器一样的思路
+      if ((!parseInt(c) && c !== " ") || s.length === 0) {
+        if (sign === "+") {
+          stack.push(num);
+        } else if (sign === "-") {
+          stack.push(-num);
+        } else if (sign === "*") {
+          stack[stack.length - 1] = stack[stack.length - 1] * num;
+        } else if (sign === "/") {
+          // javascript 除法向 0 取整的写法
+          stack[stack.length - 1] = parseInt(stack[stack.length - 1] / num);
+        }
+        num = 0;
+        sign = c;
+      }
+      // 遇到右括号返回递归结果
+      if (c === ")") break;
+    }
+
+    return stack.reduce(function (sum, current) {
+      return sum + current;
+    }, 0);
+  };
+
+  return helper(s.split(""));
 };
 ```
 
@@ -10892,8 +10964,8 @@ var intToRoman = function (num) {
 
 按照题意，可以得到下面这个表格：
 
-| 序号 | 范围      | 位数 | 总位数大小       | 起始序号 n    |
-| ---- | --------- | ---- | ---------------- | ------------- |
+| 序号 | 范围      | 位数 | 总位数大小         | 起始序号 n    |
+| ---- | --------- | ---- | ------------------ | ------------- |
 | 1    | 0-9       | 1    | `1*9*10^0 = 9`     | 0             |
 | 2    | 10-99     | 2    | `2*9*10^1 = 180`   | 0+9=9         |
 | 3    | 100-999   | 3    | `3*9*10^2 = 2700`  | 180+9=189     |
@@ -11417,59 +11489,64 @@ var merge = function (intervals) {
 
 https://leetcode.cn/problems/interval-list-intersections/
 
-> 给定两个由一些 闭区间 组成的列表，firstList 和 secondList ，其中 firstList[i] = [starti, endi] 而 secondList[j] = [startj, endj] 。每个区间列表都是成对 不相交 的，并且 已经排序 。
+> 给定两个由一些 闭区间 组成的列表，firstList 和 secondList ，其中 firstList[i] = [starti, endi] 而  secondList[j] = [startj, endj] 。每个区间列表都是成对 不相交 的，并且 已经排序 。
 > 返回这 两个区间列表的交集 。
-> 形式上，闭区间 [a, b]（其中 a <= b）表示实数 x 的集合，而 a <= x <= b 。
+> 形式上，闭区间  [a, b]（其中  a <= b）表示实数  x  的集合，而  a <= x <= b 。
 > 两个闭区间的 交集 是一组实数，要么为空集，要么为闭区间。例如，[1, 3] 和 [2, 4] 的交集为 [2, 3] 。
 
-这道题的解法和会议室II的思路很像。
-考虑把所有的start和所有的end单独放入一个数组并排序，然后用两个指针分别在两个数组中遍历；
-- 设置一个统计重叠个数的变量cnt。每经过一个start，cnt就++，相应的经过一个end就给cnt--。如果cnt加了1之后等于2，就说明已经是重叠区域了，考虑记录开头结尾。
-- 如果start[i] < end[j]，那就给i++，并给cnt++；如果cnt等于2，就把当前start[i]作为一个重叠区间的起始。
-- 如果start[i] > end[j]，那就给j++，同时cnt--。如果cnt等于1，就结束当前正在记录的重叠区间，把end[j]作为该重叠区间的结尾。
+这道题的解法和会议室 II 的思路很像。
+考虑把所有的 start 和所有的 end 单独放入一个数组并排序，然后用两个指针分别在两个数组中遍历；
 
-还要注意，这道题还有一个特殊的地方，即存在开头结尾相同的区间（长度为0）.那么当start[i] === end[j]时，记录下来即可。
+- 设置一个统计重叠个数的变量 cnt。每经过一个 start，cnt 就++，相应的经过一个 end 就给 cnt--。如果 cnt 加了 1 之后等于 2，就说明已经是重叠区域了，考虑记录开头结尾。
+- 如果 start[i] < end[j]，那就给 i++，并给 cnt++；如果 cnt 等于 2，就把当前 start[i]作为一个重叠区间的起始。
+- 如果 start[i] > end[j]，那就给 j++，同时 cnt--。如果 cnt 等于 1，就结束当前正在记录的重叠区间，把 end[j]作为该重叠区间的结尾。
+
+还要注意，这道题还有一个特殊的地方，即存在开头结尾相同的区间（长度为 0）.那么当 start[i] === end[j]时，记录下来即可。
 
 代码如下：
+
 ```js
 var intervalIntersection = function (firstList, secondList) {
-    const intervalsBegin = []
-    const intervalsEnd = []
-    for (const [start, end] of firstList) {
-        intervalsBegin.push(start)
-        intervalsEnd.push(end)
+  const intervalsBegin = [];
+  const intervalsEnd = [];
+  for (const [start, end] of firstList) {
+    intervalsBegin.push(start);
+    intervalsEnd.push(end);
+  }
+  for (const [start, end] of secondList) {
+    intervalsBegin.push(start);
+    intervalsEnd.push(end);
+  }
+  intervalsBegin.sort((a, b) => a - b);
+  intervalsEnd.sort((a, b) => a - b);
+  const res = [];
+  const curr = [];
+  let cnt = 0; // 记录当前有几个重叠，可能为0 1 2
+  let i = 0;
+  let j = 0;
+  while (j < intervalsEnd.length) {
+    if (intervalsBegin[i] < intervalsEnd[j] && i < intervalsBegin.length) {
+      if (++cnt === 2) {
+        curr[0] = intervalsBegin[i];
+      }
+      i++;
+    } else if (
+      intervalsBegin[i] > intervalsEnd[j] ||
+      i >= intervalsBegin.length
+    ) {
+      if (--cnt === 1) {
+        curr[1] = intervalsEnd[j];
+        res.push([...curr]);
+        curr.length = 0;
+      }
+      j++;
+    } else if (intervalsBegin[i] === intervalsEnd[j]) {
+      res.push([intervalsBegin[i], intervalsEnd[j]]);
+      i++;
+      j++;
     }
-    for (const [start, end] of secondList) {
-        intervalsBegin.push(start)
-        intervalsEnd.push(end)
-    }
-    intervalsBegin.sort((a, b) => a - b)
-    intervalsEnd.sort((a, b) => a - b)
-    const res = []
-    const curr = []
-    let cnt = 0 // 记录当前有几个重叠，可能为0 1 2
-    let i = 0
-    let j = 0
-    while (j < intervalsEnd.length) {
-        if (intervalsBegin[i] < intervalsEnd[j] && i < intervalsBegin.length) {
-            if (++cnt === 2) {
-                curr[0] = intervalsBegin[i]
-            }
-            i++
-        } else if (intervalsBegin[i] > intervalsEnd[j] || i >= intervalsBegin.length) {
-            if (--cnt === 1) {
-                curr[1] = intervalsEnd[j]
-                res.push([...curr])
-                curr.length = 0
-            }
-            j++
-        } else if(intervalsBegin[i] === intervalsEnd[j]) {
-            res.push([intervalsBegin[i],intervalsEnd[j]])
-            i++
-            j++
-        }
-    }
-    return res
+  }
+  return res;
 };
 ```
 
@@ -11506,7 +11583,6 @@ var eraseOverlapIntervals = function (intervals) {
 ```
 
 这个思路还可以用于解决`https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/`这道题，其实都是一个思路的问题。
-
 
 ## 最小栈
 
@@ -11817,10 +11893,10 @@ var trailingZeroes = function (n) {
 
 ---
 
-这个题有一个衍生出来的问题。假如数字都是随机的，即任意的n个数相乘，怎么计算他们的乘积0的数量？
+这个题有一个衍生出来的问题。假如数字都是随机的，即任意的 n 个数相乘，怎么计算他们的乘积 0 的数量？
 
-有一个结论：**乘积末尾0的数量取决于乘积中因子2和因子5的数量的较小值。**
-其中因子指的是最多能除几次，比如4的2的因子数量为2，因为它可以除两次2；100的5的因子为2，因为它可以除两次5。
+有一个结论：**乘积末尾 0 的数量取决于乘积中因子 2 和因子 5 的数量的较小值。**
+其中因子指的是最多能除几次，比如 4 的 2 的因子数量为 2，因为它可以除两次 2；100 的 5 的因子为 2，因为它可以除两次 5。
 
 ```
 举个例子：数组[5,2,3,50,4]
@@ -11831,45 +11907,45 @@ var trailingZeroes = function (n) {
 如果把他们全部乘起来，那么总的0的个数就为 min(2的因子数量, 5的因子数量) = 3
 ```
 
-## （乘积中0的个数大于x的）连续子数组数量
+## （乘积中 0 的个数大于 x 的）连续子数组数量
 
-
-> 给定一个数组，请你编写一个函数，返回元素乘积末尾零数量大于等于x的连续子数组数量。
-> 数组元素均为不超过10^9的正整数
-> 
-> 示例1
-> 
+> 给定一个数组，请你编写一个函数，返回元素乘积末尾零数量大于等于 x 的连续子数组数量。
+> 数组元素均为不超过 10^9 的正整数
+>
+> 示例 1
+>
 > 输入例子：
 > [5,2,3,50,4],2
-> 
+>
 > 输出例子：
 > 6
-> 
+>
 > 例子说明：
-> 共有以下6个合法连续子数组：
-> [5,2,3,50]，乘积为1500，末尾有2个零。
-> [5,2,3,50,4]，乘积为6000，末尾有3个零。
-> [2,3,50]，乘积为300，末尾有2个零。
-> [2,3,50,4]，乘积为1200，末尾有2个零。
-> [3,50,4]，乘积为600，末尾有2个零。
-> [50,4]，乘积为200，末尾有2个零。
+> 共有以下 6 个合法连续子数组：
+> [5,2,3,50]，乘积为 1500，末尾有 2 个零。
+> [5,2,3,50,4]，乘积为 6000，末尾有 3 个零。
+> [2,3,50]，乘积为 300，末尾有 2 个零。
+> [2,3,50,4]，乘积为 1200，末尾有 2 个零。
+> [3,50,4]，乘积为 600，末尾有 2 个零。
+> [50,4]，乘积为 200，末尾有 2 个零。
 
 这道题应该分为两个方面去考虑，即：
-1. 怎么确定一组数的乘积中0的个数
+
+1. 怎么确定一组数的乘积中 0 的个数
 2. 当找到一个符合条件的连续子数组之后，怎么找下一个或者计算剩下的还有多少个？
 
-对于第一个方面，可以看上一道题，结论为一组数中**乘积末尾0的数量取决于乘积中因子2和因子5的数量的较小值**。
-第二个方面，可以采取滑动窗口的方法。首先先增大右边界，当满足条件时计算数量；然后缩小左边界直到0的数量不足，再增大右边界，依次循环。
+对于第一个方面，可以看上一道题，结论为一组数中**乘积末尾 0 的数量取决于乘积中因子 2 和因子 5 的数量的较小值**。
+第二个方面，可以采取滑动窗口的方法。首先先增大右边界，当满足条件时计算数量；然后缩小左边界直到 0 的数量不足，再增大右边界，依次循环。
 
-当一个数组满足条件时，对它任意的增大都满足条件（比如乘积100，再乘多少个正整数都至少有2个0）。因此一个子数组满足条件后，`数组长度 - 右边界的索引`就是其他子数组的数量。可以理解为是多乘了右边的数。
-比如`[2,3,50]`满足条件，那么它右边还有一个数4，如果乘上肯定满足条件。加上他自己，一共就是`5 - 3 = 2`种子数组数量。其他的类似。
+当一个数组满足条件时，对它任意的增大都满足条件（比如乘积 100，再乘多少个正整数都至少有 2 个 0）。因此一个子数组满足条件后，`数组长度 - 右边界的索引`就是其他子数组的数量。可以理解为是多乘了右边的数。
+比如`[2,3,50]`满足条件，那么它右边还有一个数 4，如果乘上肯定满足条件。加上他自己，一共就是`5 - 3 = 2`种子数组数量。其他的类似。
 不用考虑左边的情况，因为可能会算重复
 
 代码如下：
 
 ```js
-function get2And5Amount(a){
-  const arr = new Array(a.length)(2)
+function get2And5Amount(a) {
+  const arr = new Array(a.length)(2);
   for (let i = 0; i < this.n; ++i) {
     let temp = a[i];
     while (temp > 0 && temp % 2 === 0) {
@@ -11882,14 +11958,14 @@ function get2And5Amount(a){
       temp /= 5;
     }
   }
-  return arr
+  return arr;
 }
 
-function solution(a,x){
+function solution(a, x) {
   let ans = 0;
   let two_num = 0;
   let five_num = 0;
-  let l = 0
+  let l = 0;
   let r = 0;
   // 滑动窗口
   while (r < a.length) {
@@ -11910,50 +11986,47 @@ function solution(a,x){
 }
 ```
 
-
-
 ## 颠倒二进制位
 
 https://leetcode.cn/problems/reverse-bits/
 
 > 颠倒给定的 32 位无符号整数的二进制位。
 >
->
 > 示例 1：
 >
 > 输入：n = 00000010100101000001111010011100
 > 输出：964176192 (00111001011110000010100101000000)
 > 解释：输入的二进制串 00000010100101000001111010011100 表示无符号整数 43261596，
->      因此返回 964176192，其二进制表示形式为 00111001011110000010100101000000。
+> 因此返回 964176192，其二进制表示形式为 00111001011110000010100101000000。
 
-基本思路：把n循环和1与，每次把n&1的结果左移31-i位即可
+基本思路：把 n 循环和 1 与，每次把 n&1 的结果左移 31-i 位即可
 
-即，比如n的从右往左第一位为1，那么结果res的从右往左第32位（左移31-0）就是1；然后把这个值和下一个结果或即可。
+即，比如 n 的从右往左第一位为 1，那么结果 res 的从右往左第 32 位（左移 31-0）就是 1；然后把这个值和下一个结果或即可。
 
-需要注意的是，由于js的数字采用补码表示有符号整数，因此将左移右移操作分为了有符号左右移（`<<`和`>>`）和无符号左右移（`<<<`和`>>>`）。对于正数来说，两者没有区别；但是对于负数来说，有符号右移会保留符号位的值，而无符号右移则会将符号位一块右移，会使得原来的负数变成一个值非常大的正数。具体参考https://www.jianshu.com/p/588eb74b5a03
+需要注意的是，由于 js 的数字采用补码表示有符号整数，因此将左移右移操作分为了有符号左右移（`<<`和`>>`）和无符号左右移（`<<<`和`>>>`）。对于正数来说，两者没有区别；但是对于负数来说，有符号右移会保留符号位的值，而无符号右移则会将符号位一块右移，会使得原来的负数变成一个值非常大的正数。具体参考https://www.jianshu.com/p/588eb74b5a03
 
-如果把一个负数无符号右移0位（即`n>>>0`），还会有特殊的情况。虽然位数没有变化，但是作为负数的补码被看作是作为正数的补码，这时数值就会发生巨大变化。
+如果把一个负数无符号右移 0 位（即`n>>>0`），还会有特殊的情况。虽然位数没有变化，但是作为负数的补码被看作是作为正数的补码，这时数值就会发生巨大变化。
 
 比如:
 
 ```js
--1 >>> 0 // 4294967295
+-1 >>> 0; // 4294967295
 // -1的补码
-11111111111111111111111111111111
+11111111111111111111111111111111;
 // 无符号右移0位，位数不变，但是被看作是正数补码，即当做原码去计算
-11111111111111111111111111111111 // 4294967295
+11111111111111111111111111111111; // 4294967295
 ```
 
-所以这道题的要求是无符号整数的颠倒，即不能出现正数颠倒成负数的情况，也就是说对于最终的结果，应该在>>>0一次；同理在循环过程中n的移位也应该是>>>1而不是>>1，因为如果是后者，当n是负数时，有符号右移则会导致负数变成一个很大的正数。
+所以这道题的要求是无符号整数的颠倒，即不能出现正数颠倒成负数的情况，也就是说对于最终的结果，应该在>>>0 一次；同理在循环过程中 n 的移位也应该是>>>1 而不是>>1，因为如果是后者，当 n 是负数时，有符号右移则会导致负数变成一个很大的正数。
 
 ```js
-var reverseBits = function(n) {
-    let res = 0
-    for(let i = 0;i < 32 && n > 0;i++){
-        res = res | ((n & 1) << (31 - i))
-        n = n >>> 1
-    }
-  return res >>> 0
+var reverseBits = function (n) {
+  let res = 0;
+  for (let i = 0; i < 32 && n > 0; i++) {
+    res = res | ((n & 1) << (31 - i));
+    n = n >>> 1;
+  }
+  return res >>> 0;
 };
 ```
 
@@ -12163,7 +12236,7 @@ class Solution {
 
 暴力法就不讲了，这里记一下官方题解的几种方法：
 
-1. 二分查找：即找一个最大的 k，使得 $k^2 ≤ x$。左右边界分别设为 0 和 x/2，在这个范围中比较 mid的平方 和 x，最后取到最大的 mid 即可
+1. 二分查找：即找一个最大的 k，使得 $k^2 ≤ x$。左右边界分别设为 0 和 x/2，在这个范围中比较 mid 的平方 和 x，最后取到最大的 mid 即可
    这个思路有点类似于二分查找的应用的那几道题，即“平台”最大值，也就是找平台最右边的那个值
 
 ```js
@@ -12569,10 +12642,10 @@ while ((val & 1) === 0 && index < 32) {
 }
 ```
 
-即每次比较最后一位是不是 1，不是就右移。 
+即每次比较最后一位是不是 1，不是就右移。
 
 2. 遍历数组中的每个数，把每个数按照第 index 位区分，为 1 的放入一个数组，为 0 的放入另一个数组
-比较的方法和上面类似，将每个数先右移 index，然后和 1 与即可
+   比较的方法和上面类似，将每个数先右移 index，然后和 1 与即可
 
 ```js
 ((num >> index) & 1) === 0;
@@ -12682,7 +12755,8 @@ https://leetcode.cn/problems/divide-two-integers
 把二分查找的上限设为 `2**31-1`，下限设为 1，在这个范围中找一个数 mid，使得`mid * divisor <= dividend`即可。因为不一定能找到刚好等于的数，因此不用设置相等的情况（参考上面二分查找的题）
 
 核心代码就是这样：
-需要注意的是还需要快速积代替乘法，用移位运算代替除以2
+需要注意的是还需要快速积代替乘法，用移位运算代替除以 2
+
 ```js
 let left = 1;
 let right = MAX; // max就是上限数2**31-1
@@ -12694,94 +12768,97 @@ while (left <= right) {
     left = mid + 1;
   } else right = mid - 1;
 }
-return right // 最后的right就是结果
+return right; // 最后的right就是结果
 // 因为当小于等于时left还会移动，有可能会使left越过结果并大于right。所以要以right为准
 ```
 
-剩下的代码，也就是这个题最麻烦的地方，就是处理各种边界情况。边界情况大概有以下几种：（我们把上限`2**31-1`设为MAX，下限`-2**31`设为MIN）
-- 被除数是MAX
-  - 除数是-1，结果是MIN
-  - 除数是MIN，结果是-1
-- 被除数是0，结果是0
-- 被除数是MIN
-  - 除数是MAX，结果是-1
-  - 除数是-1，结果是MAX
-- 除数是MIN
-  - 被除数如果不是MIN，就都是0
-  - 被除数是MIN，结果是1
-- 除数是MAX
-  - 被除数如果不是MAX，都是0
+剩下的代码，也就是这个题最麻烦的地方，就是处理各种边界情况。边界情况大概有以下几种：（我们把上限`2**31-1`设为 MAX，下限`-2**31`设为 MIN）
+
+- 被除数是 MAX
+  - 除数是-1，结果是 MIN
+  - 除数是 MIN，结果是-1
+- 被除数是 0，结果是 0
+- 被除数是 MIN
+  - 除数是 MAX，结果是-1
+  - 除数是-1，结果是 MAX
+- 除数是 MIN
+  - 被除数如果不是 MIN，就都是 0
+  - 被除数是 MIN，结果是 1
+- 除数是 MAX
+  - 被除数如果不是 MAX，都是 0
 
 当然实际上这些边界情况并不用全写进去，只需要一部分就可以通过全部用例。代码如下：
+
 ```js
 var divide = function (dividend, divisor) {
-    const MAX = 2 ** 31 - 1
-    const MIN = -(2 ** 31)
-    let isNeg = false
-    if (dividend === 0) return 0
-    if (dividend === MIN) {
-        if (divisor === 1) return MIN
-        if (divisor === -1) return MAX
-    }
+  const MAX = 2 ** 31 - 1;
+  const MIN = -(2 ** 31);
+  let isNeg = false;
+  if (dividend === 0) return 0;
+  if (dividend === MIN) {
+    if (divisor === 1) return MIN;
+    if (divisor === -1) return MAX;
+  }
 
-    if (divisor === MIN) {
-        if (dividend === MIN) return 1
-        else return 0
-    }
-    // 计算正负
-    // 这里也是个很好的思路，用同一个布尔值，如果数取反那么布尔值也取反
-    if (dividend < 0) {
-        dividend = -dividend
-        isNeg = !isNeg
-    }
-    if (divisor < 0) {
-        divisor = -divisor
-        isNeg = !isNeg
-    }
+  if (divisor === MIN) {
+    if (dividend === MIN) return 1;
+    else return 0;
+  }
+  // 计算正负
+  // 这里也是个很好的思路，用同一个布尔值，如果数取反那么布尔值也取反
+  if (dividend < 0) {
+    dividend = -dividend;
+    isNeg = !isNeg;
+  }
+  if (divisor < 0) {
+    divisor = -divisor;
+    isNeg = !isNeg;
+  }
 
-    const quickAdd = (x, n) => {
-        if (n === 0) return 0
-        if (n === 1) return x
-        const y = quickAdd(x, Math.floor(n / 2))
-        return n % 2 === 0 ? y + y : y + y + x
-    }
+  const quickAdd = (x, n) => {
+    if (n === 0) return 0;
+    if (n === 1) return x;
+    const y = quickAdd(x, Math.floor(n / 2));
+    return n % 2 === 0 ? y + y : y + y + x;
+  };
 
-    let left = 1
-    let right = MAX
-    while (left <= right) {
-        const mid = left + Math.floor((right - left) / 2)
-        if (mid === MAX) break
-        if (quickAdd(divisor, mid) <= dividend) {
-            left = mid + 1
-        } else right = mid - 1
-    }
-    return isNeg ? -right : right
+  let left = 1;
+  let right = MAX;
+  while (left <= right) {
+    const mid = left + Math.floor((right - left) / 2);
+    if (mid === MAX) break;
+    if (quickAdd(divisor, mid) <= dividend) {
+      left = mid + 1;
+    } else right = mid - 1;
+  }
+  return isNeg ? -right : right;
 };
 ```
 
 ## 两数相加
 
-> 给你两个数a和b，求两个数的和，但不能用加法
+> 给你两个数 a 和 b，求两个数的和，但不能用加法
 
 位运算：
+
 1. 两个数的异或可以看作是两个数的无进位加法
 2. 两个数的与再左移一位（`(a & b) << 1`）可以看作是两个数的总的进位值。
 
 把这两个值相加，就可以得到结果。
-但是这两个值可能还有进位，因此转成一个循环，除了第一次的值是a和b，后面每次的和都是`两个数的异或值+两个数的进位值`，直到进位为0为止。
+但是这两个值可能还有进位，因此转成一个循环，除了第一次的值是 a 和 b，后面每次的和都是`两个数的异或值+两个数的进位值`，直到进位为 0 为止。
 
 ```js
-while(b !== 0){ // 注意这里是b!==0不是b > 0；考虑到a或b是负数的情况，extra也有可能是补码负数，只有完全为0才说明没有进位
-  const extra = (a & b) << 1
-  const sum = a ^ b
-  a = sum
-  b = extra
+while (b !== 0) {
+  // 注意这里是b!==0不是b > 0；考虑到a或b是负数的情况，extra也有可能是补码负数，只有完全为0才说明没有进位
+  const extra = (a & b) << 1;
+  const sum = a ^ b;
+  a = sum;
+  b = extra;
 }
 
-
 // 递归
-function sum(a,b){
-  if(a === 0) return b
-  return sum((a & b) << 1,a ^ b)
+function sum(a, b) {
+  if (a === 0) return b;
+  return sum((a & b) << 1, a ^ b);
 }
 ```

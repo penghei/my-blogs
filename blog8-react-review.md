@@ -169,6 +169,42 @@ class ErrorBoundary extends React.Component {
   - info：带有 componentStack key 的对象，其中包含有关组件引发错误的栈信息。（类似控制台输出错误的效果）
     这个生命周期在提交阶段调用
 
+---
+
+ErrorBoundary虽然只能捕获组件代码执行中抛出的错误，但可以通过一些方式让本来不能处理的错误被抛出。
+
+举个例子，在react-error-boundary这个库中，有一个useErrorBoundary的hook，返回一个showBoundary函数，可以在异步任务中调用这个函数来抛出可以被ErrorBoundary接受的错误。它的原理就是得到error修改state，然后直接在代码中throw出去这个error。这样组件会被更新，会被重新渲染，然后抛出错误。
+
+```js
+export function useErrorBoundary<Error = any>(): UseErrorBoundaryApi<Error> {
+  const [state, setState] = useState<{
+    error: Error | null;
+    hasError: boolean;
+  }>({
+    error: null,
+    hasError: false,
+  });
+
+  const memoized = useMemo(
+    () => ({
+      showBoundary: (error: Error) =>
+       // 修改错误状态
+        setState({
+          error,
+          hasError: true,
+        }),
+    }),
+    []
+  );
+  // 在外部抛出。如果组件更新，这里就会被执行
+  if (state.hasError) {
+    throw state.error;
+  }
+  return memoized;
+}
+```
+
+
 # Refs 转发
 
 React 组件不能直接通过 ref 获取其实例；理论上说，ref 只能应用于明确定义的 dom 元素（虽然实际上是虚拟 dom）

@@ -331,6 +331,13 @@ showWeather(
 </script>
 ```
 
+#### JSOP的安全问题
+
+jsonp是有一些很明显的安全问题的。
+
+1. XSS攻击：jsonp获取js代码并执行的方式，非常容易导致xss攻击。假如攻击者篡改或伪造返回的代码内容，就可能执行xss攻击。解决方式是可以对返回内容进行校验和过滤，防止恶意代码的插入；
+2. 数据泄露：由于jsonp返回的数据是明文形式的json，因此有着和jwt类似的问题，即数据泄露的风险。解决方式是可以对数据进行加密，以及采用https传输防止窃听。
+
 ### Nginx 反向代理
 
 ![](https://pic.imgdb.cn/item/6234574f5baa1a80ab235752.jpg)
@@ -718,10 +725,16 @@ Accept 字段通常表示一种“优先选择”，即浏览器希望服务器�
 
 - `Authorization`: Web 认证信息，通常用于携带 jwt、token 等认证信息。
 - `Cookie`：当前页面设置的任何 Cookie
-- `Host`：发出请求的页面所在的域
-- `Referer`：发出请求的页面的 URL
+- `Host`：标识请求的目标主机
+- `Referer`：发出请求的页面的 URL，表示请求的“来源”
+
+> Referer和Origin都是用于标识请求来源的字段，但也有一些区别：
+> - Origin通常会携带源的端口，并且不会携带路径、参数等信息；Referer则会携带具体的路径，但不会携带端口
+> - 用处不同
+> - Referer更多表示“跳转”，它的值不一定是某个固定的url，而是指请求来自哪里。比如先在浏览器中输入 `https://www.example.com/page1.html`，并点击该页面中的链接访问 `https://www.example.com/page2.html`，那么当浏览器向服务器发送请求获取page2.html时，它会在请求头中添加Referer头，告诉服务器该请求是从page1.html页面跳转过来的。
+
 - `User-Agent`：浏览器的用户代理字符串
-- `X-Forwarded-For`：用于保存最开始发起请求的客户端的 IP 地址。主要为了解决因为多个代理服务器导致的服务端无法获取到原始的客户端的 ip 地址的问题。值：
+- `X-Forwarded-For`：用于保存最开始发起请求的客户端的 IP 地址。主要为了解决因为多个代理服务器导致的服务端无法获取到原始的客户端的 ip 地址的问题。
 
 ```
 按顺序表示客户端ip、代理服务器1ip、代理服务器2ip等
@@ -753,6 +766,24 @@ X-Forwarded-For: 203.0.113.195, 70.41.3.18, 150.172.238.178
 2. `multipart/form-data`：该种方式也是一个常见的 POST 提交方式，通常表单上传文件时使用该种方式。
 3. `application/json`：服务器消息主体是序列化后的 JSON 字符串。
 4. `text/xml、text/plain`：该种方式主要用来提交 XML 格式、纯文本格式的数据。
+
+
+> `multipart/form-data`形式的请求体是一种多部分的数据格式常用于文件上传场景。多部分数据格式由多个部分组成，每个部分都有自己的Content-Type和内容。每个部分之间通过一定的分隔符进行分隔。
+> 在HTTP请求中，每个部分由一个首部和一个消息体组成。首部包含了该部分的元数据信息，例如Content-Disposition、Content-Type等；消息体则是该部分的实际内容，通常是一个文件或一段数据。
+> 举个例子，一个上传图片的多部分数据请求体可能长这样：
+> Content-Type: multipart/form-data;boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+> 
+> ------WebKitFormBoundary7MA4YWxkTrZu0gW
+> Content-Disposition: form-data; name="title"
+> 
+> My Image Title
+> ------WebKitFormBoundary7MA4YWxkTrZu0gW
+> Content-Disposition: form-data; name="image"; filename="example.jpg"
+> Content-Type: image/jpeg
+> 
+> (binary image data here)
+> ------WebKitFormBoundary7MA4YWxkTrZu0gW--
+> 在这个例子中，请求体由两个部分组成，一个是title字段，另一个是image文件。每个部分以分隔符（----WebKitFormBoundary7MA4YWxkTrZu0gW）开始和结束，并且包含了Content-Disposition和Content-Type等元数据信息，以及实际的消息体数据。
 
 ### HTTP 请求方法
 
@@ -2461,7 +2492,20 @@ Payload 就是存放有效信息的地方。这个名字像是特指飞机上承
 
 Signature 部分是对前两部分的签名，防止数据篡改。
 首先，需要指定一个密钥（secret）。这个密钥只有服务器才知道，不能泄露给用户。
-然后，使用 Header 里面指定的签名算法（默认是 HMAC SHA256），按照一定的公式产生签名。
+然后，使用 Header 里面指定的签名算法（默认是 HMAC SHA256），按照一定的公式用服务端保存的私钥产生签名。
+当服务端收到jwt时，会解析并验证签名部分，判断内容是否被修改过。
+
+生成JWT的过程如下：
+
+- 将头部和载荷分别用Base64编码，并用点号连接起来，形成一个字符串。
+- 使用私钥对该字符串进行签名，生成签名部分。
+- 将头部、载荷和签名三部分用点号连接起来，形成最终的JWT字符串。
+
+验证JWT的过程如下：
+
+- 将JWT字符串按点号拆分成头部、载荷和签名三部分。
+- 对头部和载荷部分进行Base64解码，然后将它们用点号连接起来，形成一个字符串。
+- 使用公钥对该字符串进行验证签名，如果签名验证通过，就说明JWT的内容没有被篡改过，可以信任其中的信息。
 
 #### jwt 安全问题
 

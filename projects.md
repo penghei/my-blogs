@@ -171,7 +171,7 @@ return <>{userLinks}</>;
   - 禁用魔法数字
   - useState 建议是`[xxxState,setXxxState]`的形式，以及 useRef 必须是 xxxRef 的形式，useReducer 必须返回 xxxReducer 的形式。这三个都是自定义的插件，参考工程化中编写插件的部分。
 
-关于plugin的
+关于 plugin 的
 
 #### husky
 
@@ -184,7 +184,7 @@ husky 是一个操作 git 钩子的工具。可以使用预设的钩子，在 gi
 
 > Git hooks 是一种在 Git 仓库中预定义的脚本，它可以在特定的 Git 操作时自动执行。Git hooks 可以在 Git 操作之前或之后执行一些自定义代码，比如在代码提交之前运行测试，或者在代码合并之前运行代码格式化工具等。
 > 在 Git 中，每个仓库都有一个 .git/hooks 目录，其中包含了一些可用的 Git hooks 脚本模板。这些模板可以被复制并重命名为不同的钩子名称，然后在其中编写脚本代码来实现自定义操作。Git hooks 脚本必须是可执行的（即要有执行权限）。
-> husky的核心代码其实很简单，就是通过配置git hooks的方式来实现要在git hooks阶段执行的任务。
+> husky 的核心代码其实很简单，就是通过配置 git hooks 的方式来实现要在 git hooks 阶段执行的任务。
 
 配置流程：
 
@@ -435,58 +435,64 @@ canvas.addEventListener("click", handleClick);
 
 问题：
 在项目中确实遇到了这样的问题：有一个这样的需求，即显示一个实时地图，实时地图内有很多点位，希望点击这些点位时，能获取到具体点的是哪个点位。
-这是一个常见的事件委托的需求，但是需要事件冒泡作为基础。由于konva的事件系统是自己模拟实现的，因此与dom的事件机制不一样，在使用时出现了一些问题。
+这是一个常见的事件委托的需求，但是需要事件冒泡作为基础。由于 konva 的事件系统是自己模拟实现的，因此与 dom 的事件机制不一样，在使用时出现了一些问题。
 
 个人尝试：
-- 尝试把onclick事件放到实时地图的矩形上，发现虽然地图表现为“包裹”着点位，但是实际上不能触发冒泡
+
+- 尝试把 onclick 事件放到实时地图的矩形上，发现虽然地图表现为“包裹”着点位，但是实际上不能触发冒泡
 - 然后猜测可能是跟先后顺序有关，尝试后也无效。
 - 最后猜测应该把实时点位作为地图的矩形的子元素，或者用一个大的元素包裹这两个元素，都不行
-- 如果把事件绑定在layer或stage上，这两个上面已经有其他事件的绑定了，并且实时地图和实时点位是选择渲染的，不一定有，因此希望把事件绑定在实时地图容器上，而不是绑定在顶层。
+- 如果把事件绑定在 layer 或 stage 上，这两个上面已经有其他事件的绑定了，并且实时地图和实时点位是选择渲染的，不一定有，因此希望把事件绑定在实时地图容器上，而不是绑定在顶层。
 
 查阅资料：
-- 官方文档，有讲事件的部分，但是没有详述冒泡的规则，并且react-konva文档中也没有说事件流的相关概念
-- github issues：查找有关事件冒泡的issues，没有，然后查找其他关于事件系统的issues，也没有
+
+- 官方文档，有讲事件的部分，但是没有详述冒泡的规则，并且 react-konva 文档中也没有说事件流的相关概念
+- github issues：查找有关事件冒泡的 issues，没有，然后查找其他关于事件系统的 issues，也没有
 - 最后，查看源码
-  - 先是了解konva事件系统的实现原理
+  - 先是了解 konva 事件系统的实现原理
     - 调试源码
     - 搜一些资料，查看事件原理
   - 然后搞清楚事件冒泡的机制：fireAndBubble，以及查找的“parent”到底是谁
-  - 最后了解到每个元素都有一个parent，但是parent只在Container中被设置，并且必须调用add方法。Container只有stage、layer和group，普通元素不行。
+  - 最后了解到每个元素都有一个 parent，但是 parent 只在 Container 中被设置，并且必须调用 add 方法。Container 只有 stage、layer 和 group，普通元素不行。
 
 解决方案
-- 在Container上放置事件监听。使用Group把实时地图和实时点位包裹起来，然后在Group上监听事件，即可。
-- 同时还了解到了取消事件冒泡的机制，在Group上通过cancelBubble防止事件进一步冒泡
+
+- 在 Container 上放置事件监听。使用 Group 把实时地图和实时点位包裹起来，然后在 Group 上监听事件，即可。
+- 同时还了解到了取消事件冒泡的机制，在 Group 上通过 cancelBubble 防止事件进一步冒泡
 
 2. 地图拖动、点位的可视区域渲染，边界控制。（可以不说）
 
 问题
-地图的底图比实际的canvas大小大很多，如果想显示完整的地图就有两种方式
-- 创建一个和底图一样大的canvas，然后通过css的滚动条进行移动
+地图的底图比实际的 canvas 大小大很多，如果想显示完整的地图就有两种方式
+
+- 创建一个和底图一样大的 canvas，然后通过 css 的滚动条进行移动
 - canvas 大小固定，通过拖动的方式移动地图
 
-第一种的问题：过大的canvas会导致性能出现问题，比如分辨率不足、渲染负担重等问题。
-解决方式：canvas大小固定，改变渲染区间。
+第一种的问题：过大的 canvas 会导致性能出现问题，比如分辨率不足、渲染负担重等问题。
+解决方式：canvas 大小固定，改变渲染区间。
 
 具体做法：
-- 首先创建固定大小的canvas，然后把整个底图渲染上去。canvas的大小不变，超出的区域是没有渲染的区域
+
+- 首先创建固定大小的 canvas，然后把整个底图渲染上去。canvas 的大小不变，超出的区域是没有渲染的区域
 - 实现拖动查看。具体功能点有
-  - 基本的拖动，通过监听mousemove等事件，修改canvas的translate，然后重新渲染，实现拖动效果
-  - 边界控制，不能让拖动超出底图的范围，因此拖动时计算边界，如果拖动时offset超出边界范围就不发生移动。
+  - 基本的拖动，通过监听 mousemove 等事件，修改 canvas 的 translate，然后重新渲染，实现拖动效果
+  - 边界控制，不能让拖动超出底图的范围，因此拖动时计算边界，如果拖动时 offset 超出边界范围就不发生移动。
   - 可视区域渲染：渲染所有点位时，先通过他们的坐标判断是否在可视区域，如果在才渲染，否则不进行渲染。
 
 拖动的实现
 
 基本思路：
-1. 记录一个offsetX和offsetY，表示canvas的translate值。每次绘制，都先`translate(offsetX,offsetY)`，然后执行绘制
-2. 监听canvas的mousedown、mousemove和mouseup事件，当mousemove执行时，获取实时的鼠标坐标，和mousedown时获取的鼠标坐标的差值就是偏移量，即offsetX和offsetY。
-3. 通过修改之后的offsetX和offsetX，如第一步操作。
 
-另外：react-konva中的实现：
+1. 记录一个 offsetX 和 offsetY，表示 canvas 的 translate 值。每次绘制，都先`translate(offsetX,offsetY)`，然后执行绘制
+2. 监听 canvas 的 mousedown、mousemove 和 mouseup 事件，当 mousemove 执行时，获取实时的鼠标坐标，和 mousedown 时获取的鼠标坐标的差值就是偏移量，即 offsetX 和 offsetY。
+3. 通过修改之后的 offsetX 和 offsetX，如第一步操作。
 
-- 其他方式基本不变，但是不需要自己手动绘制，只需要修改layer的x和y即可。
+另外：react-konva 中的实现：
+
+- 其他方式基本不变，但是不需要自己手动绘制，只需要修改 layer 的 x 和 y 即可。
 
 ```js
-const canvasRef = useRef<HTMLCanvasElement>(null);
+const canvasRef = useRef < HTMLCanvasElement > null;
 const mousePos = useRef([0, 0]);
 const mouseOffset = useRef([0, 0]);
 const currMouseOffset = useRef([0, 0]);
@@ -502,16 +508,14 @@ const isShapeVisible = (shapeX: number, shapeY: number) => {
     -originX + width,
     -originY + height,
   ];
-  return (
-    shapeX >= left && shapeX <= right && shapeY >= top && shapeY <= bottom
-  );
+  return shapeX >= left && shapeX <= right && shapeY >= top && shapeY <= bottom;
 };
 
 const draw = (type: TranslateType) => {
   // 绘制前先translate
-  ctx.clearRect(0,0,width,height)
+  ctx.clearRect(0, 0, width, height);
   ctx.translate(mouseOffset.current[0], mouseOffset.current[1]);
-  // ... 
+  // ...
   // 点位的数组，每一项绘制之前先检查当前点位是否在可视区域
 };
 
@@ -554,6 +558,52 @@ useEffect(() => {
   canvas.addEventListener("mousedown", onMouseDown);
 }, []);
 ```
+
+## 其他注意点
+
+1. 移动端？
+
+如果项目是在移动端的，可能需要什么样的操作使得地图可以在移动端正常使用？
+- 响应式：由于移动端屏幕大小不同，因此canvas大小可能需要改变
+- 性能：移动端性能可能不如pc端，因此需要考虑更多的性能问题，比如web worker等，以及canvas的一些优化方式
+- 操作：移动端操作事件和pc端不同（比如touch事件和mouse事件），需要做出适配
+- 地图加载：可以采用压缩、地图分块加载等方式加快地图加载速度，这个也适用于pc端
+
+2. 定位到机器人的问题
+
+还需要一个功能：把地图中心点定位到机器人的位置。核心其实还是通过控制 translate
+
+3. 部署？
+
+项目是怎么部署的？（这个可能有点来不及了）
+
+4. 长连接的方式
+
+除了轮询和 websocket，还可以怎么样保持地图的实时性？
+
+- SSE：SSE 是一种基于 HTTP 协议的单向通信机制，它允许服务器向客户端推送事件流。客户端通过建立一个持久化的 HTTP 连接，从服务器接收事件数据。
+  SSE 通常适用于服务端推送少量数据给客户端。
+  SSE 的使用类似 websocket，但他发送数据的单位是事件流，即服务器端发送的响应内容应该使用值为 text/event-stream 的 MIME 类型。每个通知以文本块形式发送，并以一对换行符结尾。
+
+```js
+const evtSource = new EventSource("//api.example.com/ssedemo.php", {
+  withCredentials: true,
+});
+evtSource.onmessage = function (event) {
+  const newElement = document.createElement("li");
+  const eventList = document.getElementById("list");
+
+  newElement.innerHTML = "message: " + event.data;
+  eventList.appendChild(newElement);
+};
+```
+
+- 长轮询，不过不适用于本项目。
+
+5. 项目中替换技术栈有什么工程化的方式？
+
+- 渐进式替换，新的组件用新的技术栈，旧的组件用以前的
+- 做好自测和 QA 的测试
 
 # 秒杀平台项目
 
@@ -689,7 +739,7 @@ export const getBuildingInfo = (building_id: string) =>
   - 压缩：image-minimizer-webpack-plugin
 - loader：自己编写的 loader
 - 按需导入 antd 的组件和 css
-  - 组件：默认支持tree-shaking
+  - 组件：默认支持 tree-shaking
   - 样式：使用 babel-plugin-import 的 style 配置来引入样式。参考https://blog.csdn.net/zwkkkk1/article/details/88823366和https://juejin.cn/post/7117293855958892574
 - 骨架屏
 
@@ -709,10 +759,13 @@ export const getBuildingInfo = (building_id: string) =>
 - 部分数据持久化，比如秒杀到期时间戳不用频繁同步
 - 秒杀接口的节流处理，多次点击只会生效一次
 
-### 其他
+#### 其他方面优化
 
-- 倒计时的实现：setTimeout 不一定准确。
+这些优化方式并不一定是显式的优化，更多的是一种提升项目健壮性的方式
 
-> setTimeout、setInterval 属于定时触发器线程属于 macrotask，它的回调会受到 GUI 渲染、事件触发、http 请求、等的影响。所以这两个不适合做精准的定时。
+1. 针对可能的服务端问题：做好对服务端处理速度缓慢或对服务端崩溃的处理，比如
+  - 购买链接设置足够长的超时时间，或者通过倒计时，当时间到的时候加长超时时间。
+  - 采用合适的loading方式，使得用户请求之后不能再请求，相当于一种节流的方式
+  - 告知用户加载可能很慢等
+  - 如果服务器崩溃导致不能正常显示，要采取fallback措施，比如服务端返回特定的错误码时（500/504）提示好用户，并暂时关闭购买按钮，设置定时器在一段时间后再开始
 
-怎么实现一个精准的倒计时？setInterval 不行，需要用 setTimeout 实现，并且不断修正。

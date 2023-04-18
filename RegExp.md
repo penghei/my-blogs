@@ -393,8 +393,23 @@ str.replace(/\w+/g,'')
   `[1][2]abcd`.replace(/\[(\w+)\]/g,(match) => `[${+match * 2}]`)
   ```
   这里就是通过match参数取到了匹配的值，在函数内可以更方便的计算。
+  注意：match的值是整个正则的匹配结果，而不是括号内的匹配结果。比如
+  ```js
+  "你好#1#,天气是#2#".replace(/#(\d+)#/g, (match) => {})
+  ```
+  这个函数中match的值应该是`#1#`和`#2#`，而不是1和2，因为match的值是整个匹配结果。
   - `p1,p2...pn`：对应于上述的$1，$2 等，代表第 n 个括号匹配的字符串。用法和match差不多。
+  - `index`：用于match之后的第二个参数，表示匹配的索引。
+  ```js
+  const str = "你好#1#,天气是#2#";
+  const arr = ["jack", "晴天"];
 
+  const result = str.replace(/#(\d+)#/g, function (match, index) {
+    return arr[parseInt(index) - 1];
+  });
+
+  console.log(result); // "你好jack,天气是晴天"
+  ```
 基本上了解这些方法，就可以应付大多数字符串替换的情况了。
 
 

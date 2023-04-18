@@ -130,7 +130,7 @@ function flatten(arr, depth = 1) {
 }
 ```
 
-或者不使用 concat 函数直接抹平，而是利用 reduce 逐个拼接数组中的元素，如果遇到数组类型就递归一次直到深度为 0
+其他递归写法：
 
 ```js
 function flatten(arr) {
@@ -147,6 +147,21 @@ function flatten(arr) {
     res = res.concat(flatten(val));
   }
   return res;
+}
+
+// 不用concat也可以
+// concat的主要作用就是可以接受一个值，也可以接受一个数组，把所有的值连接到新数组
+// 不用concat的话，就区分一下是否是数组就可以了
+function flatten(arr, depth = Infinity) {
+  if (depth === 0) return arr;
+  let newArr = [];
+  for (const item of arr) {
+    if (Array.isArray(item)) {
+      const resArr = flatten(item, depth - 1);
+      newArr.push(...resArr);
+    } else newArr.push(item);
+  }
+  return newArr;
 }
 ```
 
@@ -790,8 +805,8 @@ class Promise {
     }
   }
   // catch可以简单实现为执行then的第二个参数
-  catch(onReject){
-    this.then(()=>{},onReject)
+  catch(onReject) {
+    this.then(() => {}, onReject);
   }
 }
 ```
@@ -2231,7 +2246,7 @@ upload("hello world", 3000);
 
 ## 计时器相关
 
-### setTimeout递归调用校准
+### setTimeout 递归调用校准
 
 js 的 setTimeout、setInterval 的执行是不准确的。由于 js 单线程的缘故，有些情况可能会导致实际的 timeout 比设定的长，或实际的 interval 比指定的 interval 长。
 
@@ -2250,12 +2265,12 @@ function startTimer() {
 }
 ```
 
-### 用setTimeout实现setInterval
+### 用 setTimeout 实现 setInterval
 
-原理：和上面的调用校准类似。我们递归调用myInertval函数，每次检查调用的时间差值：
+原理：和上面的调用校准类似。我们递归调用 myInertval 函数，每次检查调用的时间差值：
 
-- 如果差值和interval的差值<=0，说明定时时间到了，立即执行
-- 如果差值>0，说明还没到，那就用setTimeout延迟剩余时间执行。
+- 如果差值和 interval 的差值<=0，说明定时时间到了，立即执行
+- 如果差值>0，说明还没到，那就用 setTimeout 延迟剩余时间执行。
 
 ```js
 let pre = Date.now();
@@ -2268,13 +2283,12 @@ function myInterval(fn, interval) {
     myInterval(fn, interval);
   } else {
     setTimeout(() => {
-      myInterval(fn,interval);
+      myInterval(fn, interval);
     }, remain);
   }
 }
-myInterval(() => console.log(1),1000)
+myInterval(() => console.log(1), 1000);
 ```
-
 
 ## 手写 dayjs 时间格式化功能
 
@@ -3854,42 +3868,42 @@ button.change(); // 输出：false
 比如说：
 
 ```js
-function getName(){
+function getName() {
   console.log(name);
 }
 const name = "aaa";
 getName(); // aaa
 ```
 
-当执行getName时，打印出的name就是外层的name。**注意这个“外层”，指的是整个外层的变量，和具体位置没关系，和先后顺序也没关系。**
-即使const是在函数声明之后定义的，但依然不影响变量的查找。
-只要getName函数的调用在name声明和赋值之后，就能取到正常的值。
+当执行 getName 时，打印出的 name 就是外层的 name。**注意这个“外层”，指的是整个外层的变量，和具体位置没关系，和先后顺序也没关系。**
+即使 const 是在函数声明之后定义的，但依然不影响变量的查找。
+只要 getName 函数的调用在 name 声明和赋值之后，就能取到正常的值。
 
-另外，TDZ也指的是执行时才会出现的作用域问题，而不是在作用域查找时才会出现。比如：
+另外，TDZ 也指的是执行时才会出现的作用域问题，而不是在作用域查找时才会出现。比如：
 
 ```js
 getName(); // Cannot access 'name' before initialization
 const name = "aaa";
-function getName(){
+function getName() {
   console.log(name);
 }
 ```
 
-很显然TDZ和函数定义和变量定义的先后顺序没有关系，只和函数执行的前后有关系。
+很显然 TDZ 和函数定义和变量定义的先后顺序没有关系，只和函数执行的前后有关系。
 
-### 8. 函数的构造调用和直接调用的this
+### 8. 函数的构造调用和直接调用的 this
 
 ```js
-function Foo(){
+function Foo() {
   console.log(this);
-  return this
+  return this;
 }
-Foo.prototype.getName = function (){
+Foo.prototype.getName = function () {
   console.log(1);
-}
+};
 console.log(Foo());
-console.log(new Foo())
-new Foo().getName()
+console.log(new Foo());
+new Foo().getName();
 ```
 
 输出：
@@ -3903,15 +3917,84 @@ window
 
 解释：
 
-当构造函数直接返回一个对象时，new构造函数的结果就是这个对象。不过有一个例外，就是返回this的情况。
-按理来说Foo函数内的this指向window，new Foo()应该返回window才对；但是new Foo同时也会把this指向创建的实例对象。因此Foo函数内的this实际是构造出的实例对象，返回的也是这个，而不是默认情况下的window或undefined
+当构造函数直接返回一个对象时，new 构造函数的结果就是这个对象。不过有一个例外，就是返回 this 的情况。
+按理来说 Foo 函数内的 this 指向 window，new Foo()应该返回 window 才对；但是 new Foo 同时也会把 this 指向创建的实例对象。因此 Foo 函数内的 this 实际是构造出的实例对象，返回的也是这个，而不是默认情况下的 window 或 undefined
 
 ```js
-function Foo(){
+function Foo() {
   // const this = {}
-  return this
+  return this;
 }
 ```
 
-既然new Foo能成功创建，因此getName方法也能正常执行。
+既然 new Foo 能成功创建，因此 getName 方法也能正常执行。
+
+# 其他乱七八糟的题目
+
+## 通过 js 修改全局样式
+
+可以通过`document.querySelectorAll("*")`获取所有元素，然后通过 getComputeStyle 获取每个元素样式，再通过`element.style`修改样式。
+
+比如，把所有的背景白色修改为红色：
+
+```js
+document.querySelectorAll("*").forEach((element) => {
+  if (getComputedStyle(element).backgroundColor === "rgba(0, 0, 0, 0)") {
+    element.style.backgroundColor = "red";
+  }
+});
+```
+
+注意最好先查看一下具体的值再做匹配。
+
+## 颜色单位互相转换
+
+### 16进制转rgb
+
+方法就是把16进制的每2位通过parseInt转化为10进制的数即可。
+
+代码如下：
+
+```js
+function hexToRgb(color) {
+  const colorStrArr = color.split("");
+  colorStrArr.shift();// 去掉开头的#
+  let colors = colorStrArr.join('')
+  // 如果是简写，每个位置都要加倍一次
+  if(colors.length === 3){
+    const newColors = new Array(6)
+    for(let i = 0;i < colorStrArr.length;i++){
+      newColors[i * 2] = colorStrArr[i]
+      newColors[i * 2 + 1] = colorStrArr[i]
+    }
+    colors = newColors.join('')
+  }
+  const r = parseInt(colors.slice(0,2),16)
+  const g = parseInt(colors.slice(2,4),16)
+  const b = parseInt(colors.slice(4,6),16)
+  console.log(`rgb(${r}, ${g}, ${b})`);
+}
+```
+
+### rgb转16进制
+
+如下：
+
+```js
+function rgbToHex(color) {
+  const regex = /\d+/g;
+  const matches = [];
+
+  let match;
+  while ((match = regex.exec(color))) {
+    matches.push(parseInt(match[0]));
+  }
+  return `#${matches[0].toString(16).padEnd(2, "0").toUpperCase()}${matches[1]
+    .toString(16)
+    .padEnd(2, "0")
+    .toUpperCase()}${matches[2].toString(16).padEnd(2, "0").toUpperCase()}`;
+}
+```
+
+这里的关键其实是用exec循环提取数字。然后转成16进制数即可。padEnd可以很方便地填充字符以保证2位数。
 

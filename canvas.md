@@ -562,10 +562,10 @@ canvas.toBlob(callback, type, encoderOptions);
 function transforms() {
   const context = canvas.getContext("2d");
 
-  context.translate(100, 100); //先变换再绘制
+  context.translate(100, 100); // 先变换再绘制
   context.rotate((Math.PI / 180) * 60);
   context.scale(2, 0.5);
-  // context.transform(a, b, c, d, e, f);//变换矩阵，六个值分别对应矩阵横数前6个数
+  context.transform(a, b, c, d, e, f); // 变换矩阵，六个值分别对应矩阵横数前6个数
 
   context.fillRect(0, 0, 50, 30);
 }

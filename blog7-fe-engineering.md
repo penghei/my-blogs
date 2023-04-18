@@ -1723,3 +1723,118 @@ turbopack 的缺点也很明显
 
 1. 未成熟：目前只能在 nextjs 中体验，官方文档上使用的是一个 nextjs 项目的实例，而 next12 之后用的都是 turbopack，不能单独拿出来用。更深入的了解也只能依赖官方文档
 2. 生态一般：webpack、vite 相关的插件目前还无法兼容和创建新的生态，因此生态比较一般。
+
+# 项目上线
+
+## 错误监控和上报
+
+### 错误类型和捕获方式
+
+对于一个线上的项目，错误监控和上报是很重要的功能。已发布的项目通常不易修改代码，因此需要通过提前注入错误监控代码的方式来捕获可能的错误并及时上报，根据错误的情况进行合理的修复和提示。
+
+前端异常通常可以分为以下几种类型:
+
+- js 代码执行时异常；
+- promise 类型异常；
+- 资源加载类型异常；
+- 网络请求类型异常；
+- 跨域脚本执行异常；
+
+不同类型的异常，捕获方式不同。
+
+1. js运行时：
+  - try catch包裹代码块
+  - window.onerror
+
+2. promise：promise.reject抛出的异常不能被trycatch捕获，也无法被 window.onerror捕获（唯一的例外：在async函数内的await之后的promise如果reject会被try catch捕获，其他情况下不行）。
+  - window.onrejectionhandled
+
+3. 静态资源异常：图片等静态资源的加载失败（还可能是js、css等）
+  - `window.addEventListener('error', callback, true)`，因为这类错误事件不会冒泡，只能捕获。
+  - 每个具体资源的onerror回调，比如每个img元素的onerror；在实际项目中可以封装一个img组件，onerror上设置上报方式即可。
+
+4. 网络请求异常：这种一般只能在开发时由开发者增加网络请求异常的捕获，比如Promise.catch，xhr.onerror等。
+
+5. 跨域脚本执行异常：浏览器对跨域脚本中的异常，不会报告错误的细节，它的 msg 只有 'Script error' 信息，没有具体的行、列、类型信息。
+  - 设置script crossorigin，采用cors获取脚本，从而获取详细信息
+  - 再通过第一种方式捕获
+
+### 监控方式
+
+具体来说，对于上线的项目，监控错误可以依靠以下几个方法：
+
+1. 开发者代码添加，即通过添加一些捕获代码来实现错误捕获和处理，防止出现uncaught的错误。
+  - trycatch捕获，可以是针对网络请求，也可以放到比较大的一个范围
+  - 通过windo.error捕获
+  - react错误边界等框架捕获的方式
+2. 第三方监控工具。通常是利用注入代码的方式来捕获错误；捕获的原理和手动添加代码相同，但通常会采取合适的上报方式和对错误信息的自动整理、筛选等。
+
+第三方监控工具的基本原理就是通过上述错误捕获方式来监控的。比如在项目中注入代码，覆写 window.onerror：
+
+```js
+oldErrorHandler = window.onerror;
+window.onerror = function (msg, url, line, column, error) {
+    // 收集异常信息并上报
+    triggerHandlers('error', {
+        column: column,
+        error: error,
+        line: line,
+        msg: msg,
+        url: url,
+    });
+    if (oldErrorHandler) {
+        return oldErrorHandler.apply(this, arguments);
+    }
+    return false;
+};
+
+```
+
+更有甚者，为了方便捕获异步代码中的错误，还可以覆写setTimeout、rAF等原生方法：
+
+```js
+var originSetTimeout = window.setTimeout;
+window.setTimeout = function() {
+    var args = [];
+    for (var _i = 0; _i < arguments.length; _i++) {
+        args[_i] = arguments[_i];
+    }
+    var originalCallback = args[0];
+    // wrap$1 会对 setTimeout 的入参 callback 使用 try...catch 进行包装
+    // 并在 catch 中上报异常
+    args[0] = wrap$1(originalCallback, {
+        mechanism: {
+            data: { function: getFunctionName(original) },
+            handled: true,
+            // 异常的上下文是 setTimeout
+            type: 'setTimeout',
+        },
+    });
+    return original.apply(this, args);
+}
+```
+
+还可以覆写addEventListener等方法。覆写的目的是方便得到错误的来源。这样来自于异步、网络请求、事件等不同来源的错误都会被标记出到底是哪里的错误。
+
+
+
+
+## 性能监控
+
+和错误上报方式类似，可以通过获取performance相关的api来得到性能检测数据。由于每个用户的情况可能不同，因此需要监控一些关键数据，并在生产环境中保留这些关键数据。
+
+除了performance，外部的监控方式也是一种可以参考的依据，比如chrome的lighthouse。不过这种方式依赖于外部工具，可能会受到用户网络、设备的影响，可能不够权威和可信，因此只能作为测试数据，方便开发环境下的调整，不太适合用于生产环境的主要监控。
+
+一些前端监控平台也可以对性能进行监控，比如当加载速度过慢时，就会上报一个警告。监控和上报的方式和错误上报类似。
+
+
+
+# 关于项目中技术选型的替换问题
+
+最好不要在项目过程中删除、替换已经在使用的技术栈。比如替换正在使用的状态管理库等。
+
+如果一定要替换，那么最好的方式是这样：
+1. 渐进式替换，可以让新代码使用新的技术栈，让老的代码依旧使用旧的，然后慢慢替换旧的代码中的内容
+2. 做好测试，包括单测、自测等，同时可能需要QA同学再做测试，以保证功能的正常使用。
+
+

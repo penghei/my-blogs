@@ -9744,6 +9744,61 @@ var findOrder = function (numCourses, prerequisites) {
 };
 ```
 
+## 无向图的成环判断
+
+无向图的成环判断和有向图的核心差别在于：需要在搜索时记录每个节点的父节点 parent，防止返回自己的父节点。
+因为无向图本质是双向的有向图，因此每个节点都需要保证不能返回自己的父节点。其他方面和有向图完全相同。
+
+```js
+function hasCycle(n, edges) {
+  const map = new Map();
+  for (let edge of edges) {
+    const [u, v] = edge;
+    if (!map.has(u)) {
+      map.set(u, [v]);
+    } else {
+      map.set(u, [...map.get(u), v]);
+    }
+    if (!map.has(v)) {
+      map.set(v, [u]);
+    } else {
+      map.set(v, [...map.get(v), u]);
+    }
+  }
+
+  const visited = new Set();
+  const onPath = new Set();
+
+  let hasCycle = false;
+  function dfs(node, parent) {
+    if (onPath.has(node)) {
+      hasCycle = true;
+      return;
+    }
+    if (node == undefined || hasCycle || visited.has(node)) return;
+
+    visited.add(node);
+    onPath.add(node);
+    const neighbours = map.get(node);
+    if (neighbours && neighbours.length) {
+      for (let neighbour of neighbours) {
+        // 这里，必须判断不能走到父节点
+        if (neighbour !== parent) {
+          dfs(neighbour, node);
+        }
+      }
+    }
+    onPath.delete(node);
+  }
+
+  for (let i = 0; i < n; i++) {
+    dfs(i, undefined);
+  }
+  return hasCycle;
+}
+
+```
+
 ## 二分图
 
 二分图的定义：二分图的顶点集可分割为两个互不相交的子集，图中每条边依附的两个顶点都分属于这两个子集，且两个子集内的顶点不相邻。

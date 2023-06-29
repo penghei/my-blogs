@@ -328,30 +328,50 @@ https://leetcode.cn/problems/remove-duplicates-from-sorted-array/
 
 > 给你一个 升序排列 的数组 nums ，请你 原地 删除重复出现的元素，使每个元素 只出现一次 ，返回删除后数组的新长度。元素的 相对顺序 应该保持 一致 。
 
-这道题按理来说很简单，但是确实没想到......
-还是记一下：
-方法就是，双指针 i 和 j，i 作为慢指针，j 作为快指针。
+这道题有一个更通用的题型，即，使每个元素最多出现k次。k可能是1、2甚至更多，每个数字可以少于k次，但不能多于k次。
 
-- 当`nums[i] === nums[j]`，给 j++，一直到不相等停止，
-- 令`nums[i+1] = nums[j]`。这一步非常关键，核心就是这个`i+1`；这样下一次遍历 i 恰好走到刚刚改变的 i+1 的位置上，j 又会和 i 不同，继续向前走到下一个不同的数字上
-
-代码：
-
+通用的模板是下面这样：
 ```js
-var removeDuplicates = function (nums) {
-  if (nums.length === [...new Set([...nums])].length) return nums.length;
-  let j = 0;
-  let i = 0;
-  while (j < nums.length) {
-    while (nums[j] === nums[i]) j++;
-    nums[i + 1] = nums[j];
-    i++;
+var removeDuplicates = function (nums, k) {
+  let i = 0
+  let j = 0
+  while(j < nums.length){
+      if(i < k || nums[i - k] !== nums[j]){
+          nums[i] = nums[j]
+          i++
+      }
+      j++
   }
-  return i;
+  return i
 };
 ```
 
-如果希望把重复的元素完全删掉，那么就让 i 在要删除的元素前面停下来就可以
+下面解释一下。
+
+首先，这个方法的核心是控制i什么时候移动；之前的方法总是在关注j什么时候移动，但是j移动到最后一个位置时通常i还没到边缘，这样就会导致最后的边界出问题。解决方法就是让j自然增长，而控制i什么时候移动，其他时刻i不动。
+
+```js
+if(i < k || nums[i - k] !== nums[j])
+```
+
+`i < k`表示前k个元素都不做任何赋值。也就是说前k个值一定是要保留的，不管是重复的k个还是不重复的k个；前面k个位置的i和j同步自增，直到i和j都为k为止。
+当`i >= k`之后，每次判断的是i的前面k个元素和j的关系。比如k = 2时，判断i的上上一个元素是否和j相等。
+
+```
+举个例子
+[1,1,1,2,2,3] k = 2
+
+当i = 2，j = 2
+比较nums[0]和nums[2]
+发现重复，即nums[i - k] === nums[j]
+这是已经有了两个1，那么当前i位置上的数就应该被替换，所以i不动，j继续走到下一个和i当前数不同的位置为止
+
+当j = 3，nums[j]为2，此时nums[i - k] !== nums[j]
+替换i所在的数，然后让i向前走
+```
+
+最后得到的i就是边界。
+
 
 ## 移动零
 
@@ -9796,7 +9816,6 @@ function hasCycle(n, edges) {
   }
   return hasCycle;
 }
-
 ```
 
 ## 二分图
@@ -10523,6 +10542,150 @@ class WordDictionary {
     return dfs(0, this.trie.root);
   }
 }
+```
+
+### 搜索推荐系统
+
+https://leetcode.cn/problems/search-suggestions-system/
+
+> 给你一个产品数组 products 和一个字符串 searchWord ，products 数组中每个产品都是一个字符串。
+> 请你设计一个推荐系统，在依次输入单词 searchWord 的每一个字母后，推荐 products 数组中前缀与 searchWord 相同的最多三个产品。如果前缀相同的可推荐产品超过三个，请按字典序返回最小的三个。
+> 请你以二维列表的形式，返回在输入 searchWord 每个字母后相应的推荐产品的列表。
+>
+> 示例 1：
+>
+> 输入：products = ["mobile","mouse","moneypot","monitor","mousepad"], searchWord = "mouse"
+> 输出：[
+> ["mobile","moneypot","monitor"],
+> ["mobile","moneypot","monitor"],
+> ["mouse","mousepad"],
+> ["mouse","mousepad"],
+> ["mouse","mousepad"]
+> ]
+> 解释：按字典序排序后的产品列表是 ["mobile","moneypot","monitor","mouse","mousepad"]
+> 输入 m 和 mo，由于所有产品的前缀都相同，所以系统返回字典序最小的三个产品 ["mobile","moneypot","monitor"]
+> 输入 mou， mous 和 mouse 后系统都返回 ["mouse","mousepad"]
+
+这道题虽然看着就像是用前缀树的样子，但是实际上可以不使用前缀树，直接暴力法也可以过。
+有一个比较有技巧的方法，即逐渐缩小搜索范围；每次 searchWord 向后一个字符，就缩小搜索的 products 的范围，然后在缩小之后的 products 内部进行筛选即可。
+这个方法比较简单，这里不再写了。
+说说前缀树写法：之前的前缀树的 search 只是判断 true/false，即只是判断是否包含这个单词；但这里需要的不是判断是否包含，而是包含的具体是哪些。
+因此我们需要改造一下前缀树，让其能够存储匹配到的字符串。具体来说，在每个 TrieNode 上增加一个 words 数组，用于存储匹配到当前 node 时符合条件的单词有哪些。
+举个例子：
+
+```
+products = ["abc","abe","a","abd"], searchWord ="abe"
+
+trie = {
+  root: {
+    child: {
+      a: {
+        child: {
+          b: {
+            child: {
+              c: { child: {}, words: ['abc'] },
+              d: { child: {}, words: ['abd'] },
+              e: { child: {}, words: ['abe'] }
+            },
+            words: ['abc', 'abd', 'abe']
+          }
+        },
+        words: ['a', 'abc', 'abd', 'abde']
+      }
+    },
+    words: []
+  }
+}
+```
+
+每个节点的 words 存储的实际上是这个节点对应的前缀匹配到的单词。比如 a 节点的 words 就是所有以 a 开头的字符串组成的数字，b 节点就是以 ab 为开头的，依次类推。
+修改一下原来的 insert 代码，其实就是增加一个数组：
+
+```js
+insert(word) {
+  let node = this.root;
+  for (const char of word) {
+    const index = char.charCodeAt(0) - this.baseCode;
+    if (!node.next[index]) {
+      // 如果next数组还没有当前字符
+      node.next[index] = new TrieNode();
+    }
+    node = node.next[index];
+    node.words.push(word) // 注意顺序，应该是先走到子节点上再创建，不然root上就会有words了
+  }
+  node.isEnd = true;
+}
+```
+
+在查找时，如果在该节点就能匹配上（node[index]存在），说明当前节点的 words 内的所有单词都包含要查找的部分。比如上面的例子中`['abc', 'abd', 'abe']`数组，如果查找的词是`'ab'`，显然这里所有的词都是包含查找词的。由此就可以得到匹配结果。
+
+需要注意的是，这里需要将整个查找词匹配完才能记录 words 数组，即在遍历完成后再输出。
+
+```js
+searchPrefix(word) {
+  let node = this.root;
+  for (const char of word) {
+    const index = char.charCodeAt(0) - this.baseCode;
+    if (!node.next[index]) return [];
+    node = node.next[index];
+  }
+  return node.words;
+}
+```
+
+全部代码：
+
+```js
+class TrieNode {
+  constructor(isEnd = false, next = new Array(26)) {
+    this.next = next;
+    this.words = [];
+  }
+}
+class Trie {
+  constructor() {
+    this.root = new TrieNode(); // 根节点不表示任何一个字符
+    this.baseCode = "a".charCodeAt(0);
+  }
+  insert(word) {
+    let node = this.root;
+    for (const char of word) {
+      const index = char.charCodeAt(0) - this.baseCode;
+      if (!node.next[index]) {
+        node.next[index] = new TrieNode();
+      }
+      node = node.next[index];
+      // 这里的判断是这道题需要前三个匹配结果，其他时候可以去掉
+      if (node.words.length < 3) node.words.push(word);
+    }
+  }
+  search(word) {
+    let node = this.root;
+    for (const char of word) {
+      const index = char.charCodeAt(0) - this.baseCode;
+      if (!node.next[index]) return [];
+      node = node.next[index];
+    }
+    return [...node.words];
+  }
+}
+/**
+ * @param {string[]} products
+ * @param {string} searchWord
+ * @return {string[][]}
+ */
+var suggestedProducts = function (products, searchWord) {
+  products.sort();
+  const trie = new Trie();
+  for (const pro of products) {
+    trie.insert(pro);
+  }
+  const res = [];
+  for (let i = 0; i < searchWord.length; i++) {
+    res.push(trie.search(searchWord.slice(0, i + 1)));
+  }
+  return res;
+};
 ```
 
 # 其他类型题目

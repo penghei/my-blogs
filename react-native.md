@@ -71,6 +71,97 @@ FlatList、VirtualizedList、SectionList的基本实现原理都相同，关键�
 
 优化方式在官方文档已经讲的很清楚了：https://reactnative.cn/docs/optimizing-flatlist-configuration
 
+#### FlatList
+
+FlatList除了包含虚拟列表的基本功能之外，还有一些其他组件功能，常用于native开发中，比如：
+
+- 支持水平布局模式。
+- 行组件显示或隐藏时可配置回调事件。
+- 支持单独的头部组件。
+- 支持单独的尾部组件。
+- 支持自定义行间分隔线。
+- 支持下拉刷新。
+- 支持上拉加载。
+- 支持跳转到指定行（ScrollToIndex）。
+- 支持多列布局。
+
+这其中比较关键的是上拉下拉以及跳转，这也是在开发中常用的方法。
+
+FlatList有几个比较重要的使用要点：
+
+1. 当某行滑出渲染区域之外后，其内部状态将不会保留。也就是说对于每个ListItem组件来说，滑出渲染区域之后组件将会被卸载或重置复用，其上的状态不会保留；
+
+比如一个功能是修改列表的某一项，如果只是修改了对应的ListItem组件内部的state或props则不能保留，除非修改的是data源数据。
+
+2. 组件继承自PureComponent，如果其props在浅比较中是相等的，则不会重新渲染。所以请先检查你的renderItem函数所依赖的props数据（包括data属性以及可能用到的父组件的 state），如果是一个引用类型（Object 或者数组都是引用类型），则需要先修改其引用地址（比如先复制到一个新的 Object 或者数组中），然后再修改其值，否则界面很可能不会刷新。
+
+上面这一段是官方文档的内容。其实大概意思就是更新FlatList的data属性时需要修改索引，否则不会更新。也就是说即使你通过setState修改了data，但data如果没有被重新创建，就还是不会更新。
+
+举个例子：
+
+下面这样修改state是不会让FlatList更新的：
+```js
+data.push({id: 'xxx', name: 'ttt' });
+setData(data);
+```
+
+这样是可以的：
+
+```js
+data.push({id: 'xxx', name: 'ttt' });
+setData([...data]);
+```
+
+> 当然这种方式容易造成内存的浪费，如果频繁增加元素，那么每次data都需要重新创建。为了优化这个问题，我们可以采用两个数组交替复制的方式。这是一个小技巧，可以参考https://juejin.cn/post/7201425436835151930
+
+除了上面这种情况之外，如果列表还依赖于其他state，还可以使用extraData属性来控制FlatList更新。当然extraData也和data一样，也有浅比较的检查。
+
+我们可以修改extraData，来让FlatList强制更新。比如：
+
+```js
+const App = () => {
+  const [data, setData] = useState(['Item 1', 'Item 2', 'Item 3']);
+  const [extraData, setExtraData] = useState(false);
+
+  const updateData = () => {
+    setData(['Item 1', 'Item 2', 'Item 3', 'Item 4']);
+    setExtraData(!extraData); // 切换extraData的值，强制FlatList重新渲染
+  };
+
+  return (
+    <View>
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item}
+        renderItem={renderItem}
+        extraData={extraData} // 将extraData属性设置为依赖项的状态值
+      />
+      <Button title="Update Data" onPress={updateData} />
+    </View>
+  );
+};
+```
+
+当然这种方式不是很好。大多数情况下，extraData主要用于处理额外依赖数据的情况。
+
+
+3. 为了优化内存占用同时保持滑动的流畅，列表内容会在屏幕外异步绘制。这意味着如果用户滑动的速度超过渲染的速度，则会先看到空白的内容。这是为了优化不得不作出的妥协，你可以根据自己的需求调整相应的参数，而我们也在设法持续改进。
+
+这也是上面介绍虚拟列表时提到的，可能的白屏情况。FlatList提供了很多可能的调优属性，比如
+
+- getItemLayout：返回列表元素的偏移、高度等信息，避免动态测量内容尺寸的开销。如果不提供，FlatList需要通过自行测量的方式得知每个元素的偏移量等属性，就会导致每次计算开销增大。（但是如果每个元素高度不确定这个属性就不能用）
+- keyExtractor：用于为给定的 item 生成一个不重复的 key。如果没有这个属性，默认抽取item.key作为 key 值。若item.key也不存在，则使用数组下标。因此最好提供好key值，key在react的重要性不言而喻。
+- maxToRenderPerBatch：每次批处理更新时更新多少项目，或者说在渲染时每批最多渲染多少个列表项。默认情况下，FlatList会将更新操作批处理成一批，以减少重绘的次数，从而提高性能。这个和下面的属性都是用于控制批处理过程的。
+- updateCellsBatchingPeriod：用于设置批处理的时间间隔（以毫秒为单位），如果在这个时间间隔内有多个更新操作，则这些更新操作会被批处理成一批。如果设置为0，则表示禁用批处理，每个更新操作都会立即重绘。**如果不设置updateCellsBatchingPeriod属性，则默认禁用批处理。**
+
+> 批处理，可以让FlatList能够在一段时间内更新一组Cell，而不是一次更新所有Cell。
+> 批处理和虚拟列表的渲染无关，它主要指的是当FlatList需要更新时如何进行分批更新，而非一次性更新全部项。
+> 比如在FlatList中进行一系列更新操作，例如添加、删除、移动或更新列表项。这些更新操作将被添加到批处理队列中，而不会立即执行重绘操作。
+> FlatList还会等待updateCellsBatchingPeriod属性所设置的时间间隔。在这个时间间隔内，如果有其他更新操作，则这些更新操作也将被添加到批处理队列中。
+> 最后当时间间隔到达后，FlatList将执行批处理操作，将批处理队列中的所有更新操作合并成一个单独的操作，并执行重绘操作。这样，就可以减少重绘的次数，从而提高性能。
+> 这个过程类似react的批量更新，大致思路是相同的。
+
+4. 默认情况下每行都需要提供一个不重复的 key 属性。你也可以提供一个keyExtractor函数来生成 key。
 
 
 # 简单原理

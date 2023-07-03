@@ -94,7 +94,6 @@ RACF 分别表示响应(Response)、动效(Animation)、完成(Completion)、跟
   - 公司内项目性能指标平台：RCF，尤其是C评分很低
   - 会场页首屏渲染慢，拖动列表时掉帧卡顿，屏幕闪烁
   - 其他：比如CLS过大，骨架屏
-
 - 性能问题指标，初期性能问题发现，优化效果的体现
   - 监测工具（优化效果体现）
     - 接入的公司内部平台（优化之后，C指标上升，C时间减少）
@@ -119,6 +118,7 @@ RACF 分别表示响应(Response)、动效(Animation)、完成(Completion)、跟
         - [mrn分包](https://km.sankuai.com/docs/mrn/page/293886135)
         - [rn分包](https://reactnative.cn/docs/ram-bundles-inline-requires)
         - 其他相关文档：[MRN 页面加载提速之内联引用与RAM bundle](https://km.sankuai.com/page/298098639)、[MRN页面加载速度优化方式之懒加载](https://km.sankuai.com/page/275397094)
+      - 通过**Priority组件**降低Carousel的渲染优先级，使其延后渲染
       - 骨架屏优化和占位元素，防止页面大幅度抖动，降低CLS
       - 商卡背景图和头部背景图采用优化方案中的图片优化方式
     - 主会场掉帧、闪烁、卡顿
@@ -128,6 +128,11 @@ RACF 分别表示响应(Response)、动效(Animation)、完成(Completion)、跟
     - 预加载
       - 会场页预加载视频沉浸页
       - 点击跳链时预加载二级页
+    - 图片优化
+      - 降低分辨率
+      - 预加载，预先占位
+      - 懒加载
+      - 设置加载优先级。优先级机制在组件内含有，也可以使用上面说的Priority组件实现
     - 其他
       - 类比RACF官方文档中的优化案例，挑选一些编一些。比如ScrollView改FlatList之类的
       - 图片优化，比如懒加载、webp格式、降低分辨率等

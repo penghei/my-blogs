@@ -76,55 +76,55 @@ RACF 分别表示响应(Response)、动效(Animation)、完成(Completion)、跟
 
 项目中主要的优化方向：
 
-| 优化方案         | 方案说明                                                     | 优化方向 |
-| ---------------- | ------------------------------------------------------------ | -------- |
-| 预请求           | [预请求](https://sky.sankuai.com/docs/gfe/cube-native-docs/developGuide/project/performance/prenetwork.html)(提供mrn桥自定义触发时机) | 前置优化 |
-| 预下载           | jsbundle预下载                                               | 前置优化 |
-| 预请求时机前置   | [前置触点矩阵组件接入文档](https://km.sankuai.com/collabpage/1379387274) | 前置优化 |
-| 下载格式优化     | [兜底转换Webp方案介绍](https://km.sankuai.com/page/1335665871) | 图片优化 |
-| 下载尺寸自适应   | [图片自适应裁剪方案介绍](https://km.sankuai.com/page/1313094221) | 图片优化 |
-| 图片分级加载     | [RN图片下载优先级说明文档](https://km.sankuai.com/page/1454785150) | 图片优化 |
-| 图片预下载       | [图片预下载](https://km.sankuai.com/page/1496720567)         | 图片优化 |
-| 包体大小优化     | [MRN Bundle 体积的深度优化](https://km.sankuai.com/page/192468332) | 包体优化 |
-| 内联 + ramBundle | [MRN 页面加载提速之内联引用与 RAM bundle](https://km.sankuai.com/page/295532469) | 包体优化 |
+| 优化方案         | 方案说明                                                                                                                                | 优化方向 |
+| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| 预请求           | [预请求](https://sky.sankuai.com/docs/gfe/cube-native-docs/developGuide/project/performance/prenetwork.html)(提供 mrn 桥自定义触发时机) | 前置优化 |
+| 预下载           | jsbundle 预下载                                                                                                                         | 前置优化 |
+| 预请求时机前置   | [前置触点矩阵组件接入文档](https://km.sankuai.com/collabpage/1379387274)                                                                | 前置优化 |
+| 下载格式优化     | [兜底转换 Webp 方案介绍](https://km.sankuai.com/page/1335665871)                                                                        | 图片优化 |
+| 下载尺寸自适应   | [图片自适应裁剪方案介绍](https://km.sankuai.com/page/1313094221)                                                                        | 图片优化 |
+| 图片分级加载     | [RN 图片下载优先级说明文档](https://km.sankuai.com/page/1454785150)                                                                     | 图片优化 |
+| 图片预下载       | [图片预下载](https://km.sankuai.com/page/1496720567)                                                                                    | 图片优化 |
+| 包体大小优化     | [MRN Bundle 体积的深度优化](https://km.sankuai.com/page/192468332)                                                                      | 包体优化 |
+| 内联 + ramBundle | [MRN 页面加载提速之内联引用与 RAM bundle](https://km.sankuai.com/page/295532469)                                                        | 包体优化 |
 
 ## 优化大纲
 
 - 性能问题来源，有什么性能问题
-  - 公司内项目性能指标平台：RCF，尤其是C评分很低
+  - 公司内项目性能指标平台：RCF，尤其是 C 评分很低
   - 会场页首屏渲染慢，拖动列表时掉帧卡顿，屏幕闪烁
-  - 其他：比如CLS过大，骨架屏
+  - 其他：比如 CLS 过大，骨架屏
 - 性能问题指标，初期性能问题发现，优化效果的体现
   - 监测工具（优化效果体现）
-    - 接入的公司内部平台（优化之后，C指标上升，C时间减少）
-    - 代码接入：计算渲染时间，通过raptor实现线上打点记录，统计首屏加载包下载、加载耗时、主接口耗时、首屏模块渲染时长。
-    - rn调试工具，mrn自带的RCF计算
+    - 接入的公司内部平台（优化之后，C 指标上升，C 时间减少）
+    - 代码接入：计算渲染时间，通过 raptor 实现线上打点记录，统计首屏加载包下载、加载耗时、主接口耗时、首屏模块渲染时长。
+    - rn 调试工具，mrn 自带的 RCF 计算
   - 检查工具（检查性能问题）
     - whydidyourender
     - profiler
     - Fllipper（暂定）
 - 怎么做的优化
   - 不同方面
-    - 主会场的C，首屏渲染
+    - 主会场的 C，首屏渲染
     - 主会场掉帧问题，重复渲染
   - 优化目标
-    - 主流程页面 RCF 平均分提升到流畅（>= 60 分），其中 C 指标期望提升到 40 以上。（优化前会场的C只有2，优化后希望提升至30以上）
+    - 主流程页面 RCF 平均分提升到流畅（>= 60 分），其中 C 指标期望提升到 40 以上。（优化前会场的 C 只有 2，优化后希望提升至 30 以上）
   - 整体方案：
-    - 经调研发现到餐（[到餐主流程RACF优化立项](https://km.sankuai.com/collabpage/1536226885)）和到综（[RCF优化方案全景](https://km.sankuai.com/page/1341247797)）有部分优化手段，但整体缺乏更精细地打点数据，难以评估具体优化策略带来的收益和遇到的瓶颈。因此我们决定先建立完备的页面性能打点统计当前的页面性能瓶颈，然后先上一版通用低成本的优化策略，最好再根据性能瓶颈进行专项优化
-    - 线上和线下的性能观测数据不同，因此采用不同的方式监测性能。线上通过raptor打点上报以及平台统计数据，线下可以通过[RACF指标线下测试 SOP](https://km.sankuai.com/page/1305841457)进行分析
+    - 经调研发现到餐（[到餐主流程 RACF 优化立项](https://km.sankuai.com/collabpage/1536226885)）和到综（[RCF 优化方案全景](https://km.sankuai.com/page/1341247797)）有部分优化手段，但整体缺乏更精细地打点数据，难以评估具体优化策略带来的收益和遇到的瓶颈。因此我们决定先建立完备的页面性能打点统计当前的页面性能瓶颈，然后先上一版通用低成本的优化策略，最好再根据性能瓶颈进行专项优化
+    - 线上和线下的性能观测数据不同，因此采用不同的方式监测性能。线上通过 raptor 打点上报以及平台统计数据，线下可以通过[RACF 指标线下测试 SOP](https://km.sankuai.com/page/1305841457)进行分析
   - 优化方式
     - 主会场页面加载时间
-      - 懒加载Carousel和video，初始采用三个商卡占位，加载完成Carousel和video后再显示。懒加载的理论依据：
-        - [mrn分包](https://km.sankuai.com/docs/mrn/page/293886135)
-        - [rn分包](https://reactnative.cn/docs/ram-bundles-inline-requires)
-        - 其他相关文档：[MRN 页面加载提速之内联引用与RAM bundle](https://km.sankuai.com/page/298098639)、[MRN页面加载速度优化方式之懒加载](https://km.sankuai.com/page/275397094)
-      - 通过**Priority组件**降低Carousel的渲染优先级，使其延后渲染
-      - 骨架屏优化和占位元素，防止页面大幅度抖动，降低CLS
+      - 懒加载 Carousel 和 video，初始采用三个商卡占位，加载完成 Carousel 和 video 后再显示。懒加载的理论依据：
+        - [mrn 分包](https://km.sankuai.com/docs/mrn/page/293886135)
+        - [rn 分包](https://reactnative.cn/docs/ram-bundles-inline-requires)
+        - 其他相关文档：[MRN 页面加载提速之内联引用与 RAM bundle](https://km.sankuai.com/page/298098639)、[MRN 页面加载速度优化方式之懒加载](https://km.sankuai.com/page/275397094)
+      - 通过**Priority 组件**降低 Carousel 的渲染优先级，使其延后渲染
+      - 骨架屏优化和占位元素，防止页面大幅度抖动，降低 CLS
       - 商卡背景图和头部背景图采用优化方案中的图片优化方式
     - 主会场掉帧、闪烁、卡顿
-      - 通过whyyourender检查重复渲染出现的位置，即列表滚动导致redux更新导致重渲染
-      - 使用全局事件代替redux
-      - 使用Animation代替state更新（nav渐变色、背景图放大）
+      - 通过 whyyourender 检查重复渲染出现的位置，即列表滚动导致 redux 更新导致重渲染
+      - 使用全局事件代替 redux
+      - 使用 Animation 代替 state 更新（nav 渐变色、背景图放大）
     - 预加载
       - 会场页预加载视频沉浸页
       - 点击跳链时预加载二级页
@@ -132,20 +132,33 @@ RACF 分别表示响应(Response)、动效(Animation)、完成(Completion)、跟
       - 降低分辨率
       - 预加载，预先占位
       - 懒加载
-      - 设置加载优先级。优先级机制在组件内含有，也可以使用上面说的Priority组件实现
+      - 设置加载优先级。优先级机制在组件内含有，也可以使用上面说的 Priority 组件实现
     - 其他
-      - 类比RACF官方文档中的优化案例，挑选一些编一些。比如ScrollView改FlatList之类的
-      - 图片优化，比如懒加载、webp格式、降低分辨率等
-      - 包体优化，比如lodash、moment等
+      - 类比 RACF 官方文档中的优化案例，挑选一些编一些。比如 ScrollView 改 FlatList 之类的
+      - 图片优化，比如懒加载、webp 格式、降低分辨率等
+      - 包体优化，比如 lodash、moment 等
       - 接口优化，比如会场刷新的分散请求，会场页到沉浸页的数据缓存等
-      - 内存优化，可见于[MRN内存优化](https://km.sankuai.com/page/652206431)
+      - 内存优化，可见于[MRN 内存优化](https://km.sankuai.com/page/652206431)
+      - 渲染优化，常见方式可见https://zhuanlan.zhihu.com/p/152146482，从中挑一两个实现
   - 其他业内优化方式
-    - [住宿门票主流程MRN化实践总结](https://km.sankuai.com/page/200118658)
+    - [住宿门票主流程 MRN 化实践总结](https://km.sankuai.com/page/200118658)
 - 优化效果->体现于性能指标
   - 优化了多少
-    - C指标提升
-    - 响应时间原本3000ms以上->减少1000ms左右
+    - C 指标提升
+    - 响应时间原本 3000ms 以上->减少 1000ms 左右
     - 闪烁情况消失，帧数提升并能稳定五六十，极少出现掉帧
-    - CLS降低，体验变好
+    - CLS 降低，体验变好
     - 二级页进入速度更快，秒开率更高
 
+还需要了解的一些点，可以在文档搜下
+
+- 首屏渲染，计算指标、依据，内部优化方式
+- async-storage，缓存请求数据
+- 轮播组件优化
+- 页面直出方案
+- 优先级渲染，图片优先级加载案例
+- 懒加载和分包方案的实际用例
+- 一些特殊的方式，比如
+  - 分批次渲染/渐进式渲染/延迟渲染，这三个类似，因为都是大致按照延迟渲染的方式进行
+  - 按需渲染，比如对于浮层或者二级界面
+  - 请求分布，按需请求，不在首屏需要的请求可以分离（比如券包和会场list）

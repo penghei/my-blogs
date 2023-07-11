@@ -10,6 +10,101 @@ categories: React
 
 rn和react有一点不太相同的是，rn更像是一个完善的框架，其内部包含了大量的内置组件，这些组件通常含有很多props，因此学习rn的一个关键点就是搞清这些组件的使用方式，以及他们的内部实现、区别等。
 
+## 交互
+
+### 导航
+
+rn使用的导航是react-navigation开源库，本质上是一个类似react router的路由功能，通过堆栈记录的方式来完成页面的跳转、数据的传递等。
+rnav实现的导航和react router类似，实际上是应用内部的页面切换，比如很多应用的底部tab切换等。如果要在不同的rn打包出的页面间跳转，就不能使用rnav了。
+
+> A key difference between how this works in a web browser and in React Navigation is that React Navigation's native stack navigator provides the gestures and animations that you would expect on Android and iOS when navigating between routes in the stack.
+
+正如官方文档所说，rnav就是在模拟web端的路由实现，在基础上还增加了适用于不同平台的跳转动画、手势识别等。
+在使用方面，rnav和react router也很相似，通过Stack.Navigator包裹Stack.Screen，即可实现不同页面的切换。
+
+在rnav中有一个特点，即用户离开上一个页面时，该页面对应的页面组件不会被卸载；当用户返回该页面时，也不会再次触发渲染。这点和在web端是不同的。
+
+> 具有屏幕 A 和 B 的堆栈导航器。导航到 A 后，调用其 componentDidMount。当压入 B 时，它的 componentDidMount 也会被调用，但 A 仍然挂载在堆栈上，因此不会调用它的 componentWillUnmount 。
+
+可以通过rnav提供的hooks或事件监听来得到用户当前是否进入或离开页面。
+
+### 动画
+
+rn的动画有两个类别：
+
+- Animated: 声明式动画。即，rn通过预先声明一个动画的值、时间等，将其传递给特定组件的style属性。然后在恰当的时机内通过调用start、stop等方法来开始、结束动画。
+
+举个例子：
+
+```js
+import React, { useRef, useEffect } from 'react';
+import { Animated, Text, View } from 'react-native';
+
+const FadeInView = (props) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current  // 透明度初始值设为0
+
+  React.useEffect(() => {
+    Animated.timing(                  // 随时间变化而执行动画
+      fadeAnim,                       // 动画中的变量值
+      {
+        toValue: 1,                   // 透明度最终变为1，即完全不透明
+        duration: 10000,              // 让动画持续一段时间
+      }
+    ).start();                        // 开始执行动画
+  }, [fadeAnim])
+
+  return (
+    <Animated.View                 // 使用专门的可动画化的View组件
+      style={{
+        ...props.style,
+        opacity: fadeAnim,         // 将透明度绑定到动画变量值
+      }}
+    >
+      {props.children}
+    </Animated.View>
+  );
+}
+```
+
+Animated.View就是专门执行动画的组件，类似的还有Animated.Text、Image等等。
+Animated动画通常有着比修改state实现的动画更好的性能。一般来说动画的实现可能是通过rAF等js代码，不断通过bridge将动画数据发送给原生端进行渲染，并不会直接修改动画组件的state。
+
+如果在timing函数传入的参数中加一个属性，就可以启用原生动画驱动。通过下发给原生的形式，让动画在native上执行，从而大大提升动画的性能，避免和js线程的冲突。
+
+> 启用原生驱动，我们在启动动画前就把其所有配置信息都发送到原生端，利用原生代码在 UI 线程执行动画，而不用每一帧都在两端间来回沟通。如此一来，动画一开始就完全脱离了 JS 线程，因此此时即便 JS 线程被卡住，也不会影响到动画了。
+
+```js
+Animated.timing(this.state.animatedValue, {
+  toValue: 1,
+  duration: 500,
+  useNativeDriver: true, // <-- 加上这一行
+}).start();
+```
+
+但是有一个缺陷是，这样的动画通常不能应用于布局改变，比如改变元素宽高、定位等，而只能用于元素的透明度、颜色等修改。
+
+- LayoutAnimation：可以用于一些布局动画的实现，并且用法更简单。
+
+比如：
+
+```js
+// part 1: 使用普通的state来定义变量
+state = {
+    bottom: 0
+}
+
+// part 2: 
+// 此处假设我们在某个View的style中，使用了this.state.bottom这个变量作为bottom的值
+LayoutAnimation.spring();
+this.setState({ bottom: 20 }); // 只要改变state，就可以生效动画
+```
+
+spring方法是LayoutAnimation的一个预设，其他预设还有linear、easeout等，和通常的动画速度曲线一致。
+当然也可自定义动画，可以参考[官方文档](https://reactnative.dev/docs/animations#layoutanimation-api)
+
+
+
+
 ## 组件
 
 ### 核心组件

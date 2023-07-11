@@ -3105,19 +3105,17 @@ https://leetcode.cn/problems/sqrtx/
  * @return {number}
  */
 var mySqrt = function (x) {
-  let left = 0;
-  let right = x;
-  while (left <= right) {
-    const mid = left + Math.floor((right - left) / 2);
-    if (mid ** 2 === x) {
-      return mid;
-    } else if (mid ** 2 < x) {
-      left = mid + 1;
-    } else {
-      right = mid - 1;
+    if(x === 0 || x === 1) return x
+    let left = 0;
+    let right = x;
+    // 本质上是在求第一个大于target的数，然后减一即可
+    // target = floor(sqrt(x))
+    while (left < right) {
+        const mid = (left + right) >> 1;
+        if (mid * mid <= x) left = mid + 1
+        else right = mid
     }
-  }
-  return left - 1;
+    return left - 1;
 };
 
 // 还有一种方法
@@ -12022,7 +12020,7 @@ var reconstructQueue = function (people) {
 
 - 与：同为 1 结果为 1，其他都为 0。比如`110 & 010 = 010`
 - 或：只要有一个 1 结果就为 1，只有同为 0 结果才为 0。`110 | 010 = 110`
-- 异或：相同为 1，不同为 0，即“负负得正，正正得正，正负得负，负正得负”。`110 ^ 010 = 011`
+- 异或：相同为 0，**不同为 1**，`110 ^ 010 = 100`
 
 > js 可以通过前缀 0b 或 0B 表示二进制数字。但是只能作为字面量形式存在，如果作为变量，实际上还是在以十进制的形式计算。
 > 但是这并不影响左移右移、与或异或等操作。两个十进制数进行与操作，本质上还是对他们的二进制形式操作，只是得到的结果还是十进制而已。因此大多数位运算的题目还是可以做的。
@@ -12042,7 +12040,9 @@ var reconstructQueue = function (people) {
 
 3. `a ^ a = 0`，即异或，一个数和它本身做异或运算结果为 0，即 `a ^ a = 0`；一个数和 0 做异或运算的结果为它本身，即 `a ^ 0 = a`。并且异或操作遵循结合律、交换律，可以无视顺序。
 
-这个操作常见于把一组数字异或起来，往往剩下的那个数字就是一个特殊值。比如下面的这道题就是。
+两个数字异或的结果是保留两个数字的位中不同的位。比如`10010110 ^ 11001010 = 10100011`，结果的这个数字的每一位1都是两个数不同的位。比如[汉明距离](https://leetcode.cn/problems/hamming-distance)这道题，要统计两个数的每个位不同的，即我们将两个数异或之后数1的个数就好了。
+
+还有一种题型是把一组数字异或起来，往往剩下的那个数字就是一个特殊值。比如下面的这道题就是。
 还有一道下面的题的变种，即<a href="https://leetcode.cn/problems/missing-number/">丢失的数字</a>这道题
 
 ### 只出现一次的数字
@@ -12827,7 +12827,6 @@ var singleNumber = function (nums) {
 这道题核心思路还是利用异或，也就是和第一道题一样的思路。
 
 我们把所有数字都异或在一起，相同的数会被消去，**因此最后得到的异或结果一定是这两个单独的数异或的结果**。比如示例 1 中，所有数异或的结果就是`3^5`的结果
-。
 所以下一步就是考虑怎么把这两个数分离出来。异或的特点是，相同的位为 0，不同的位为 1，也就是说这个异或的结果中为 1 的位就是这两个数不同的位。
 
 ```

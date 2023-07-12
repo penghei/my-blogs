@@ -138,7 +138,7 @@ RACF 分别表示响应(Response)、动效(Animation)、完成(Completion)、跟
       - 图片优化，比如懒加载、webp 格式、降低分辨率等
       - 包体优化，比如 lodash、moment 等
       - 接口优化，比如会场刷新的分散请求，会场页到沉浸页的数据缓存等
-      - 内存优化，可见于[MRN 内存优化](https://km.sankuai.com/page/652206431)
+      - 内存优化，可见于[MRN 内存优化](https://km.sankuai.com/page/652206431)。还有一个内存优化的点是，当离开页面时清除视频资源，终止播放，卸载组件，以减少内存消耗
       - 渲染优化，常见方式可见https://zhuanlan.zhihu.com/p/152146482，从中挑一两个实现
   - 其他业内优化方式
     - [住宿门票主流程 MRN 化实践总结](https://km.sankuai.com/page/200118658)

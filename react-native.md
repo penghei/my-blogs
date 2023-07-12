@@ -480,4 +480,5 @@ Objective-C 会向 Block 中传入参数和 BlockId，然后在 Block 内部调�
 
 ## 新架构
 
-
+https://medium.com/coox-tech/deep-dive-into-react-natives-new-architecture-fb67ae615ccd
+https://juejin.cn/post/7063738658913779743

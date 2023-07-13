@@ -330,26 +330,26 @@ https://km.sankuai.com/page/883771103
 
 ## 架构（旧版）
 
-rn的基本架构如下图
+rn 的基本架构如下图
 
 ![](https://pic.imgdb.cn/item/64aeeecc1ddac507cc02f153.jpg)
 
 从图中可以看到有几个关键的部分
 
-- **js代码**：即react代码的部分
-- **js引擎**：解释和执行 JavaScript 代码。在 React Native 里面，JavaScriptCore 负责 bundle 产出的 JS 代码的解析和执行。
+- **js 代码**：即 react 代码的部分
+- **js 引擎**：解释和执行 JavaScript 代码。在 React Native 里面，JavaScriptCore 负责 bundle 产出的 JS 代码的解析和执行。
 
-js引擎通常有几个：
-- Hermes：最新的安卓端js引擎，优势是比较轻便，并且针对安卓做了专门的优化
-- JavaScriptCore：在ios上的引擎，也是safari的引擎
-- V8：web端引擎，在native端的性能上不如上面两个
+js 引擎通常有几个：
+
+- Hermes：最新的安卓端 js 引擎，优势是比较轻便，并且针对安卓做了专门的优化
+- JavaScriptCore：在 ios 上的引擎，也是 safari 的引擎
+- V8：web 端引擎，在 native 端的性能上不如上面两个
 
 - **bridge**：原生端和 JavaScript 交互是通过 Bridge 进行的，Bridge 的作用就是给 React Native 内嵌的 JS Engine 提供原生接口的扩展供 JS 调用。
 
 所有的本地存储、图片资源访问、图形图像绘制、3D 加速、网络访问、震动效果、NFC、原生控件绘制、地图、定位、通知等都是通过 Bridge 封装成 JS 接口以后注入 JS Engine 供 JS 调用。理论上，任何原生代码能实现的效果都可以通过 Bridge 封装成 JS 可以调用的组件和方法, 以 JS 模块的形式提供给 RN 使用。
 
-- **原生模块**：即native侧的api、模块等，可以通过bridge让js进行调用
-
+- **原生模块**：即 native 侧的 api、模块等，可以通过 bridge 让 js 进行调用
 
 ## 渲染
 
@@ -393,7 +393,7 @@ shadow tree 和原生 view 树有何不同呢？后者去掉了前者结构之�
 
 rn 项目的首次渲染流程可以分为几步：
 
-1. Native 打开 RN 页面（在此之前，js上下文、引擎已被加载完毕，桥已建立，bundle也被加载到native中开始执行）
+1. Native 打开 RN 页面（在此之前，js 上下文、引擎已被加载完毕，桥已建立，bundle 也被加载到 native 中开始执行）
 1. JS 线程运行，Virtual DOM Tree 被创建
 1. JS 线程异步通知 Shadow Thread 有节点变更
 1. Shadow Thread 创建 Shadow Tree
@@ -418,7 +418,7 @@ rn 项目的首次渲染流程可以分为几步：
 这种方式的优点是，Main Thread 不会阻塞 (block)，也就是说，UI 渲染是流畅的，所以用户体验不会卡顿
 但是桥调用方式使得所有交互都是异步的。对于需要比较强烈实时性的场景，比如频繁的交互、快速的更新、动画等都有可能造成一种延迟感。并且当需要传输的数据非常大时，本身的内存消耗和对于数据处理的时间消耗也会非常大。
 
-另外，rn的渲染消耗要比web端大得多。因为react完成fiber的创建之后，shadow线程也要维护一棵树来实现构建，这个过程比web端的dom操作要繁琐很多，更何况线程之间的通信本就是异步、效率不高的。因此rn的优化中对于渲染控制应该要求更高
+另外，rn 的渲染消耗要比 web 端大得多。因为 react 完成 fiber 的创建之后，shadow 线程也要维护一棵树来实现构建，这个过程比 web 端的 dom 操作要繁琐很多，更何况线程之间的通信本就是异步、效率不高的。因此 rn 的优化中对于渲染控制应该要求更高
 
 从上向下看 rn 的渲染过程则为：
 
@@ -478,16 +478,14 @@ BatchedBridge.enqueueNativeCall(moduleID, methodID, args, onFail, onSuccess);
 
 ### 基本通信原理
 
-假设不通过rn，js和native仅通过引擎也可完成基本的通信。比如native侧和js侧都把想共享的模块暴露到全局，让对方获取并调用。但这样会导致大量的全局变量污染，所以为了规范这个通信过程，React Native 自己实现了 Bridge。
+假设不通过 rn，js 和 native 仅通过引擎也可完成基本的通信。比如 native 侧和 js 侧都把想共享的模块暴露到全局，让对方获取并调用。但这样会导致大量的全局变量污染，所以为了规范这个通信过程，React Native 自己实现了 Bridge。
 
-bridge本质上就是js和native的互相调用，夹杂着一些参数的传递。
-
+bridge 本质上就是 js 和 native 的互相调用，夹杂着一些参数的传递。
 
 ### js 调用 native
 
 js 是一个不能自执行的语言，意思就是 js 必需一个执行它的“引擎”。在 ios 上是 JavaScript Core，在安卓上则有专门执行 js 的 c++部分。
 因此 js 调用 native 的过程，本质上可以理解为是引擎执行 js，然后将 js 的执行结果或在 js 中的某些操作传递给 native 的过程。
-
 
 以 ios 上的 objective-c 为例，React Native 解决这个问题的方案是在 Objective-C 和 JavaScript 两端都保存了一份配置表，里面标记了所有 Objective-C 暴露给 JavaScript 的模块和方法。这样，无论是哪一方调用另一方的方法，实际上传递的数据只有 ModuleId、MethodId 和 Arguments 这三个元素，它们分别表示类、方法和方法参数，当 Objective-C 接收到这三个值后，就可以通过 runtime 唯一确定要调用的是哪个函数，然后调用这个函数。
 
@@ -503,7 +501,7 @@ js 是一个不能自执行的语言，意思就是 js 必需一个执行它的�
 
 ### native 调用 js
 
-native调用js代码就比较简单了，通过 moduleid 和 methodid 完成方法的调用，通过这两个参数可以找到 JS 侧定义的方法模块。
+native 调用 js 代码就比较简单了，通过 moduleid 和 methodid 完成方法的调用，通过这两个参数可以找到 JS 侧定义的方法模块。
 
 ![](https://pic.imgdb.cn/item/64aef4881ddac507cc0c090f.jpg)
 
@@ -517,8 +515,6 @@ Objective-C 会向 Block 中传入参数和 BlockId，然后在 Block 内部调�
 
 ![](https://pic2.imgdb.cn/item/6464bee50d2dde5777c3dfd9.jpg)
 
-
-
 ## 其他概念
 
 ### bundle
@@ -526,21 +522,21 @@ Objective-C 会向 Block 中传入参数和 BlockId，然后在 Block 内部调�
 在 React web 应用中，打包，部署到上线的产物，是一个 html ，css，js 文件的集合体，最后把这些产物放在服务器上就可以了。
 但是在 RN 中，最后打包产物是一个 js 文件，叫做 jsbundle ，在 Native 端运行 RN 项目，本质上是远程拉取了 jsbundle ，并通过上述的 js 引擎运行当前 jsbundle，每次运行一个 bundle 就需要外层容器提供一个 js 引擎。
 
-一个bundle可以对应一个页面，也可通过路由的形式对应多个页面。
+一个 bundle 可以对应一个页面，也可通过路由的形式对应多个页面。
 
-bundle的产生其实就是在rn的入口文件中注册的组件。在 RN 中每一个应用都有一个入口文件，RN 中提供了注册根本应用的方法，那就是 AppRegistry，这一点和 React web 应用会有一些区别，web 应用中，主要依赖于 react-dom 中提供的 api ，但是在 RN 项目中，无需再下载 react-dom，取而代之的是 react-native 包。
+bundle 的产生其实就是在 rn 的入口文件中注册的组件。在 RN 中每一个应用都有一个入口文件，RN 中提供了注册根本应用的方法，那就是 AppRegistry，这一点和 React web 应用会有一些区别，web 应用中，主要依赖于 react-dom 中提供的 api ，但是在 RN 项目中，无需再下载 react-dom，取而代之的是 react-native 包。
 
 ```js
-import {AppRegistry} from 'react-native'
+import { AppRegistry } from "react-native";
 /* 根组件 */
-import App from './app' 
+import App from "./app";
 
-AppRegistry.registerComponent('Root', () => <App />)
+AppRegistry.registerComponent("Root", () => <App />);
 ```
 
-在应用程序启动阶段，当native端加载完成引擎、建立起桥后，就会下载js文件，然后通过js引擎来加载bundle，执行如上所示的代码。从这里就会进入react的渲染过程，比如执行组件等
+在应用程序启动阶段，当 native 端加载完成引擎、建立起桥后，就会下载 js 文件，然后通过 js 引擎来加载 bundle，执行如上所示的代码。从这里就会进入 react 的渲染过程，比如执行组件等
 
-### rn应用的启动流程
+### rn 应用的启动流程
 
 以安卓侧为例子，RN 应用的启动流程如下：
 
@@ -549,7 +545,7 @@ AppRegistry.registerComponent('Root', () => <App />)
 1. 当 JS 解析完毕之后，接下来就要启动 RN 应用了，包括运行 RN 提供的 AppRegistry 入口。
 1. 构建组件树，包括执行 React 运行时代码，渲染组件，接下来通过 Native 提供的 UIManager，把虚拟 DOM 树在 Native 应用中渲染出来，视图也就正常呈现了。
 
-注意这里是启动流程，上面提到的渲染流程实际上是启动流程的最后一步，也就是在js解析之后，开始执行渲染才会进入渲染流程
+注意这里是启动流程，上面提到的渲染流程实际上是启动流程的最后一步，也就是在 js 解析之后，开始执行渲染才会进入渲染流程
 
 这个启动的过程可以简单分解为
 
@@ -557,11 +553,11 @@ AppRegistry.registerComponent('Root', () => <App />)
 上下文创建 + 渲染
 ```
 
-上下文创建，包括JS 引擎的构建，解析并运行 JS Bundle，准备 JS 上下文是最占用时间的一部分，但这部分也是前端无法优化的地方，需要依赖native和rn的底层技术进行优化。
+上下文创建，包括 JS 引擎的构建，解析并运行 JS Bundle，准备 JS 上下文是最占用时间的一部分，但这部分也是前端无法优化的地方，需要依赖 native 和 rn 的底层技术进行优化。
 
-### rn的底层优化
+### rn 的底层优化
 
-针对上下文创建的消耗，rn当然也有一些优化手段。主要有
+针对上下文创建的消耗，rn 当然也有一些优化手段。主要有
 
 - 预加载
 - 引擎复用
@@ -595,20 +591,131 @@ https://juejin.cn/post/7063738658913779743
 
 ### JSI
 
-JSI的主要功能有三个：
+JSI 的主要功能有三个：
 
-1. 替代原来的bridge，实现js直接调用原生方法，反过来也一样，解决了之前通信的异步、数据量大的问题。
-2. 对不同引擎做统一处理，比如在安卓和ios的引擎不同，JSI可以让js侧不感知引擎类型，通过自己来选择合适的引擎进行编译
-3. 定义了与 JS 侧对应的各种数据类型 (undefined, null, boolean, number, symbol, string, or object) 及 JS Value 与 Native Value 相互转化的方法，本质上也是方便和native端的通信。
+1. 替代原来的 bridge，实现 js 直接调用原生方法，反过来也一样，解决了之前通信的异步、数据量大的问题。（不需要序列化，不需要异步）
+2. 对不同引擎做统一处理，比如在安卓和 ios 的引擎不同，JSI 可以让 js 侧不感知引擎类型，通过自己来选择合适的引擎进行编译
+3. 定义了与 JS 侧对应的各种数据类型 (undefined, null, boolean, number, symbol, string, or object) 及 JS Value 与 Native Value 相互转化的方法，本质上也是方便和 native 端的通信。
 
-最大的功能其实就在于js侧可以直接调用原生方法。
-具体是怎么做到的呢？其实可以类比一下dom的使用方式。 Web 里 JS 代码可以保存对任何 DOM 元素的引用，并在它上面调用方法：
+JSI 的主要优势有
+
+- 同步执行：现在可以同步执行那些本来就不应该是异步的函数。
+- 并发：可以在 JavaScript 中调用在不同线程上执行的函数。
+- 更低的开销：新架构不需要再对数据进行序列化/反序列化，因此可以避免序列化的开销。
+- 代码共享：通过引入 C++，现在有可能抽象出所有与平台无关的代码，并在平台之间轻松共享它。
+- 类型安全：为了确保 JS 可以正确调用 C++ 对象的方法，反之亦然。即 js 和 c++可以完成类型转换然后相互调用方法、传递参数，这个过程是安全的。
+
+最大的功能其实就在于 js 侧可以直接调用原生方法。
+具体是怎么做到的呢？其实可以类比一下 dom 的使用方式。 Web 里 JS 代码可以保存对任何 DOM 元素的引用，并在它上面调用方法：
 
 ```js
-const container = document.createElement('div');
+const container = document.createElement("div");
 ```
 
 在这里的 container 会包含一些在 C++ 中初始化的 DOM 元素的引用，这时候如果我们调用 container 上的任何方法，它就会调用 DOM 元素上的方法。
 JSI 就是以类似的方式运行，JSI 将允许 JS 代码保存对 Native Modules 的引用，并且 JS 可以直接通过引用去调用 Native 上的方法。
 
 ![](https://pic.imgdb.cn/item/64aef4881ddac507cc0c090f.jpg)
+
+当 js 访问这个对象上的方法时，c++层可以通过类似代理的形式监听到 js 的访问，从而达到对 js 的感知。这种对象被称为 HostObject
+HostObject 是 Native Module 在运行时注入到 JSI 中的一个对象，这是一个特殊的对象，并不像普通的 JS 对象一样可以随意的创建或者访问，这个流程需要 Native 的支持，才能在 JS 中创建和使用 HostObject
+
+### Fabric
+
+Fabric 是新的渲染系统，它将取代当前的 UI Manager。
+在 Fabric 之前，当 App 运行时，React 会执行你的代码并在 JS 中创建一个 ReactElementTree ，基于这棵树渲染器会在 C++ 中创建一个 ReactShadowTree。
+
+UI Manager 会使用 Shadow Tree 来计算 UI 元素的位置，而一旦 Layout 完成，Shadow Tree 就会被转换为由 Native Elements 组成的 HostViewTree（例如：RN 里的 View 元素会变成 Android 中的 ViewGroup 和 iOS 中的 UIView）。
+
+![](https://pic.imgdb.cn/item/64af66381ddac507ccde4726.jpg)
+
+而之前线程之间的通信都发生在 Bridge 上，这就意味着需要在传输和数据复制上耗费时间。
+
+例如如果一个 ReactElementTree 节点恰好是一个 `<Image/>`，那么 ReactShadowTree 的节点也会是一个图像，但是这些数据必须被复制并分别存储在两个节点中。
+
+另外由于 JS 和 UI 线程不同步，因此在某些情况下 App 可能会因为丢帧而显得卡顿（例如滚动有大量数据的 FlatList ）
+而得益于前面的 JSI， JS 可以直接调用 Native 方法，其实就包括了 UI 方法，所以 JS 和 UI 线程可以同步执行从而提高列表、跳转、手势处理等的性能。
+使用新的 Fabric 渲染，用户交互（如滚动、手势等）可以优先在主线程或 Native 线程中同步执行，而 API 请求等其他任务使用异步执行。
+
+另外新的 Shadow Tree 将成为 immutable，它会在 JS 和 UI 线程之间共享，以两端进行直接交互。
+在以前 RN 必须维护两个层次结构的 DOM 节点，但因为现在 Shadow Tree 可以共享，在减少内存消耗的部分也会得到相应的优化。
+
+#### 新架构的渲染流程
+
+rn 的 Fabric 同时也带来了新的渲染方式。由于 jsi 的存在，原来通过 bridge 难以实现的渲染方式现在也变得可以实现了。
+
+rn 把渲染流程分为三大类
+
+- 初次渲染
+- react 状态更新重渲染
+- 原生状态更新重渲染
+
+每个渲染部分将会有类似的流程。
+首先是初次渲染的流程，大致分为三个阶段：
+
+1. **渲染**（Render）：可以理解为 react 执行组件，获得 fiber 树，然后在 shadow threaded 中创建一棵 shadow tree 并和 fiber tree 相连。
+
+这一步主要是 js 侧的执行。当应用启动并开始执行 js 后，就会通过入口进入 js，执行 react 的 render 过程。
+每调用一个 React 元素，渲染器同时会同步地创建 React 影子节点。但只会创建 HostComponent，符合组件不会创建。
+最后创建出的 fiber tree，每一个 “fiber” 都代表一个宿主组件，存着一个 C++ 指针，指向 React 影子节点。这些都是因为有了 JSI 才有可能实现的。
+
+另外，fiber tree 和 shadow tree 都是 immutable 的。也就是说如果 react 发生更新，并不是复制+修改创建一棵新的树，而是绝大部分复用旧的树。这个和在 web 端 diff 算法的复制其实不同，后者大部分时候是在复制元素。
+
+![](https://pic.imgdb.cn/item/64af6f371ddac507ccfef19b.jpg)
+
+2. **提交**（Commit）：shadow 创建完成之后，在 ui 线程（native）计算具体布局信息，然后提交成为`next tree`。
+
+这些操作都是在后台线程中异步执行的。
+为什么要在 native 端计算布局，是因为不同的端的情况不同，布局信息由每个端单独维护，因此也要在 native 侧进行计算。
+最后的提交成为 next tree，和下面的 rendered tree 构成双缓冲树。这里类似 web 端的行为；不过初次渲染不存在 rendered tree。
+
+![](https://pic.imgdb.cn/item/64af6f4c1ddac507ccff28dd.jpg)
+
+3. **挂载**（Mount）：通过创建之后的 next tree 生成具体的 native 布局树，创建、修改具体的 native 元素，然后把 next tree 变为 rendered tree。
+   挂载阶段由三个步骤组成：
+   1. 树对比： 这个步骤完全用的是 C++ 计算的，会对比 rendered tree 和 next tree 之间的差异。然后对于变更，去生成 native 端的原子变更操作，比如 createView, updateView, removeView, deleteView 等等（还没有真正执行，只是生成操作队列）。这个过程类似 web 端 diff 算法执行后，在 commit 阶段执行具体的 dom 元素操作。在这个步骤中，还会将 React _影子树拍平_，来避免不必要的宿主视图创建。
+   1. 树提升，Next Tree → Rendered Tree，即交换两棵树
+   1. 视图挂载：具体执行对 native 的操作。
+
+![](https://pic.imgdb.cn/item/64af6f5a1ddac507ccff4cf8.jpg)
+
+---
+
+然后是 react 更新导致的更新渲染。这一步其实和上面的初次渲染略有不同
+
+- 更新的 fiber tree 和 shadow tree 不会重新创建，而是通过 immutable 数据结构来大量复用，只修改更新存在的路径的元素。
+- 更新时存在 next tree 和 rendered tree，在 commit 阶段会对比两棵树，找到变更。
+- 最后在挂载阶段，根据上一步的变更执行具体的 native 渲染操作。
+
+#### 视图拍平
+
+视图拍平（View Flattening）是 React Native 渲染器避免布局嵌套太深的优化手段。在 Fabric 渲染的挂载阶段，会通过拍平来减小 shadow tree 的嵌套层级，减少 native 元素的创建。
+
+具体来说，拍平的结果对于那些只参与布局的节点（比如只有某个样式的 View），将其多层合并为一个节点
+比如有这样一段代码：
+
+```js
+function MyComponent() {
+  return (
+    <View>                          // ReactAppComponent
+      <View style={{margin: 10}} /> // ContainerComponent
+        <View style={{margin: 10}}> // TitleComponent
+          <Image {...} />
+          <Text {...}>This is a title</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+```
+
+这里三个 view 都是只参与布局的 view，创建 shadow tree 和 fiber tree 时存在，但没必要在 native 端都创建。因此后面两个 view 会被合并到第一个中，同时保留他们的样式。
+
+![](https://pic.imgdb.cn/item/64af71651ddac507cc04f88a.jpg)
+
+![](https://pic.imgdb.cn/item/64af716e1ddac507cc0514e9.jpg)
+
+### Turbo Modules
+
+在之前的架构中 JS 使用的所有 Native Modules（例如蓝牙、地理位置、文件存储等）都必须在应用程序打开之前进行初始化，这意味着即使用户不需要某些模块，但是它仍然必须在启动时进行初始化。
+Turbo Modules 基本上是对这些旧的 Native 模块的增强，正如在前面介绍的那样，现在 JS 将能够持有这些模块的引用，所以 JS 代码可以仅在需要时才加载对应模块，这样可以将显着缩短 RN 应用的启动时间。

@@ -328,6 +328,29 @@ https://juejin.cn/post/6844903442079563784
 http://blog.cnbang.net/tech/2698/
 https://km.sankuai.com/page/883771103
 
+## 架构（旧版）
+
+rn的基本架构如下图
+
+![](https://pic.imgdb.cn/item/64aeeecc1ddac507cc02f153.jpg)
+
+从图中可以看到有几个关键的部分
+
+- **js代码**：即react代码的部分
+- **js引擎**：解释和执行 JavaScript 代码。在 React Native 里面，JavaScriptCore 负责 bundle 产出的 JS 代码的解析和执行。
+
+js引擎通常有几个：
+- Hermes：最新的安卓端js引擎，优势是比较轻便，并且针对安卓做了专门的优化
+- JavaScriptCore：在ios上的引擎，也是safari的引擎
+- V8：web端引擎，在native端的性能上不如上面两个
+
+- **bridge**：原生端和 JavaScript 交互是通过 Bridge 进行的，Bridge 的作用就是给 React Native 内嵌的 JS Engine 提供原生接口的扩展供 JS 调用。
+
+所有的本地存储、图片资源访问、图形图像绘制、3D 加速、网络访问、震动效果、NFC、原生控件绘制、地图、定位、通知等都是通过 Bridge 封装成 JS 接口以后注入 JS Engine 供 JS 调用。理论上，任何原生代码能实现的效果都可以通过 Bridge 封装成 JS 可以调用的组件和方法, 以 JS 模块的形式提供给 RN 使用。
+
+- **原生模块**：即native侧的api、模块等，可以通过bridge让js进行调用
+
+
 ## 渲染
 
 ### 渲染线程
@@ -340,10 +363,10 @@ https://km.sankuai.com/page/883771103
 - JavaScript thread: js 执行的线程
 - Shadow thread: 可以理解为是在 native 侧，负责和 react 的的虚拟 dom 进行交互，并控制 native 渲染的一个线程。
 
-> react 存在 diff 算法，通过 diff 算法尽可能减小虚拟 dom 的更新损耗。在 rn 中也有类似的虚拟 dom 结构，也有 diff 的过程；但是不同于浏览器环境中 React DOM 直接调用浏览器 API 来完成真正的 DOM 更新操作，Native 环境下 React Native 是通过 Bridge ，将需要变更的指令（Commands）以字符串的方式发送到 Native Side，而对应在 Native 这边负责处理这些指令的进程就是 Shadow Thread。
-> Shadow Thread 通过维护一个 Shadow Tree 来计算 "Virtual DOM" 在 Native 页面的实际布局，然后通过 Bridge 异步通知 Main Thread 渲染 UI。
-> Shadow Tree 可以理解为是 "Virtual DOM" 在 Native 的映射，拥有和 Virtual DOM 相同的树形层级关系
-> 因此我们可以理解为，shadowThread 就是一个用于“接收布局消息”的线程，然后控制 native 的渲染结构。
+react 存在 diff 算法，通过 diff 算法尽可能减小虚拟 dom 的更新损耗。在 rn 中也有类似的虚拟 dom 结构，也有 diff 的过程；但是不同于浏览器环境中 React DOM 直接调用浏览器 API 来完成真正的 DOM 更新操作，Native 环境下 React Native 是通过 Bridge ，将需要变更的指令（Commands）以字符串的方式发送到 Native Side，而对应在 Native 这边负责处理这些指令的进程就是 Shadow Thread。
+Shadow Thread 通过维护一个 Shadow Tree 来计算 "Virtual DOM" 在 Native 页面的实际布局，然后通过 Bridge 异步通知 Main Thread 渲染 UI。
+Shadow Tree 可以理解为是 "Virtual DOM" 在 Native 的映射，拥有和 Virtual DOM 相同的树形层级关系
+因此我们可以理解为，shadowThread 就是一个用于“接收布局消息”的线程，然后控制 native 的渲染结构。
 
 ### 渲染树
 
@@ -370,7 +393,7 @@ shadow tree 和原生 view 树有何不同呢？后者去掉了前者结构之�
 
 rn 项目的首次渲染流程可以分为几步：
 
-1. Native 打开 RN 页面
+1. Native 打开 RN 页面（在此之前，js上下文、引擎已被加载完毕，桥已建立，bundle也被加载到native中开始执行）
 1. JS 线程运行，Virtual DOM Tree 被创建
 1. JS 线程异步通知 Shadow Thread 有节点变更
 1. Shadow Thread 创建 Shadow Tree
@@ -394,6 +417,8 @@ rn 项目的首次渲染流程可以分为几步：
 
 这种方式的优点是，Main Thread 不会阻塞 (block)，也就是说，UI 渲染是流畅的，所以用户体验不会卡顿
 但是桥调用方式使得所有交互都是异步的。对于需要比较强烈实时性的场景，比如频繁的交互、快速的更新、动画等都有可能造成一种延迟感。并且当需要传输的数据非常大时，本身的内存消耗和对于数据处理的时间消耗也会非常大。
+
+另外，rn的渲染消耗要比web端大得多。因为react完成fiber的创建之后，shadow线程也要维护一棵树来实现构建，这个过程比web端的dom操作要繁琐很多，更何况线程之间的通信本就是异步、效率不高的。因此rn的优化中对于渲染控制应该要求更高
 
 从上向下看 rn 的渲染过程则为：
 
@@ -451,14 +476,24 @@ BatchedBridge.enqueueNativeCall(moduleID, methodID, args, onFail, onSuccess);
 
 这里的通信指的是 js 和 native 语言之间的交互、通信，具体来说其实是两者的互相调用。在 ios 和安卓端的 native 语言有所不同，前者是 objective-c，后者是 java。在具体实现上有所不同，但在大致原理上是近似的。
 
+### 基本通信原理
+
+假设不通过rn，js和native仅通过引擎也可完成基本的通信。比如native侧和js侧都把想共享的模块暴露到全局，让对方获取并调用。但这样会导致大量的全局变量污染，所以为了规范这个通信过程，React Native 自己实现了 Bridge。
+
+bridge本质上就是js和native的互相调用，夹杂着一些参数的传递。
+
+
 ### js 调用 native
 
 js 是一个不能自执行的语言，意思就是 js 必需一个执行它的“引擎”。在 ios 上是 JavaScript Core，在安卓上则有专门执行 js 的 c++部分。
 因此 js 调用 native 的过程，本质上可以理解为是引擎执行 js，然后将 js 的执行结果或在 js 中的某些操作传递给 native 的过程。
 
+
 以 ios 上的 objective-c 为例，React Native 解决这个问题的方案是在 Objective-C 和 JavaScript 两端都保存了一份配置表，里面标记了所有 Objective-C 暴露给 JavaScript 的模块和方法。这样，无论是哪一方调用另一方的方法，实际上传递的数据只有 ModuleId、MethodId 和 Arguments 这三个元素，它们分别表示类、方法和方法参数，当 Objective-C 接收到这三个值后，就可以通过 runtime 唯一确定要调用的是哪个函数，然后调用这个函数。
 
-当 js 生成包含 ModuleId、MethodId 和 Arguments 的对象后，会放入到 MessageQueue 中，等待 Objective-C 主动拿走，或者超时后主动发送给 Objective-C。
+简单来说，当 JS 调用 Native 模块的时候，会调用一个 Native 暴露出来的全局方法，并通过传入要调用的 moduleName 、methodName、callback 参数给这个方法，然后这个方法再*通知*给 Native 侧找到相应的模块并执行。
+
+![](https://pic.imgdb.cn/item/64aef3a61ddac507cc0aafd9.jpg)
 
 ---
 
@@ -468,6 +503,12 @@ js 是一个不能自执行的语言，意思就是 js 必需一个执行它的�
 
 ### native 调用 js
 
+native调用js代码就比较简单了，通过 moduleid 和 methodid 完成方法的调用，通过这两个参数可以找到 JS 侧定义的方法模块。
+
+![](https://pic.imgdb.cn/item/64aef4881ddac507cc0c090f.jpg)
+
+---
+
 对于 Objective-C 来说，执行完 JavaScript 代码再执行 Objective-C 回调毫无难度，难点依然在于 JavaScript 代码调用 Objective-C 之后，如何在 Objective-C 的代码中，回调执行 JavaScript 代码。
 目前 React Native 的做法是：在 JavaScript 调用 Objective-C 代码时，注册要回调的 Block，并且把 BlockId 作为参数发送给 Objective-C，Objective-C 收到参数时会创建 Block，调用完 Objective-C 函数后就会执行这个刚刚创建的 Block。
 Objective-C 会向 Block 中传入参数和 BlockId，然后在 Block 内部调用 JavaScript 的方法，随后 JavaScript 查找到当时注册的 Block 并执行。
@@ -476,9 +517,98 @@ Objective-C 会向 Block 中传入参数和 BlockId，然后在 Block 内部调�
 
 ![](https://pic2.imgdb.cn/item/6464bee50d2dde5777c3dfd9.jpg)
 
-## rn和native
+
+
+## 其他概念
+
+### bundle
+
+在 React web 应用中，打包，部署到上线的产物，是一个 html ，css，js 文件的集合体，最后把这些产物放在服务器上就可以了。
+但是在 RN 中，最后打包产物是一个 js 文件，叫做 jsbundle ，在 Native 端运行 RN 项目，本质上是远程拉取了 jsbundle ，并通过上述的 js 引擎运行当前 jsbundle，每次运行一个 bundle 就需要外层容器提供一个 js 引擎。
+
+一个bundle可以对应一个页面，也可通过路由的形式对应多个页面。
+
+bundle的产生其实就是在rn的入口文件中注册的组件。在 RN 中每一个应用都有一个入口文件，RN 中提供了注册根本应用的方法，那就是 AppRegistry，这一点和 React web 应用会有一些区别，web 应用中，主要依赖于 react-dom 中提供的 api ，但是在 RN 项目中，无需再下载 react-dom，取而代之的是 react-native 包。
+
+```js
+import {AppRegistry} from 'react-native'
+/* 根组件 */
+import App from './app' 
+
+AppRegistry.registerComponent('Root', () => <App />)
+```
+
+在应用程序启动阶段，当native端加载完成引擎、建立起桥后，就会下载js文件，然后通过js引擎来加载bundle，执行如上所示的代码。从这里就会进入react的渲染过程，比如执行组件等
+
+### rn应用的启动流程
+
+以安卓侧为例子，RN 应用的启动流程如下：
+
+1. 创建 JS 引擎，注册 Native 和 C++ ,C++ 和 JS 层的通信桥，同时会创建 JS 和 Native UI 线程队列。
+1. 异步加载 JS Bundle，这一部分是 JS 交给 JS 引擎去处理，会对 JS 文件进行加载和解析，当然解析的时长受到 JS 文件大小的影响。
+1. 当 JS 解析完毕之后，接下来就要启动 RN 应用了，包括运行 RN 提供的 AppRegistry 入口。
+1. 构建组件树，包括执行 React 运行时代码，渲染组件，接下来通过 Native 提供的 UIManager，把虚拟 DOM 树在 Native 应用中渲染出来，视图也就正常呈现了。
+
+注意这里是启动流程，上面提到的渲染流程实际上是启动流程的最后一步，也就是在js解析之后，开始执行渲染才会进入渲染流程
+
+这个启动的过程可以简单分解为
+
+```
+上下文创建 + 渲染
+```
+
+上下文创建，包括JS 引擎的构建，解析并运行 JS Bundle，准备 JS 上下文是最占用时间的一部分，但这部分也是前端无法优化的地方，需要依赖native和rn的底层技术进行优化。
+
+### rn的底层优化
+
+针对上下文创建的消耗，rn当然也有一些优化手段。主要有
+
+- 预加载
+- 引擎复用
+
+引擎预加载和业务场景息息相关，对于一些上下游的页面会有一定的要求，在加载当前页面的时候，如果下游页面是 RN 页面，那么会进行引擎的预加载，构建初始化的 JS 环境。
+
+![](https://pic.imgdb.cn/item/64aeed4d1ddac507cc0039ef.jpg)
+
+如上一个业务线上存在 A，B，C 三个页面，其中 C 是 RN 页面，那么当从 A 进入到 B 的时候，开始启动预加载，加载 C 页面的 Bundle，这样进入到 C 页面后，就不需要做初始化 JS 运行环境等操作，大幅度提高了页面的秒开率。
+但是预加载的 JS 引擎不能一直存在，所以可以在 从 B -> A 的时候，回收引擎。还有一点需要注意的是，预加载的引擎需要在内存中保留一段时间后才会被回收，所以在进入一个页面中的时候，不要预加载很多页面，这样就会造成内存瞬间暴涨，容易引起 APP 闪退。
+
+---
+
+引擎复用，也是一种对页面初始化加载的优化手段，比如 A 进入 RN 的 B 页面，当 B 离开回到 A 的时候，B 的引擎并没有直接回收，而是被保存下来，当 A 再次进入到 B 的时候，直接服用引擎，这样当第二次进入 B 的时候，打开的速度非常快。
+
+![](https://pic.imgdb.cn/item/64aeeda51ddac507cc00c63f.jpg)
+
+引擎复用比较适合从列表页到详情页的场景，比如从商品列表到商品详情，用户可能多次从商品详情返回列表，然后再次进入商品详情。
 
 ## 新架构
 
 https://medium.com/coox-tech/deep-dive-into-react-natives-new-architecture-fb67ae615ccd
 https://juejin.cn/post/7063738658913779743
+
+新架构带来的调整主要在于以下四点：
+
+- JavaScript Interface(JSI)
+- Fabric
+- Turbo Modules
+- CodeGen
+
+### JSI
+
+JSI的主要功能有三个：
+
+1. 替代原来的bridge，实现js直接调用原生方法，反过来也一样，解决了之前通信的异步、数据量大的问题。
+2. 对不同引擎做统一处理，比如在安卓和ios的引擎不同，JSI可以让js侧不感知引擎类型，通过自己来选择合适的引擎进行编译
+3. 定义了与 JS 侧对应的各种数据类型 (undefined, null, boolean, number, symbol, string, or object) 及 JS Value 与 Native Value 相互转化的方法，本质上也是方便和native端的通信。
+
+最大的功能其实就在于js侧可以直接调用原生方法。
+具体是怎么做到的呢？其实可以类比一下dom的使用方式。 Web 里 JS 代码可以保存对任何 DOM 元素的引用，并在它上面调用方法：
+
+```js
+const container = document.createElement('div');
+```
+
+在这里的 container 会包含一些在 C++ 中初始化的 DOM 元素的引用，这时候如果我们调用 container 上的任何方法，它就会调用 DOM 元素上的方法。
+JSI 就是以类似的方式运行，JSI 将允许 JS 代码保存对 Native Modules 的引用，并且 JS 可以直接通过引用去调用 Native 上的方法。
+
+![](https://pic.imgdb.cn/item/64aef4881ddac507cc0c090f.jpg)

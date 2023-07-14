@@ -513,9 +513,19 @@ js 是一个不能自执行的语言，意思就是 js 必需一个执行它的�
 
 ---
 
-另外，js 不会主动将数据发送给 oc。也就是说必须当 oc 在某些条件下执行 js 时，才会执行上面步骤，而不是由 js 代码主动驱动数据的发送。JS 不会主动传递数据给 OC，在调 OC 方法时，会把 ModuleID,MethodID 等数据加到一个队列里，等 OC 过来调 JS 的任意方法时，再把这个队列返回给 OC，此时 OC 再执行这个队列里要调用的方法。
+在JSToNative的通信⽅式中，⼜分为两种调⽤⽅式：异步调⽤和同步调⽤。
+rn主要依靠异步调⽤；调⽤的发起在JS线程，异步的⽅式不会阻塞JS线程。
 
-这样的执行方式就类似于事件触发。native 开发里只在有事件触发的时候才会执行代码，这个事件可以是启动事件，触摸事件，timer 事件，系统事件，回调事件。而在 React Native 里，这些事件发生时 OC 都会调用 JS 相应的模块方法去处理，处理完这些事件后再执行 JS 想让 OC 执行的方法，而没有事件发生的时候，是不会执行任何代码的。
+大致流程为：
+
+1. 调⽤具体的NativeModule时，会触发C++的调⽤流程，这个过程就是创建或者查找对应Module的过程。根据JS侧提供的module信息⽣成具体的Module实例。
+2. 当调⽤Module具体⽅法时，会将对应模块的调⽤信息存放在⼀个数组中，我们称之为Queue；这个Queue中的消息要么是在⼩于5ms的情况下等待Java侧的事件驱动调⽤并清空，要么是⼤于5ms，⾃动触发调⽤并清空。queue等待java或oc线程来取数据，因此这个过程是异步的；
+3. 接下来就⾛到了C++层的调⽤流程，通过JSToNativeBridge将Java层的调⽤信息放到NativeModulesThread消息队列中，等待调⽤。
+4. 然后就进⼊Java层的调⽤，找到与C++侧同名的Java Module包装类，调⽤其invoke⽅法，通过反射实现对应Native Module⽅法的调⽤。
+5. 如果有数据回调的话，其回调流程会通过NativeToJsBridge，调⽤流程与Native调⽤JS⽅法⼤致相同，主要的区别是回传的参数，传递的是callId和结果，其信息存储在JS侧，可以通过callId找到对应的回调函数，并执⾏回调。回调的过程又是一次放入消息队列等待js取出执行的过程，因此异步调用将会花费较多时间。
+
+![](https://pic.imgdb.cn/item/64b1ced21ddac507cc8ce3ab.jpg)
+
 
 ### native 调用 js
 
@@ -525,13 +535,20 @@ native 调用 js 代码就比较简单了，通过 moduleid 和 methodid 完成�
 
 ---
 
-对于 Objective-C 来说，执行完 JavaScript 代码再执行 Objective-C 回调毫无难度，难点依然在于 JavaScript 代码调用 Objective-C 之后，如何在 Objective-C 的代码中，回调执行 JavaScript 代码。
-目前 React Native 的做法是：在 JavaScript 调用 Objective-C 代码时，注册要回调的 Block，并且把 BlockId 作为参数发送给 Objective-C，Objective-C 收到参数时会创建 Block，调用完 Objective-C 函数后就会执行这个刚刚创建的 Block。
-Objective-C 会向 Block 中传入参数和 BlockId，然后在 Block 内部调用 JavaScript 的方法，随后 JavaScript 查找到当时注册的 Block 并执行。
+NativeToJS的⽅法调⽤，是异步的操作，会在NativeToJsBridge上做⼊队处理，这个消息队列没有优先级且是串⾏执⾏，所以它的执⾏时间会受到队列消息是否拥堵的影响。
 
-本质上 native 调用 js 就是一个回调的过程，即 js 预先把自己的回调也传给 oc，然后 oc 只需要执行这个 block 即可。
+![](https://pic.imgdb.cn/item/64b1cf311ddac507cc8dacc7.jpg)
 
-![](https://pic2.imgdb.cn/item/6464bee50d2dde5777c3dfd9.jpg)
+大致流程为：
+
+1. 执⾏JSModule⽅法时，我们先通过JSModule注册表，找到对应的实例，没有就初始化并缓存，有就直接使⽤。
+2. 发起C++侧的调⽤流程。
+3. Native调⽤JS⽅法，最终⾛到NativeToJsBridge上，此处做了⼀个线程切换，由主线程切换到JS线程，⽅法调⽤进⼊消息队列。等对应⽅法被执⾏时，就会触发JS侧callFunctionReturnFlushedQueue的⽅法调⽤，进⼊JS侧的调⽤流程。
+4. JS侧直接根据Module名、⽅法名找到对应的Module和⽅法，传⼊参数调⽤即完成了整个过程。
+
+这个过程中js侧并不会立即相映native的调用，而是类似eventLoop这样的处理机制。
+
+对于这个过程中数据的交换，诸如参数等，在旧的架构都是通过JSON序列化的方式完成。在新的JSI架构中则可以转换两者的数据类型，从而实现直接传递。
 
 ## 其他概念
 

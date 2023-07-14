@@ -10010,8 +10010,8 @@ class MinHeap {
       this.heap.push(value);
       return;
     }
-    this.heap.push(value);
-    this.shiftUp(this.heap.length - 1);
+    this.heap.unshift(value);
+    this.shiftDown(this.heap.length - 1);
     return true;
   }
   min() {
@@ -10028,27 +10028,12 @@ class MinHeap {
     return null;
   }
 
-  // 向上调整
-  shiftUp(currIndex) {
-    const parentIndex = this.getParentIndex(currIndex); // 获取父节点位置
-    if (this.heap[currIndex] > this.heap[parentIndex] || currIndex <= 0) return; // 如果当前比父节点大就不动
-    this.swap(currIndex, parentIndex); // 交换父节点和当前节点
-    this.shiftUp(parentIndex); // 递归传入父节点位置，直到整个堆调整完毕
-  }
-
-  // 向上的非递归版本
-  shiftUp(currIndex) {
-    while (this.heap[currIndex] < this.heap[parentIndex] && currIndex > 0) {
-      this.swap(currIndex, this.getParentIndex(currIndex));
-      currIndex = this.getParentIndex(currIndex);
-    }
-  }
-
   // 向下调整
   shiftDown(currIndex) {
     const leftIndex = this.getLeftChildIndex(currIndex); // 获取左右子元素索引
     const rightIndex = this.getRightChildIndex(currIndex);
     // 如果当前元素比左右子元素大，选择左右元素较小的一个交换并递归
+    // 如果是最小堆，这里就是小于，取左右两个元素较小的
     if (
       this.heap[currIndex] > this.heap[leftIndex] ||
       this.heap[currIndex] > this.heap[rightIndex]

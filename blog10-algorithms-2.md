@@ -684,3 +684,33 @@ var validSquare = function (p1, p2, p3, p4) {
   );
 };
 ```
+
+# 关键题目及概括
+
+这里放一些比较重要的题的链接和简单类型，某些题目可能有些比较有代表性的解法，或者刚好是不知道的类型。但是都写题解就太长了，这里简要总结下。
+
+- 原地哈希：将数组作为哈希表，通常是索引和元素的值有函数关系
+
+缺失的第一个正数：https://leetcode.cn/problems/first-missing-positive
+找到所有数组中消失的数字：https://leetcode.cn/problems/find-all-numbers-disappeared-in-an-array/
+数组中重复的数据：https://leetcode.cn/problems/find-all-duplicates-in-an-array/
+
+- 多源bfs：即从多个起点开始的bfs
+
+腐烂的橘子：https://leetcode.cn/problems/rotting-oranges/
+
+- 类接雨水（单调栈）：双向单调栈
+
+https://leetcode.cn/problems/largest-rectangle-in-histogram/
+
+- 堆，双堆：同时维护最大和最小堆，两个堆可能会相互交换
+
+摆动排序：https://leetcode.cn/problems/wiggle-sort/
+中位数：https://leetcode.cn/problems/find-median-from-data-stream/
+
+- 鸡蛋问题（分治）
+
+https://leetcode.cn/problems/egg-drop-with-2-eggs-and-n-floors/
+https://leetcode.cn/problems/super-egg-drop/
+
+- 

@@ -10011,7 +10011,7 @@ class MinHeap {
       return;
     }
     this.heap.unshift(value);
-    this.shiftDown(this.heap.length - 1);
+    this.shiftDown(0);
     return true;
   }
   min() {

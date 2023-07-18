@@ -67,7 +67,11 @@
   - 重要内容 HTML 代码放在最前
   - ssr
   - 非装饰性图片必须加 alt
-- 页面通信的方式
+- 页面通信的方式：https://juejin.cn/post/6844903811232825357
+  - localstorage
+  - shared worker
+  - window.postMessage:跨域
+  - service worker
 
 # CSS
 
@@ -607,7 +611,7 @@
     - 基本头
     - 基本缓存
     - 状态码
-    - 问题：短连接
+    - 问题：短连接、队头阻塞
   - 1.1
     - 长连接
     - 并发 tcp 连接
@@ -620,7 +624,7 @@
     - 多路复用
     - 请求优先级
     - 服务端推送
-    - 头部压缩（HPACK，双方维护一个表存储报文头，如果报文头已经在表中存在，就只发送索引号）
+    - 头部压缩（HPACK算法，三个部分，静态表存储key、哈夫曼编码压缩value，动态表存储剩余）
     - 一个 tcp 连接
     - 问题：依赖 tcp，tcp 的队头阻塞
   - 3.0
@@ -760,7 +764,8 @@
   - 防范
     - httponly
     - 不信任用户输入（过滤输入）
-    - 不使用拼接字符串形成 html（转码输出）
+    - 不使用拼接字符串形成 html
+    - 转码输出，html转码和js转码
 - CSRF 攻击和防范
   - 概念
   - 基本原理：模拟用户发起请求
@@ -1019,6 +1024,91 @@
 - babel 配置，解析 ts 和 react
 - 引入 hmr 和 fastrefresh
 - 配置 css module
+
+# 工程化
+
+- node相关
+  - package.json的作用，几个关键字段
+    - peerDependencies，dependencies、devDependencies
+  - package-lock作用
+  - npm
+    - npm包版本号
+      - `[major,minor,patch]`
+      - `^`和`~`
+    - npm install全过程
+      - 检查是否安装
+      - 解析package和package-lock
+      - 搜索远程库，下载包，缓存，解压
+      - 扁平化解压
+    - npm run 全过程
+      - 安装依赖时安装可执行文件到bin
+      - 软链接
+- npm/yarn/pnpm
+  - yarn的特点
+    - 并行下载
+    - 安全检查
+  - pnpm的特点
+    - 硬链接依赖
+    - 更新时只更新最小内容
+    - 速度快
+      - 解析和下载过程连续，加快速度
+    - 非扁平node_modules
+      - 根store存储所有库的所有版本
+      - .pnpm根据项目需要扁平化硬链接
+      - node_modules的其他库都是对.pnpm内的软连接
+    - 局限性：
+      - 如果修改store可能影响所有项目
+      - 兼容性不佳
+- Babel
+- Vite
+  - 特点
+    - 依赖和源码，依赖预构建
+      - esbuild，go编写
+    - 源码直接引入，利用浏览器module
+    - 开发环境强缓存
+    - rollup打包
+- ESlint
+  - 配置
+    - extends加载预设，plugins使用插件。
+- git
+  - 基本概念
+    - 工作区、暂存区、版本库
+    - 分支
+    - HEAD指针
+  - 常用命令
+    - 创建切换分支
+    - git log查看历史commitid
+    - git reset --hard HEAD^回退commit
+    - git stash
+    - git cherry-pick commitid
+    - push/pull/fetch
+    - git tag
+  - 工作流
+    - git flow
+      - 长期分支：master和develop
+      - 临时分支：feature/hotfix/release
+    - github flow
+      - master创建feature
+      - feature提pr到master
+    - gitlab flow
+    - gitflow flow
+      - 标准五分支，master/release/fix/feature/develop
+- 其他模块化内容
+  - 循环加载
+    - cjs：循环加载只输出第一次执行，之后遇见不执行
+    - esm：差不多，import不会进入已经解析过的模块
+  - 项目中问题：循环依赖导致使用在定义之前
+    - 解决方案：统一导入再统一导出，统一导入时按照合理顺序
+- MVVM/MVC
+  - MVC
+    - model：数据
+    - view：展示的界面
+    - controller：后端代码
+    - 单向
+  - MVVM
+    - model：数据
+    - view：视图
+    - viewModel：模型，连接视图和数据，双向绑定
 
 # 优化
 

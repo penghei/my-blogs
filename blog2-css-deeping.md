@@ -1012,25 +1012,40 @@ IFC 的特性常常会带来一些布局问题，参考：https://mengsixing.git
 
 > MDN: 当应用于非浮动块时，它将非浮动块移动到所有相关浮动元素外边界的下方。
 
-值可以是 left、right 和 both 或者 none。这里的左和右指的是`清除哪边的浮动`，也就是说该元素不希望旁边有浮动元素。根据上面 MDN 的描述，非浮动元素会被置于浮动元素的下方。
+值可以是 left、right 和 both 或者 none。这里的左和右指的是`清除哪种浮动`，比如left就是清除`float: left`的元素，right同理，both就是都清除
 
-比如一个元素设置了clearleft之后，就是告诉浏览器，左边不允许有浮动元素存在；因此浏览器会调整该元素的位置，使得该元素被放到浮动元素的下面，保证它左边不会出现浮动元素。
-并且，由于该元素依然在文档流中，所以它会导致父元素高度增加从而包含该元素。
+什么是清除？其实就是让这个元素位于被清除的浮动元素的下方。具体有这样几个条件：
 
-官方对 clear 属性解释：“元素盒子的边不能和前面的浮动元素相邻”，对元素设置 clear 属性是为了**避免浮动元素对该元素的影响**，而不是清除掉浮动。
+1. 浮动元素在html中，应该处于非浮动元素前面
+2. 非浮动元素应用了float，并且值和浮动元素的值匹配
 
-注意清除浮动实际上是清除该元素前面的浮动。这里的前面指的是 HTML 元素的代码顺序。使用 clear 清除浮动不会管后面的元素。
+这样，非浮动元素会被置于浮动元素的下方。
 
-还是上面讲 bfc 的例子，设置了清除浮动后是这样的：
+比如下面这个例子
 
 ```html
-<div style="height: 100px;width: 100px;float: left;">我是一个左浮动的元素</div>
-<div style="width: 200px; height: 200px;clear:left">
-  我是一个没有设置浮动的元素
+<div class="wrapper">
+  <p class="black"></p>
+  <p class="red"></p>
+  <p class="left"></p>
 </div>
+
+<style>
+.left {
+  clear: left;
+}
+.black {
+  float: left;
+}
+.red {
+  float: left;
+}
+</style>
 ```
 
-![](https://pic.imgdb.cn/item/621cd0382ab3f51d91e785e7.png)
+这里，left元素在html结构上位于两个浮动元素的后面，然后使用了clear，这样它就会被放置到这两个浮动元素下方，而不会被盖住。
+
+![](https://pic.imgdb.cn/item/64b577c91ddac507cc44264d.jpg)
 
 ### 2. 设置一个空元素并清除（也可以用伪元素）
 
@@ -1327,7 +1342,7 @@ document
   .getElementsByClassName("container")
   .style.setPropertyValue("--color", "pink");
 // 读取变量
-doucment
+document
   .getElementsByClassName("container")
   .style.getPropertyValue("--color")
   .trim(); //pink
@@ -1504,6 +1519,116 @@ p {
   overflow: hidden;
 }
 ```
+
+上面这个方法兼容性比较差，如果遇到设置display无效的浏览器就会gg。
+因此还有一些奇怪的实现方法，css和js实现都有。
+
+参考来源：https://github.com/sisterAn/JavaScript-Algorithms/issues/130
+
+```css
+//1:单行文本溢出
+.textTruncate {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+//2:按行数-多行文本溢出(兼容性不好)
+.mulLineTruncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+//3:按高度-多行文本溢出(没有省略号)
+.mulLineTruncate {
+  max-height: 40px;
+  overflow: hidden;
+  line-height: 20px;
+}
+//4:解决3方案没有省略号的情况
+.mulLineTruncate {
+  position: relative;
+  max-height: 40px;
+  overflow: hidden;
+  line-height: 20px;
+  &::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    padding: 0 20px 0 10px;
+    content: '...';
+  }
+}
+```
+
+如果要用js实现，那么有两个思路
+1. 通过文本长度来截取。固定长度不能超过多少。这样在一定情况下是好用的，但如果容器尺寸变化就表现不是很好。
+
+2. 首先获取元素的line-height，然后通过行数就可以得到整个部分的最大高度maxHeight。再逐渐拼接字符串并修改innerHTML，并实时计算元素的height，直到height > maxHeight。在此截断，就得到了符合条件的字符串
+
+参考来源：https://juejin.cn/post/6844903789749616648
+示例如下：
+
+```js
+function setTextOverflow(row,element) {
+  const text = element.innerHTML;
+  const heightStr = getCurrentStyle(element, "height");
+  const height = getNumber(heightStr);
+  const maxHeight = getMaxHeight(element, options.rows, text);
+  if (height > maxHeight) {
+    subStrChar(element, maxHeight, text);
+  } else {
+    element.innerHTML = text;
+  }
+
+  // 截取字符串，从第一个开始，当前高度大于最大高度时，截取到前一个字符；
+  function subStrChar(element, maxHeight, text) {
+    console.log(maxHeight);
+    let end = false;
+    let i = 0;
+    // 逐渐修改innerHTML，直到text走完或超出高度
+    while (!end) {
+      i++;
+      element.innerHTML = text.substring(0, i) + "...";
+      const currentHeightStr = getCurrentStyle(element, "height");
+      const currentHeight = getNumber(currentHeightStr);
+      if (currentHeight > maxHeight) {
+        element.innerHTML = text.substring(0, i - 1) + "...";
+        end = true;
+      }
+      if (i >= text.length) {
+        break;
+      }
+    }
+  }
+
+  // 获取最大高度，当line-height为normal的时候，对标签塞入字符，获取一行的行高
+  function getMaxHeight(element, rows) {
+    const lineHeight = getCurrentStyle(element, "lineHeight");
+    let number = 0;
+    number = getNumber(lineHeight);
+    return number * rows;
+  }
+
+  // 获取当前元素的属性值
+  function getCurrentStyle(element, elAttr) {
+    return window.getComputedStyle(element)[elAttr];
+  }
+
+  // 将获取的字符串值变成向上取整成数字
+  function getNumber(str) {
+    let number = parseFloat(str);
+    return Math.ceil(number);
+  }
+}
+```
+
+当然这个方法是最简单的方法，还需要打磨，可以改进的地方有：
+
+- 可以只保留字符串，方便添加展开和收起功能
+- 监听height变化的过程，可以改用Mutation Observer API
+
 
 ## 盒阴影
 
@@ -2333,6 +2458,8 @@ client 的相关 api 是针对元素本身的
 - `clientTop`：元素顶部边框的宽度
 - `clientLeft`：元素左边框宽度
 
+注意，这个属性对于内联元素以及没有 CSS 样式的元素为 0
+
 #### 3. 滚动大小 scroll
 
 主要有两个属性：
@@ -2421,6 +2548,36 @@ function isInViewPort(element) {
 ---
 
 还有几种方法可以参考：https://juejin.cn/post/6844903725249609741
+
+#### 可视和可视区域
+
+元素进入了可视区域，并不代表这个元素就一定能被看到。这个元素可能会被遮挡，比如有一个z-index更大的元素，或者有个fixed等绝对定位的元素挡住该元素。还要考虑这个元素有没有被隐藏。
+
+因此上面的方法只是从位置上判断是否进入了viewport区域，至于是否可视，还要另作判断。
+
+有一个判断遮挡关系的方法，是通过elementFromPoint方法。这个方法可以指定一个坐标，返回这个坐标上最上层的元素
+MDN：https://developer.mozilla.org/zh-CN/docs/Web/API/Document/elementFromPoint
+
+```js
+function isElementVisible(el) {
+  const rect = el.getBoundingClientRect();
+  const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+  
+  // 判断元素是否在视口内
+  if (rect.right < 0 || rect.bottom < 0 || rect.left > viewportWidth || rect.top > viewportHeight) {
+    return false;
+  }
+  
+  // 判断元素是否被其他元素遮挡
+  const elementFromPoint = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  if (elementFromPoint !== el && !el.contains(elementFromPoint)) {
+    return false;
+  }
+  
+  return true;
+}
+```
 
 # CSS 奇怪的用处和技巧
 

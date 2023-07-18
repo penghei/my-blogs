@@ -11,7 +11,7 @@ sticky: 10
 
 ## 数据类型概览
 
-js 只有 8 种基本数据类型
+js 只有 8 种基本数据类型 
 
 - number
 - bigint

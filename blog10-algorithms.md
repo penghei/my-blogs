@@ -11056,6 +11056,51 @@ var calculate = function (s) {
 };
 ```
 
+另一种通过index移动的写法，原理相同，只是改用index
+
+```js
+var calculate = function (s) {
+  let idx = 0;
+  const helper = function (s) {
+    const stack = [];
+    let sign = "+";
+    let num = 0;
+
+    while (idx < s.length) {
+      const char = s[idx++];
+      if (!isNaN(char)) {
+        num = +char;
+      }
+      if (char === "(") {
+        num = helper(s);
+      }
+      // 然后下面就和简单计算器一样的思路
+      if ((!parseInt(char) && char !== " ") || idx === s.length) {
+        if (sign === "+") {
+          stack.push(num);
+        } else if (sign === "-") {
+          stack.push(-num);
+        } else if (sign === "*") {
+          stack[stack.length - 1] = stack[stack.length - 1] * num;
+        } else if (sign === "/") {
+          stack[stack.length - 1] = parseInt(stack[stack.length - 1] / num);
+        }
+        num = 0;
+        sign = char;
+      }
+      // 遇到右括号返回递归结果
+      if (char === ")") break;
+    }
+
+    return stack.reduce(function (sum, current) {
+      return sum + current;
+    }, 0);
+  };
+
+  return helper(s);
+};
+```
+
 ## 对角线遍历矩阵
 
 https://leetcode.cn/problems/diagonal-traverse/

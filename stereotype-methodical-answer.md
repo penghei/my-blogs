@@ -583,6 +583,7 @@
       - Upgrade
     - 实体
       - Content-Encoding、Type、Language、Length
+      - Content-Type的multipart/form-data在请求体中的格式是什么
 - HTTP 的方法有哪些
   - get head post put delete options
 - **HTTP 状态码**
@@ -1214,10 +1215,10 @@
   - 生命周期
   - React element 的获取
 - 类组件的生命周期
-  - 挂载
+  - 挂载  
     - constructor -> getDerivedStateFromProps -> render -> componentDidMount
   - 更新
-    - gdsf -> shouleComponentUpdate -> render -> getSnapshotBeforeUpdate -> commit -> componentDidUpdate
+    - gdsf -> shouldComponentUpdate -> render -> getSnapshotBeforeUpdate -> commit -> componentDidUpdate
   - 废弃的声明周期，为什么？
 - React 事件系统
   - 概念：

@@ -765,7 +765,7 @@ X-Forwarded-For: 203.0.113.195, 70.41.3.18, 150.172.238.178
 1. `application/x-www-form-urlencoded`：浏览器的原生 `form` 表单，如果不设置 `enctype` 属性，那么最终就会以 `application/x-www-form-urlencoded `方式提交数据。该种方式提交的数据放在 body 里面，数据按照 `key1=val1&key2=val2` 的方式进行编码，key 和 val 都进行了 URL 转码。
 2. `multipart/form-data`：该种方式也是一个常见的 POST 提交方式，通常表单上传文件时使用该种方式。
 3. `application/json`：服务器消息主体是序列化后的 JSON 字符串。
-4. `text/xml、text/plain`：该种方式主要用来提交 XML 格式、纯文本格式的数据。
+4. `text/html、text/plain`：该种方式主要用来提交 XML 格式、纯文本格式的数据。
 
 
 > `multipart/form-data`形式的请求体是一种多部分的数据格式常用于文件上传场景。多部分数据格式由多个部分组成，每个部分都有自己的Content-Type和内容。每个部分之间通过一定的分隔符进行分隔。

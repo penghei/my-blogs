@@ -1062,7 +1062,7 @@ function ensureRootIsScheduled(root, currentTime) {
   // 调度一个新的更新任务
   let newCallbackNode;
   if (newCallbackPriority === SyncLanePriority) {
-    // 这里根据Lagacy模式和concurrent模式分别进入不同的调度流程
+    // 这里根据Legacy模式和concurrent模式分别进入不同的调度流程
     // 但是核心都是performSyncWorkOnRoot，这个是调度的入口函数
     if (root.tag === LegacyRoot) {
       scheduleLegacySyncCallback(performSyncWorkOnRoot.bind(null, root));
@@ -1111,7 +1111,7 @@ function ensureRootIsScheduled(root, currentTime) {
     }
   }
   ```
-  - scheduleMicrotask 根据浏览器兼容性选择不同的微任务 api，可能是 queueMicrotask、Promise.reslove 或者 setTimeout。通过微任务执行 flushSyncCallbacks，也就是同步任务更新队列；借此就实现了批量更新。
+  - scheduleMicrotask 根据浏览器兼容性选择不同的微任务 api，可能是 queueMicrotask、Promise.resolve 或者 setTimeout。通过微任务执行 flushSyncCallbacks，也就是同步任务更新队列；借此就实现了批量更新。
 
 ---
 
@@ -1420,7 +1420,17 @@ beginWork 作用如下：
 2. 组件更新任务的调度统一发生在 RootFiber 上，那是怎么确定具体在哪个组件更新呢？换句话说，即使知道对应的组件，又是靠什么方法搜索到组件的位置呢？如果是依靠遍历搜索，那时间复杂度就会大大增加。
 3. 子组件更新会导致父组件进入 beginWork 吗，它的同级相邻组件呢？
 
-在 React17 的 scheduleUpdateOnFiber 中有这么一个函数： markUpdateLaneFromFiberToRoot
+
+以state更新为例，当我们调用一个组件的setState更新时，就会触发scheduleUpdateOnFiber
+
+```js
+function dispatchAction(fiber, queue, action) {
+  const lane = requestUpdateLane(fiber);
+  scheduleUpdateOnFiber(fiber, lane, eventTime);
+}
+```
+
+在 scheduleUpdateOnFiber 中有这么一个函数： markUpdateLaneFromFiberToRoot
 
 ```js
 function scheduleUpdateOnFiber(fiber, lane) {

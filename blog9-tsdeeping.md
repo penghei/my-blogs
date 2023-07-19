@@ -95,7 +95,7 @@ let strLength: number = (<string>someValue).length;
 
 但是容易和 jsx 混淆， 因此不建议使用
 
-## unknow
+## unknown
 
 unknown 类型和 any 类型都可以用来表示任意类型的值，但它们有以下几点区别：
 

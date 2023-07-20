@@ -498,22 +498,39 @@ function isEqual(x, y) {
 
 另外一种写法，思路上有点像比较两棵树；但是由于对象的键可能大于 2，因此写出来更像回溯：
 
+注意几个边界情况
+1. 对象的key顺序可能不同，可以使用sort将其排个序
+2. value相同key不同的情况也要注意，要排序后再比较一下key
+3. `[0]`和`{"0":0}`表现是一样的，但不是同一类，要注意区分，可以判断一下两者类型。
+
 ```js
-const isObj = (obj) => typeof obj === "object";
-function isEqual(obj1, obj2) {
-  if (!isObj(obj1) && !isObj(obj2)) return obj1 === obj2;
-  else if ((isObj(obj1) && !isObj(obj2)) || (!isObj(obj1) && isObj(obj2)))
-    return false;
-  const keysX = Object.keys(obj1);
-  const keysY = Object.keys(obj2);
-  if (keysX.length !== keysY.length) {
-    return false;
-  }
-  let flag = true;
-  for (let key in obj1) {
-    flag = flag && isEqual(obj1[key], obj2[key]);
-  }
-  return flag;
+/**
+ * @param {any} o1
+ * @param {any} o2
+ * @return {boolean}
+ */
+var areDeeplyEqual = function (o1, o2) {
+    if (!o1 && !o2) return o1 == o2
+    if (o1 && !o2 || !o1 && o2) return false
+    if (!isObject(o1) && !isObject(o2)) return o1 === o2
+    if (getType(o1) !== getType(o2)) return false
+    const keys1 = Object.keys(o1).sort()
+    const keys2 = Object.keys(o2).sort()
+    if (keys1.length !== keys2.length) return false
+    let flag = true
+    for (let i = 0; i < keys1.length; i++) {
+        const key1 = keys1[i]
+        const key2 = keys2[i]
+        flag = flag && key1 === key2 && areDeeplyEqual(o1[key1], o2[key2])
+    };
+    return flag
+}
+function isObject(obj) {
+    return typeof obj === "object" && obj != null
+}
+
+function getType(val) {
+    return Object.prototype.toString.call(val).slice(8, -1)
 }
 ```
 
@@ -712,6 +729,87 @@ function sum(...args1) {
   return f;
 }
 ```
+
+## 手写缓存函数
+
+> 实现一个缓存函数，返回一个处理之后的函数，这个函数多次调用相同的参数时只会调用一次，第一次之后都返回缓存结果。
+> 具体参考：https://leetcode.cn/problems/memoize-ii/
+
+缓存的实现是这道题的核心，具体来说方式有两种：
+
+1. 计算key。不过这里要用到两个map，一个map用于记录具体的args，然后对应一个id值作为key（其他任何不重复的也行）；另一个map就是id和函数运行结果的映射。
+
+之所以要两个，是因为题目需要的其实是两个地方的缓存判断，一个是比较各个参数，在参数全部相同的情况下才会取缓存；另一个是存具体的缓存值。
+
+```
+map1  args --> id ---> key
+map2  id --> value
+```
+
+代码如下：
+
+```js
+function memoize(fn) {
+  const argToIdMap = new Map();
+  const idToValueMap = new Map();
+  let id = 0;
+  return function (...args) {
+    let key = "";
+    for (let item of args) {
+      if (!argToIdMap.has(item)) argToIdMap.set(item, id++);
+      key += argToIdMap.get(item);
+    }
+    if (idToValueMap.has(key)) {
+      return idToValueMap.get(key);
+    } else {
+      const res = fn(...args);
+      idToValueMap.set(key, res);
+      return res;
+    }
+  };
+}
+```
+
+2. 利用前缀树，把每个参数看作是一个树节点，整个函数的参数列表就形成了一条查询路径，在查询逻辑的末尾和其他前缀树一样，设置一个值用于表示是否匹配到相同的参数列表，以及值是多少
+
+这种方法的好处在在于节省内存，因为相同的参数只会复用同一个map，每个map存的并不多。
+
+更进一步的方法是，如果参数的某一项是对象类型的，那就使用weakMap以节省内存。
+
+```js
+class DictNode {
+    res = undefined; // 如果这个节点是某个函数参数列表匹配的位置，这里存的就是函数返回值
+    save = false; // 类似前缀树的isEnd
+    primitive = new Map(); // 存储基本类型参数
+    object = new WeakMap(); // 存储引用类型参数
+    setResult(res) {
+      this.res = res; 
+      this.save = true;
+      return res
+    };
+}
+
+function isObject(arg) {
+    return typeof arg === 'function' || (typeof arg === 'object' && arg !== null);
+}
+
+function memoize(fn) {
+    const root = new DictNode();
+    return function (...args) {
+        let node = root
+        for (const item of args) {
+            const map = isObject(item) ? node.object : node.primitive;
+            if (!map.has(item)) map.set(item, new DictNode());
+            node = map.get(item);
+        }
+        if (node.save) return node.res;
+        else return node.setResult(fn(...args));
+    }
+}
+```
+
+在React中也有类似的实现：https://github.com/facebook/react/blob/ee4233bdbc71a7e09395a613c7dde01194d2a830/packages/react/src/ReactCache.js#L50
+
 
 ## 手写 Promise
 
@@ -1566,6 +1664,11 @@ total = (...args) => f(h(...args)) = f(g(h(..args)))
 // 依次类推
 ```
 
+## 手写immerjs的produce函数效果
+
+参考：https://leetcode.cn/problems/immutability-helper/solutions/2287059/proxychao-shi-by-yuan-zhi-b-e667//
+
+
 ## 手写对象扁平化和逆扁平化
 
 ### 扁平化
@@ -1795,30 +1898,41 @@ function render(vnode, container) {
 代码：
 
 ```js
-function stringify(obj) {
-  if (obj === null) return obj;
-  if (typeof obj !== "object") {
-    const type = typeof obj;
-    if (type === "number" || type === "boolean") return obj;
-    if (type === "string") return `"${obj}"`;
-    else return undefined;
-  }
-
-  const res = [];
-  const isArray = Array.isArray(obj);
-  for (const key in obj) {
-    let val = obj[key];
-    val = stringify(val);
-    if (val === undefined) {
-      if (!isArray) continue;
-      else val = null;
-    }
-    // 如果当前obj是对象，那么每个值都是`key:value`形式，否则就只是value
-    res.push((isArray ? "" : `"${key}":`) + val);
-  }
-  return isArray ? `[${res.join(",")}]` : `{${res.join(",")}}`;
+const isObject = (object) => typeof object == 'object' && object != null
+const isArray = Array.isArray
+const toString = (val) => {
+    if (typeof val === "number" || typeof val === "boolean") return val
+    if (typeof val === "string") return `"${val}"`
+    if (val == null) return "null"
 }
+var jsonStringify = function (object) {
+    if (object === null || typeof object !== 'object') return toString(object)
+    let str = isArray(object) ? '[' : '{'
+    const keys = [...Object.entries(object)]
+    for (let i = 0; i < keys.length; i++) {
+        const [key, value] = keys[i]
+        if (isArray(object)) {
+            str += jsonStringify(value)
+        } else {
+            str += `"${key}":${jsonStringify(value)}`
+        }
+        str += i === keys.length - 1 ? '' : ','
+    }
+    str += isArray(object) ? ']' : '}'
+    return str
+};
 ```
+
+## 手写 JSON.parse
+
+看到一个非常好的解法，很工整：
+
+https://leetcode.cn/problems/convert-json-string-to-object/solutions/2329596/shou-xie-jsonparse-fang-fa-by-alex-pang-toii/
+
+parse的解法其实可以分解成几个部分，即从一个嵌套结构开始，再扩展到多种类型
+
+
+
 
 ## 手写 LazyMan 类
 

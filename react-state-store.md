@@ -917,7 +917,7 @@ function Index() {
 在 useSyncExternalStore 内部，第一次调用时会调用一个 subscribeToStore 函数，这个函数会调用 store.subscribe 并传入一个 handleStoreChange 函数。
 handleStoreChange 的作用就是检查 state（即从第二个参数来的 state）是否发生变化。如果变化就触发更新。
 
-而传入的 store.subcribe 函数会将 handleStoreChange 放入 store 的 listeners 上，在 dispatch 时调用。
+而传入的 store.subscribe 函数会将 handleStoreChange 放入 store 的 listeners 上，在 dispatch 时调用。
 因此后面调用 dispatch 时就会执行 handleStoreChange，得到新的 state、比较新旧 state、触发更新。
 
 ```ts

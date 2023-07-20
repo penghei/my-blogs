@@ -15,4 +15,5 @@ https的证书链
 QUIC协议的原理（深入）
 如果想在udp的基础上实现http，应该怎么做？https://xiaolincoding.com/network/3_tcp/quic.html
 token相关八股
+发布订阅模式的基础和高级实现，更多的功能（比如异步、错误处理）。可参考[pubsubjs](https://github.com/mroderick/PubSubJS/blob/master/src/pubsub.js)和[tapable](https://github.com/webpack/tapable/blob/master/lib/Hook.js)
 

@@ -583,7 +583,7 @@
       - Upgrade
     - 实体
       - Content-Encoding、Type、Language、Length
-      - Content-Type的multipart/form-data在请求体中的格式是什么
+      - Content-Type 的 multipart/form-data 在请求体中的格式是什么
 - HTTP 的方法有哪些
   - get head post put delete options
 - **HTTP 状态码**
@@ -625,7 +625,7 @@
     - 多路复用
     - 请求优先级
     - 服务端推送
-    - 头部压缩（HPACK算法，三个部分，静态表存储key、哈夫曼编码压缩value，动态表存储剩余）
+    - 头部压缩（HPACK 算法，三个部分，静态表存储 key、哈夫曼编码压缩 value，动态表存储剩余）
     - 一个 tcp 连接
     - 问题：依赖 tcp，tcp 的队头阻塞
   - 3.0
@@ -766,7 +766,7 @@
     - httponly
     - 不信任用户输入（过滤输入）
     - 不使用拼接字符串形成 html
-    - 转码输出，html转码和js转码
+    - 转码输出，html 转码和 js 转码
 - CSRF 攻击和防范
   - 概念
   - 基本原理：模拟用户发起请求
@@ -1028,76 +1028,76 @@
 
 # 工程化
 
-- node相关
-  - package.json的作用，几个关键字段
+- node 相关
+  - package.json 的作用，几个关键字段
     - peerDependencies，dependencies、devDependencies
-  - package-lock作用
+  - package-lock 作用
   - npm
-    - npm包版本号
+    - npm 包版本号
       - `[major,minor,patch]`
       - `^`和`~`
-    - npm install全过程
+    - npm install 全过程
       - 检查是否安装
-      - 解析package和package-lock
+      - 解析 package 和 package-lock
       - 搜索远程库，下载包，缓存，解压
       - 扁平化解压
     - npm run 全过程
-      - 安装依赖时安装可执行文件到bin
+      - 安装依赖时安装可执行文件到 bin
       - 软链接
 - npm/yarn/pnpm
-  - yarn的特点
+  - yarn 的特点
     - 并行下载
     - 安全检查
-  - pnpm的特点
+  - pnpm 的特点
     - 硬链接依赖
     - 更新时只更新最小内容
     - 速度快
       - 解析和下载过程连续，加快速度
-    - 非扁平node_modules
-      - 根store存储所有库的所有版本
-      - .pnpm根据项目需要扁平化硬链接
-      - node_modules的其他库都是对.pnpm内的软连接
+    - 非扁平 node_modules
+      - 根 store 存储所有库的所有版本
+      - .pnpm 根据项目需要扁平化硬链接
+      - node_modules 的其他库都是对.pnpm 内的软连接
     - 局限性：
-      - 如果修改store可能影响所有项目
+      - 如果修改 store 可能影响所有项目
       - 兼容性不佳
 - Babel
 - Vite
   - 特点
     - 依赖和源码，依赖预构建
-      - esbuild，go编写
-    - 源码直接引入，利用浏览器module
+      - esbuild，go 编写
+    - 源码直接引入，利用浏览器 module
     - 开发环境强缓存
-    - rollup打包
+    - rollup 打包
 - ESlint
   - 配置
-    - extends加载预设，plugins使用插件。
+    - extends 加载预设，plugins 使用插件。
 - git
   - 基本概念
     - 工作区、暂存区、版本库
     - 分支
-    - HEAD指针
+    - HEAD 指针
   - 常用命令
     - 创建切换分支
-    - git log查看历史commitid
-    - git reset --hard HEAD^回退commit
+    - git log 查看历史 commitid
+    - git reset --hard HEAD^回退 commit
     - git stash
     - git cherry-pick commitid
     - push/pull/fetch
     - git tag
   - 工作流
     - git flow
-      - 长期分支：master和develop
+      - 长期分支：master 和 develop
       - 临时分支：feature/hotfix/release
     - github flow
-      - master创建feature
-      - feature提pr到master
+      - master 创建 feature
+      - feature 提 pr 到 master
     - gitlab flow
     - gitflow flow
       - 标准五分支，master/release/fix/feature/develop
 - 其他模块化内容
   - 循环加载
     - cjs：循环加载只输出第一次执行，之后遇见不执行
-    - esm：差不多，import不会进入已经解析过的模块
+    - esm：差不多，import 不会进入已经解析过的模块
   - 项目中问题：循环依赖导致使用在定义之前
     - 解决方案：统一导入再统一导出，统一导入时按照合理顺序
 - MVVM/MVC
@@ -1215,7 +1215,7 @@
   - 生命周期
   - React element 的获取
 - 类组件的生命周期
-  - 挂载  
+  - 挂载
     - constructor -> getDerivedStateFromProps -> render -> componentDidMount
   - 更新
     - gdsf -> shouldComponentUpdate -> render -> getSnapshotBeforeUpdate -> commit -> componentDidUpdate
@@ -1388,6 +1388,92 @@
       - 对 Concurrent 支持好
       - 使用层面：更简单，对 ts 支持更好
 
+# React Native
+
+- 基本使用
+  - 页面和导航
+    - 特点：页面不会被卸载
+  - 动画
+    - Animated
+      - Animated 组件
+      - Animated.timing
+    - LayoutAnimation
+  - 调用原生
+    - 直接调用原生模块
+    - 调用原生方法
+- 性能
+  - 不同方面
+    - js 帧率
+    - ui 帧率
+    - 产物
+      - RAM Bundles 和内联引用优化
+        - 基本原理：RAM 和 require 分别是什么
+        - File RAM bundle 和 Indexed RAM Bundle
+        - 和 import()的区别
+    - 长列表
+      - FlatList 和 SectionList
+      - 优化方式（props 传入）
+      - 长列表的基本原理
+    - React 性能
+  - 指标和测量方式
+    - 首屏：js bundle 资源下载及解压耗时 + RN 视图创建耗时 + RN 资源加载耗时 + js bridge 及应用启动耗时 + 首屏视图渲染耗时
+    - 帧率
+    - TTI、FID、FMP、FCP
+  - 优化方式
+    - 渲染
+    - bundle
+    - 预加载预请求
+    - 缓存
+    - 帧数优化
+    - 内存
+    - 网络请求
+- 组件
+  - 列表
+    - 四种列表
+    - 虚拟列表实现原理和特性
+      - 只渲染可视
+      - 节点回收和复用
+      - 异步加载和渲染
+      - 渲染优先级，滚动方向
+    - 优化
+      - maxToRenderPerBatch 和 updateCellsBatchingPeriod 控制批处理
+      - initialNumToRender
+      - windowSize
+      - ListItem 优化
+        - item 组件简单化
+        - 轻量，不用大图
+        - memo
+        - getItemLayout
+        - key
+- 原理
+  - 旧版架构
+    - 关键部分
+      - js 代码
+      - js 引擎
+      - bridge
+      - native
+    - 渲染
+      - 渲染线程
+        - ui 线程
+        - js 线程
+        - shadow 线程
+      - 三颗渲染树
+        - fibertree
+        - shadowtree
+        - 原生 tree
+      - 渲染过程
+    - 通信
+      - js 调 native 方法
+      - native 调 js 方法
+      - 序列化
+    - 其他
+      - bundle：一个入口是一个 bundle
+      - rn 启动流程
+  - 新版架构
+    - JSI
+    - Fabric
+    - Turbo Modules
+
 # 深层思考问题
 
 - 状态管理库
@@ -1455,14 +1541,26 @@
 # 设计模式
 
 - 工厂模式
+  - 简单工厂
+  - 工厂
+    - 区别：简单工厂扩展需要修改内部代码（ifelse），工厂模式可以通过继承
+  - 抽象工厂
 - 单例模式
+  - js 实现：Class.instance 获取该类的实例
+  - 应用：全局 Modal
 - 装饰器
+  - 本质：函数
 - 原型
 - 适配器
 - 代理
+  - 事件代理：即 js 的事件委托
+  - 虚拟代理：比如图片加载之前用 image 对象当占位符
+  - 缓存代理：缓存函数，比如存储函数计算结果
 - 策略
+  - 策略模式：封装 ifelse
 - 观察者和发布订阅
-- 两者区别
+  - 两者区别：观察者模式中订阅者可获取发布者实例，发布定于模式则直接传递参数
+  - 实现：可以通过 map
 
 # 项目
 
@@ -1497,7 +1595,7 @@
         - 拖拽效果的优化
           - 节流降低触发频率，但要保证一定的帧率
           - 局部更新：只绘制部分区域，比如拖拽范围周边一圈的大小
-          - 使用rAF：将拖拽过程看做是一个动画，即拖拽开始和结束之间是一个动画，利用rAF保证流畅。
+          - 使用 rAF：将拖拽过程看做是一个动画，即拖拽开始和结束之间是一个动画，利用 rAF 保证流畅。
     - 代码规范不易遵守，经常忘记：采用 eslint，自己编写 plugin
       - 编写 plugin
         - 方式：ast
@@ -1513,6 +1611,7 @@
         - recoil
         - zustand、jotai
 - 秒杀
+
   - 优化
     - 开发环境
       - eval-cheap-module-source-map

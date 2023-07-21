@@ -331,6 +331,7 @@ https://leetcode.cn/problems/remove-duplicates-from-sorted-array/
 这道题有一个更通用的题型，即，使每个元素最多出现k次。k可能是1、2甚至更多，每个数字可以少于k次，但不能多于k次。
 
 通用的模板是下面这样：
+
 ```js
 var removeDuplicates = function (nums, k) {
   let i = 0

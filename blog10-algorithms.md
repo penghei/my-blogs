@@ -373,6 +373,31 @@ if(i < k || nums[i - k] !== nums[j])
 
 最后得到的i就是边界。
 
+如果题目希望删除所有重复的元素，即如果一个元素重复，则一个不留；那么就不能使用这种方法，因为当k=0时每一步`nums[i] === nums[j]`都成立，就没法算了。
+有一个思路是参考链表的移除全部相邻重复数字的题，和那道题的链表解法一样，这里做一个参考。如果有更好的方法后面补充：
+
+```js
+const removeDuplicate = (nums) => {
+  nums.sort((a,b) => a - b)
+  // 原地删除某个位置的数
+  const deleteNum = (i) => {
+    for(;i < nums.length;i++){
+      nums[i] = nums[i+1]
+    }
+  }
+  let i = -1
+  while(nums[i+1]!=null && nums[i+2] != null ){
+    if(nums[i+1] === nums[i+2]){
+      let val = nums[i+1]
+      while(nums[i+1]  === val) deleteNum(i+1)
+    }else{
+      i++
+    }
+  }
+  return nums.slice(0,i+1)
+}
+```
+
 
 ## 移动零
 
@@ -547,6 +572,8 @@ for (let i = 1; i < length; i++) {
 return res;
 ```
 
+**注意：要记住当end+1超长时就不需要再减了，要记得这个条件判断**
+
 ### 区间加法
 
 https://leetcode.cn/problems/range-addition/
@@ -651,6 +678,29 @@ for(let i = 1;i < nums.length;i++){
 
 ```
 
+**注意，前缀和的起始应该是0，但这个0不应该在前缀和的数组里，而是直接放到哈希表里**。
+啥意思呢？以数组`[1,2,3,4,5]`为例。如果以nums[0]作为preSum[0]的话，那么如果想得到和为10的子数组，就会计算不出来，因为preSum[0]是1。
+因此我们应该在-1位置上增加一个0，即`preSum[-1] = 0`；实际解题过程中并不需要真的向preSum添加，因为会打乱其他元素的index。可以在map中增加一个，即`map.set(0,-1)`，然后其他位置正常设置即可。这样就不会出现子数组从头开始没算上的问题。
+
+```js
+const findSubArraySum = (nums,target) => {
+  const preSum = [nums[0]]
+  for(let i = 1;i < nums.length;i++){
+    preSum[i] = preSum[i-1] + nums[i]
+  }
+  const map = new Map()
+
+  map.set(0,-1) // 这里，如果不加的话，从第一位开始的子数组就算不出来
+  
+  for(let i = 0;i < preSum.length;i++){
+    if(map.has(preSum[i] - target)) return [map.get(preSum[i] - target),i]
+    map.set(preSum[i],i) 
+  }
+  return [-1,-1]
+}
+```
+
+
 ### 连续数组（前缀和）
 
 https://leetcode.cn/problems/contiguous-array/
@@ -708,7 +758,7 @@ https://leetcode.cn/problems/valid-triangle-number/
 > 示例 1:
 > 输入: nums = [2,2,3,4]
 > 输出: 3
-> 解释:有效的组合是:
+> 解释: 有效的组合是:
 > 2,3,4 (使用第一个 2)
 > 2,3,4 (使用第二个 2)
 > 2,2,3
@@ -836,7 +886,7 @@ var triangleNumber = function(nums) {
 };。
 ```
 
-## 寻找重复数
+## 寻找重复数（成环链表）
 
 > 给定一个包含  n + 1 个整数的数组  nums ，其数字都在  [1, n]  范围内（包括 1 和 n），可知至少存在一个重复的整数。
 > 假设 nums 只有 一个重复的整数 ，返回   这个重复的数 。
@@ -2711,6 +2761,8 @@ var decodeString = function (s) {
 
 思路是用两个栈存储，正常的入队就是 push 到 stack1；但是每次出队时，将 stack1 中的元素依次出栈再入栈到 stack2 中，这样栈底元素就被取出了；此后再次入队仍然是到 stack1 中
 
+注意每次出队操作并不是都要把stack1全部移到stack2中，而是要先判断stack2是否为空，如果为空才会移动。如果stack2中还有值，那么出队操作就是直接pop stack2即可。
+
 ```js
 class MyQueue {
   constructor() {
@@ -2878,6 +2930,8 @@ https://leetcode.cn/problems/permutation-in-string/
 
 但是这个问题在于判断字符相等，因为求得是字符串的**排列**而非子序列，因此它是连续但并不按顺序的，所以不能直接比较判断字符串相等（太耗时）。
 这里提供了一个思路是记录 a-z 的 26 个字符的出现次数的数组，**如果两个字符串之间除了顺序之外完全相同，那么这两个数组也一定是完全相同的**。因此就可以在每次遍历中当前字符++，并把超出窗口大小的字符--即可。
+
+注意如果采用这个方法，就不需要再创建一个queue了。说到底滑动窗口其实是一种思想，队列并不是必须的结构。
 
 ```js
 /**
@@ -3158,7 +3212,9 @@ https://leetcode.cn/problems/find-peak-element/
 
 - 如果 左边 > 中间值 > 右边 ，那就在左边查找，即相当于取左边的值为新的 right
 - 如果 左边 < 中间值 < 右边，在右边查找
+- 如果 左边 >= 中间 <= 右边，即中间是“谷底”，那么向右向左都可以，这里就取向右
 - 如果 左 < 中间 > 右，说明找到了。
+
 
 ```js
 /**
@@ -3247,6 +3303,58 @@ var search = function (nums, target) {
   return -1;
 };
 ```
+
+---
+
+这道题有一个扩展，就是数组中包含重复数字的情况，如果有重复就需要返回最小索引
+
+基础逻辑不变，在基础上增加一下新的判断：
+
+- 比较nums[0] 和 nums[mid]，大于和小于的情况不变，但是如果等于，就让left++。这个原理和下面搜索最小值的重复情况的right++类似，因为相等时不能确定mid到底是在哪个部分，因此我们让left++，逐渐缩小范围，直到mid确定范围为止
+- 每次循环时，如果`nums[left] === target`，就直接返回。这种主要是考虑到第一个元素就是target的情况，由于可能有重复数字，因此第一个元素不会被正常计算。
+
+比如`[5,5,5,1,2,3,4,5]`这个数组，如果不增加这个逻辑，那么最后得出的5应该是最后一个位置的
+这个比较难想到，但是如果类似的题目出现这个问题，可以尝试加上这个逻辑。
+
+- 如果target和nums[mid]相等，那么循环找到左边界。这个就和查找重复数字一样
+
+代码如下：
+
+```js
+var search = function (arr, target) {
+    let left = 0
+    let right = arr.length - 1
+    while (left <= right) {
+        const mid = (left + right) >> 1
+        if(arr[left] === target) return left
+        if (arr[mid] === target) {
+            let i = mid
+            while (arr[i] === target) {
+                i--
+            }
+            return i + 1
+        }
+        if (arr[mid] > arr[0]) {
+            if (target >= arr[0] && target < arr[mid]) {
+                right = mid - 1
+            } else {
+                left = mid + 1
+            }
+        } else if (arr[mid] < arr[0]) {
+            if (target <= arr[arr.length - 1] && target > arr[mid]) {
+                left = mid + 1
+            } else {
+                right = mid - 1
+            }
+        } else {
+            left++
+        }
+    }
+    return -1
+};
+```
+
+
 
 ## 搜索旋转排序数组的最小值
 
@@ -3593,7 +3701,7 @@ const preorder = (root) => {
   const stack = [];
   const res = [];
   stack.push(root);
-  while (stack.length) {
+  while (stack.length) { 
     let node = stack.pop();
     res.push(node.val);
     if (node.right) stack.push(node.right);
@@ -3727,7 +3835,25 @@ function dfs(node) {
 
 ### 基础数据结构
 
-js 平衡二叉树代码：
+js 平衡二叉树代码如下。
+
+参考：https://zhuanlan.zhihu.com/p/438604092
+
+平衡二叉树的实现关键是插入节点时的旋转，左旋和右旋。只有当插入和删除节点时才会出现不平衡的情况。
+
+比如考虑插入的情况，会有下面四种：
+1. LL：向根节点的左子树插入一个节点。这时根节点的左子树有可能会比右子树高，而且如果出现不平衡，那么根节点的平衡因子应该是+2，即左子树比右子树高2层
+2. LR：向根节点的左子树插入一个右子节点，根节点平衡因子为+2
+3. RR：右子树插入右子节点，平衡因子为-2
+4. RL：右子树插入左子节点，-2
+
+当出现上面四种情况时，就需要旋转树以保证平衡。注意这里的根节点不一定是整个树的根节点，也可以是某个子树的根节点。
+
+以LL旋转为例，实际操作是：
+
+![](https://pic.imgdb.cn/item/64bbffdb1ddac507cc08e5d9.jpg)
+
+其他三种旋转可以参考那篇文章，大体的旋转方式类似，都是改变根节点，然后把原来的根节点插入改变之后的，这样就可以降低高度差。
 
 ```js
 class AVLTree {
@@ -3741,7 +3867,8 @@ class AVLTree {
     return Math.max(this.getHeight(node.left), this.getHeight(node.right)) + 1;
   }
 
-  // 获取节点的平衡因子
+  // 获取节点的平衡因子，其实是左右节点高度的差值
+  // 如果>1，则说明左子树比右子树高度高，且不平衡，如果<-1则是反过来
   getBalanceFactor(node) {
     if (!node) return 0;
     return this.getHeight(node.left) - this.getHeight(node.right);
@@ -3783,6 +3910,8 @@ class AVLTree {
       return node; // 已存在相同节点
     }
 
+    // 插入完成之后，如果不平衡就需要进行旋转操作
+    // 后序检查每一个node，如果不平衡就进行旋转
     const balanceFactor = this.getBalanceFactor(node);
     if (balanceFactor > 1 && newNode.key < node.left.key) {
       // LL情况，进行右旋转
@@ -3826,6 +3955,7 @@ class AVLTree {
         return node.left || node.right;
       } else {
         // 情况3：有两个子节点
+        // 这里的删除和二叉搜索树的方式一样，找到左子树的最大或者右子树的最小，替换根节点
         const minNode = this._findMinNode(node.right);
         node.key = minNode.key;
         node.right = this._removeNode(node.right, minNode.key);
@@ -3913,6 +4043,17 @@ const isBalanced2 = function (root) {
   }
 
   return flag;
+};
+
+// 或者同时返回两个值也可
+const isValidTree = (root) => {
+  if (!root) return [true,0];
+  const [left, leftHeight] = isValidTree(root.left);
+  const [right, rightHeight] = isValidTree(root.right);
+  return [
+    left && right && Math.abs(leftHeight - rightHeight) <= 1,
+    Math.max(leftHeight, rightHeight) + 1,
+  ];
 };
 ```
 
@@ -4048,6 +4189,23 @@ const isValidBST = function (root) {
   }
   // 初始化最小值和最大值为极小或极大
   return dfs(root, -Infinity, Infinity);
+};
+
+// 另一种方法
+// 返回三个值，分别是[该子树是否合法，该子树的最小值，该子树的最大值]
+const isValidSearchTree = (root) => {
+    // 如果子树为null，那么最大值就应该是-Infinity。在返回的时候和root.val比较，就会选成root.val；相当于如果一个节点没有右子树，那么最大值就是他自己
+    // 最小值也是同理，这里设置-Infinity和Infinity就是为了下面的比较替换
+    if (!root) return [true, -Infinity, Infinity]
+    if (!root.left && !root.right) return [true, root.val, root.val];
+    // [左子树是否合法，左子树的最大值，左子树的最小值]
+    const [left, leftMax, leftMin] = isValidSearchTree(root.left);
+    const [right, rightMax, rightMin] = isValidSearchTree(root.right);
+    return [
+        left && right && root.val > leftMax && root.val < rightMin,
+        Math.max(rightMax, root.val), // 这两个，主要考虑左右子数可能为空的情况。如果右子树为空，那么显然该子树的最大值应该是当前节点
+        Math.min(leftMin, root.val), // 反过来同理
+    ];
 };
 ```
 
@@ -4193,6 +4351,45 @@ var findMode = function (root) {
   return maxNumbers;
 };
 ```
+
+## 完全二叉树
+
+### 二叉树的完全性校验（检查是否是完全二叉树）
+
+https://leetcode.cn/problems/check-completeness-of-a-binary-tree/
+
+给你一颗树，检查是否是完全二叉树。完全二叉树的最后一行可以不全吗，但必须靠左。
+
+方法是通过记录索引，每次放入节点时也把索引放入。对于完全二叉树来说，一个节点的左节点和右节点的索引应该是确定的。
+
+然后将所有索引打印输出，应该是一个从1开始连续的数。如果中间不连续则返回false
+
+```js
+var isCompleteTree = function (root) {
+    const queue = [{ node: root, index: 1 }]
+    const res = []
+    while (queue.length) {
+        const len = queue.length
+        for (let i = 0; i < len; i++) {
+            const { node, index } = queue.shift()
+            res.push(index)
+            if (node.left) {
+                queue.push({ node: node.left, index: index * 2 })
+            }
+            if (node.right) {
+                queue.push({ node: node.right, index: index * 2 + 1 })
+            }
+        }
+    }
+    console.log(res)
+    for(let i = 1;i <= res.length;i++){
+        if(res[i-1] !== i) return false
+    }
+    return true
+};
+```
+
+
 
 ## 比较两棵二叉树
 
@@ -4406,6 +4603,8 @@ var pathSum = function (root, targetSum) {
 
 ### 路径问题 3（任意节点开始）
 
+https://leetcode.cn/problems/path-sum-iii/
+
 > 给定一个二叉树的根节点 root ，和一个整数 targetSum ，求该二叉树里节点值之和等于 targetSum 的 路径 的数目。路径 不需要从根节点开始，也不需要在叶子节点结束，但是路径方向必须是向下的（只能从父节点到子节点）。
 
 这道题有两种解法，最好想的就是二重递归：
@@ -4423,9 +4622,11 @@ var pathSum = function (root, targetSum) {
 };
 
 function dfs(node, targetSum) {
-  let paths = 0;
+  let paths = 0; 
   if (!node) return 0;
-  if (node.val === targetSum) paths++;
+  // 这里不能直接返回1，因为考虑到节点的值是有正负的，当前路径和达到了，并不代表之后的不会达到
+  // 因此这里继续递归即可。实际上paths只会是1或0
+  if (node.val === targetSum) paths++; 
   return (
     paths +
     dfs(node.left, targetSum - node.val) +
@@ -4460,7 +4661,9 @@ var maxPathSum = function (root) {
     let left = Math.max(maxPath(node.left), 0);
     let right = Math.max(maxPath(node.right), 0);
     res = Math.max(res, node.val + left + right);
-    return Math.max(left, right) + node.val;
+    // 返回的是左右子树的最大路径和的较大值，因为不可能把左右子树路径连起来
+    // 只能选择左或右，否则不能构成路径
+    return Math.max(left, right) + node.val; 
   }
   maxPath(root);
   return res;
@@ -4633,7 +4836,7 @@ var mergeTrees = function (root1, root2) {
     else if (!node1 && node2) return node2;
     else if (node1 && !node2) return node1;
 
-    node1.val += node2.val;
+    node1.val += node2.val; // 注意这里不要提前return了
     node1.left = dfs(node1.left, node2.left);
     node1.right = dfs(node1.right, node2.right);
     return node1;
@@ -4812,11 +5015,148 @@ function findLast(node) {
 }
 ```
 
+
 # 回溯
 
 ## 九种基本回溯
 
 参考https://labuladong.github.io/algo/di-san-zha-24031/bao-li-sou-96f79/hui-su-sua-56e11/
+
+模板：
+
+### 组合/子集
+
+组合和子集问题在剪枝上属于同一类，区别只是在于输出不同。
+
+#### 组合/子集——元素不重复，不可重复选
+
+```js
+const dfs = (start) => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  for(let i = start;i < nums.length;i++){
+    path.push(...)
+    dfs(i+1)
+    path.pop()
+  }
+}
+```
+
+#### 组合/子集——元素重复，不可重复选
+
+```js
+// 数组排序情况下
+const dfs = (start) => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  for(let i = start;i < nums.length;i++){
+    if(i > start && nums[i] === nums[i-1]) continue
+    path.push(...)
+    dfs(i+1)
+    path.pop()
+  }
+}
+
+// 数组不可排序的情况
+const dfs = (start) => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  const set = new Set()
+  for(let i = start;i < nums.length;i++){
+    if(set.has(nums[i])) continue
+    set.add(nums[i])
+    path.push(...)
+    dfs(i+1)
+    path.pop()
+  }
+}
+```
+
+#### 组合/子集——元素不重复，可重复选
+
+```js
+const dfs = (start) => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  for(let i = start;i < nums.length;i++){
+    path.push(...)
+    dfs(i) // i不用+1
+    path.pop()
+  }
+}
+```
+
+
+### 排列
+
+#### 排列——元素不重复，不可重复选
+
+
+```js
+const visited = new Set()
+const dfs = () => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  for(let i = 0;i < nums.length;i++){
+    if(visited.has(i)) continue
+    path.push(...)
+    visited.add(i)
+    dfs(i+1)
+    path.pop()
+    visited.delete(i)
+  }
+}
+```
+
+#### 排列——元素重复，不可重复选
+
+最麻烦的一种，最好单独记忆这种情况。
+注意这里的visited判断是i-1而不是i
+
+```js
+const visited = new Set()
+const dfs = () => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  for(let i = 0;i < nums.length;i++){
+    if(i > 0 && nums[i] === nums[i-1] && !visited.has(i-1)) continue
+    path.push(...)
+    visited.add(i)
+    dfs(i+1)
+    path.pop()
+    visited.delete(i)
+  }
+}
+```
+
+#### 排列——元素不重复，可重复选
+
+```js
+const dfs = () => {
+  if(...){
+    res.push([...path])
+    return
+  }
+  for(let i = 0;i < nums.length;i++){
+    path.push(...)
+    dfs(i+1)
+    path.pop()
+  }
+}
+```
+
 
 ## 回溯问题的基本思路
 
@@ -5979,6 +6319,7 @@ function solution(nums) {
       }
       return;
     }
+    // 这里的循环原因是这四个数是可以任意修改位置的，即排列问题
     for (let i = 0; i < 4; i++) {
       if (visited[i]) continue;
       visited[i] = true;
@@ -6257,6 +6598,8 @@ var sortArray = function (nums) {
     while (i <= j) {
       while (arr[i] <= pivotValue && i < right) i++;
       while (arr[j] > pivotValue && j > left) j--;
+      // 这里为啥要判断一次i和j，直接在循环判断不行吗？
+      // 原因是，当i=j，且上面两个循环不能进入时，i和j一直不能自增，如果不加这个判断就无法退出
       if (i >= j) {
         break;
       }
@@ -6745,54 +7088,6 @@ var jump = function (nums) {
 };
 ```
 
-## 最少硬币找零
-
-> 给定不同面额的硬币 coins 和一个总金额 amount。
-> 编写一个函数来计算可以凑成总金额所需的 最少 的硬币个数。如果没有任何一种硬币组合能组成总金额，返回 -1。
-
-站在已经凑成的角度上思考问题，如果从已经凑成的结果中取走一个硬币，就会有以下的情况：
-![](https://pic.imgdb.cn/item/626789ea239250f7c5c0b9d6.jpg)
-
-借此可以推出状态转移方程：
-
-```
-n表示amount，f(n)表示凑成n金额所需的最少硬币数量
-
-f(n) = Math.min(f(n-c1)+1,f(n-c2)+1,f(n-c3)+1......f(n-cn)+1)
-
-```
-
-放入循环：
-
-```js
-const getCoinsDynamic = (coins, amount) => {
-  const f = [];
-  f[0] = 0;
-  for (let i = 1; i <= amount; i++) {
-    f[i] = Infinity;
-    // 这个循环相当于是 f[n] = Math.min(f(n-coin1),f(n-coin2),...,f(n-coinn))
-    // 由于coin数量不确定,因此两两比较每个f(n)和f(n-coin)
-    for (let coin of coins) {
-      if (i >= coin) f[i] = Math.min(f[i], f[i - coin] + 1);
-    }
-  }
-  if (f[amount] === Infinity) return -1;
-  return f[amount];
-};
-```
-
-这道题实际上是一个完全背包问题。我们把 coins 看作物品价值，要凑成的 amount 看作是重量，即求 coins 的组合，使得凑得 amount 的数量最小。
-可以设 dp[j]表示凑得 amount 的最小硬币个数，那么用一维数组表示的递推式就应该是：
-
-```js
-dp[j] = min(dp[j], dp[j - coins[i]] + 1);
-```
-
-如果给这道题换一个问题，即问你要凑出 amount 的硬币有多少种，其实就是对上面式子的小改进
-
-```js
-dp[j] += dp[j - coins[i]];
-```
 
 ## 整数拆分
 
@@ -7306,8 +7601,10 @@ j 的遍历下限是 w[i]，也就是最远能更新的位置。这时因为在�
 ```js
 const len = weight.length;
 const dp = Array(size + 1).fill(0);
-for (let i = 1; i <= len; i++) {
-  for (let j = size; j >= weight[i - 1]; j--) {
+
+// 一维形式下i不一定必须从1开始，可以看情况，如果dp[0]赋值之后能正常得出结果就不用从1开始
+for (let i = 0; i <= len; i++) {
+  for (let j = size; j >= weight[i]; j--) {
     dp[j] = Math.max(dp[j], value[i] + dp[j - weight[i]]);
   }
 }
@@ -7629,9 +7926,63 @@ for (let j = 0; j <= bagWeight; j++) {
 > dp[j] = max(dp[j], dp[j - nums[i]] + 1);
 > ```
 
-### 零钱兑换 II
+### 零钱兑换
 
-https://leetcode.cn/problems/coin-change-2/
+#### 零钱兑换1——最少数量
+
+https://leetcode.cn/problems/coin-change/
+
+> 给定不同面额的硬币 coins 和一个总金额 amount。
+> 编写一个函数来计算可以凑成总金额所需的 最少 的硬币个数。如果没有任何一种硬币组合能组成总金额，返回 -1。
+
+
+这道题实际上是一个完全背包问题。我们把 coins 看作物品价值，要凑成的 amount 看作是重量，即求 coins 的组合，使得凑得 amount 的数量最小。
+
+设dp[i][j]表示选择前i个硬币，当amount为j时的最小硬币数量，那么这里的value应该是1，相当于每次增加1个硬币
+
+```js
+dp[i][j] = min(dp[i-1][j-coins[i]] + 1,dp[i-1][j])
+```
+
+用一维数组表示的递推式就应该是：
+
+```js
+dp[j] = min(dp[j], dp[j - coins[i]] + 1);
+```
+
+不过其实这道题经常拿出来不是当做完全背包考的，而是普通的一维dp。我们设dp[i]表示凑成金额为i时的最小硬币数量，每次遍历所有硬币，可以选择不选当前硬币(dp[i])或者选当前硬币(dp[i-coins[j]] + 1)，取两个最小值即可。
+
+
+如果给这道题换一个问题，即问你要凑出 amount 的硬币有多少种，其实就是对上面式子的小改进
+
+```js
+dp[j] += dp[j - coins[i]];
+```
+
+放入循环：
+
+```js
+const getCoinsDynamic = (coins, amount) => {
+  const f = [];
+  f[0] = 0;
+  for (let i = 1; i <= amount; i++) {
+    f[i] = Infinity;
+    // 这个循环相当于是 f[n] = Math.min(f(n-coin1),f(n-coin2),...,f(n-coinn))
+    // 由于coin数量不确定,因此两两比较每个f(n)和f(n-coin)
+    for (let coin of coins) {
+      if (i >= coin) f[i] = Math.min(f[i], f[i - coin] + 1);
+    }
+  }
+  if (f[amount] === Infinity) return -1;
+  return f[amount];
+};
+```
+
+
+
+#### 零钱兑换2——组合总数
+
+https://leetcode.cn/problems/coin-change-ii/
 
 > 给你一个整数数组 coins 表示不同面额的硬币，另给一个整数 amount 表示总金额。
 > 请你计算并返回可以凑成总金额的硬币组合数。如果任何硬币组合都无法凑出总金额，返回 0 。
@@ -7676,7 +8027,7 @@ var change = function (amount, coins) {
 const change = (amount, coins) => {
   let dp = Array(amount + 1).fill(0);
   dp[0] = 1;
-
+  // 一维形式下i不一定必须从1开始，一般给dp[0]设好默认值就可以
   for (let i = 0; i < coins.length; i++) {
     for (let j = coins[i]; j <= amount; j++) {
       dp[j] += dp[j - coins[i]];
@@ -7686,6 +8037,7 @@ const change = (amount, coins) => {
   return dp[amount];
 };
 ```
+
 
 ### 组合总和 IV
 
@@ -7983,20 +8335,58 @@ var maxProfit = function (prices) {
 
 ---
 
-实际上状态 1 和 3 可以合并为一个状态，即“卖出且不在冷冻期”，和“卖出并在冷冻期”、“买入”这三个状态就可以。
+实际上“卖出且不在冷冻期”，和“卖出并在冷冻期”、“买入”这三个状态就可以。
+
+这三个状态的推导：
+1. 当天要买入，那么前一天必须是冷冻期，即必须从冷冻期状态推导，不能直接从卖出推导。其实就是买卖股票II里边的推导方式，只是这里要从冷冻期状态下推导
+2. 当天卖出，那么后一天就必须是冷冻期。对卖出来说，推导方式和买卖股票II完全相同
+3. 当天处在冷冻期，那么后一天可以买入，而前一天应该是刚好卖出的。
+
+
 
 设:
 
 - `dp[i][0]`表示今天买入
-- `dp[i][1]`表示当前处在冷冻期，即今天刚刚卖出；
-- `dp[i][2]`表示前几天卖出的，今天不在冷冻期。
+- `dp[i][1]`表示今天卖出，那么下一天就是冷冻期，买入不能从这一天继承值；
+- `dp[i][2]`表示今天是冷冻期，只能从前一天卖出的状态推导来。
 
 那么方程为：
 
 ```js
-dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][2] - price[i]);
-dp[i][1] = dp[i - 1][0] + price[i];
-dp[i][2] = Math.max(dp[i - 1][2], dp[i - 1][1]);
+dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][0] + prices[i])
+dp[i][2] = dp[i - 1][1]
+dp[i][0] = Math.max(dp[i - 1][2] - prices[i], dp[i - 1][0])
+```
+
+## 买卖股票III和IV
+
+III和IV其实本质上是同一道题，都是限制了交易次数。我们把每次买入看做是一次交易，在原来的dp基础上增加一个k维度，当每次买入时从k-1推导就可以。
+
+有几个关键点：
+1. 三维数组的创建方法：其实就是在最后一个数组map一下就可以，创建一个`n * (k + 1) * 2`的数组
+2. 初始化：这个的初始化比前几道麻烦一些，因为是三维数组。具体来说，在迭代过程中不会得出k = 0的情况，但却需要k = 0的结果，因此我们需要在每个i内，都把k=0的情况赋值为0。
+另外当i = 0时，交易次数大于0的`dp[i][k][0]`应该为`-price[i]`，相当于总共交易次数为k次时，第一次买入的利润。其他的都初始为0即可。
+
+具体实现：
+
+```js
+var maxProfit = function (K, prices) {
+    const dp = Array.from(new Array(prices.length), () => new Array(K + 1).fill(0).map(() => new Array(2)))
+    for (let i = 0; i < prices.length; i++) {
+        for (let k = K; k >= 1; k--) {
+            if (i === 0) {
+                dp[i][k][0] = -prices[i]
+                dp[i][k][1] = 0
+                continue
+            }
+            dp[i][k][0] = Math.max(dp[i - 1][k][0], dp[i - 1][k - 1][1] - prices[i])
+            dp[i][k][1] = Math.max(dp[i - 1][k][1], dp[i - 1][k][0] + prices[i])
+        }
+        dp[i][0][0] = 0
+        dp[i][0][1] = 0
+    }
+    return dp[dp.length - 1][K][1]
+};
 ```
 
 ## 打家劫舍 I
@@ -8051,12 +8441,15 @@ var rob = function (nums) {
 
 ```js
 var rob = function (nums) {
-  function dfs(i) {
-    if (i >= nums.length) {
-      return 0;
+    const memo = new Map()
+    const robRoom = (index) => {
+        if (index >= nums.length) return 0
+        if (memo.has(index)) return memo.get(index)
+        const val = Math.max(robRoom(index + 1), robRoom(index + 2) + nums[index])
+        memo.set(index, val)
+        return val
     }
-    return Math.max(nums[i] + dfs(i + 2), dfs(i + 1));
-  }
+    return robRoom(0)
 };
 ```
 
@@ -8077,6 +8470,11 @@ var rob = function (nums) {
 那怎么判断第一家还是第二家偷了呢？之前考虑判断`dp[1] === nums[0]`，如果是就说明偷了第一家；但是这个方法在第一家和第二家一样的时候就不能用了。
 因此应该从序号入手，计算两次，第一次是直接从 nums[1]开始；第二次从 nums[0]开始，到了倒数第二项就结束即可。最后取两个的较大值
 
+**注意：这道题的细节很多，要关注细节！！！！**
+
+主要细节在注释里
+
+
 ```js
 /**
  * @param {number[]} nums
@@ -8093,12 +8491,16 @@ var rob = function (nums) {
 
 const robRange = (nums, start, end) => {
   if (end === start) return nums[start];
+  // 这里dp正常创建就可，因为下面是从start开始的，可能是1或者0
   const dp = Array(nums.length).fill(0);
+  // 注意这里，不要设置dp[0]或dp[1]，而是直接设置dp[start]，相当于跳过了0和1的讨论，直接根据start确定起始元素
   dp[start] = nums[start];
+  // 这个地方需要取第一位和第二位的最大值，不要忘了
   dp[start + 1] = Math.max(nums[start], nums[start + 1]);
   for (let i = start + 2; i <= end; i++) {
     dp[i] = Math.max(dp[i - 2] + nums[i], dp[i - 1]);
   }
+  // 这里应该直接返回end，和dp计算的下界一致，不要dp[dp.length - 1]，因为当start=1时，最后一项和start=0的不同
   return dp[end];
 };
 ```
@@ -8118,18 +8520,19 @@ https://leetcode.cn/problems/house-robber-iii/
 
 ```js
 var rob = function (root) {
-  const map = new Map();
-  function dfs(root) {
-    if (!root) return 0;
-    if (map.has(root)) return map.get(root);
-    let steal = root.val;
-    if (root.left) steal += dfs(root.left.left) + dfs(root.left.right);
-    if (root.right) steal += dfs(root.right.left) + dfs(root.right.right);
-    const unsteal = dfs(root.left) + dfs(root.right);
-    map.set(root, Math.max(steal, unsteal));
-    return Math.max(steal, unsteal);
-  }
-  return dfs(root);
+    const memo = new Map()
+    const robRoom = (node) => {
+        if (!node) return 0
+        if (memo.has(node)) return memo.get(node)
+        let amount1 = robRoom(node.left) + robRoom(node.right)
+        let amount2 = node.val
+        if (node.left) amount2 += robRoom(node.left.left) + robRoom(node.left.right)
+        if (node.right) amount2 += robRoom(node.right.left) + robRoom(node.right.right)
+        const res = Math.max(amount1,amount2)
+        memo.set(node, res)
+        return res
+    }
+    return robRoom(root)
 };
 ```
 
@@ -8549,7 +8952,7 @@ var numDistinct = function (s, t) {
 
 这道题有两个思路：
 
-1. 设`dp[i][j]`为以 i-1 为结尾的 s 和以 t-1 为结尾的 t，两个串要相等需要删除的字符数量。
+1. 设`dp[i][j]`为以 i-1 为结尾的 s 和以 j-1 为结尾的 t，两个串要相等需要删除的字符数量。
 2. 计算两个串的最长公共子序列长度，然后任意一个串的长度减去公共子序列的长度就可以
 
 以第一个思路为例，还是比较`s[i-1]`和`t[i-1]`
@@ -10066,35 +10469,41 @@ class MinHeap {
 ```js
 const swap = (arr, a, b) => ([arr[a], arr[b]] = [arr[b], arr[a]]);
 
-// 大顶堆的shiftDown
-// 注意参数必须要限制heapSize，即只处理堆的一部分而不是全部，后面排序好的部分不再参与
-const heapify = (heap, index, heapSize = heap.length) => {
-  const left = 2 * index + 1 > heapSize ? null : 2 * index + 1;
-  const right = 2 * index + 2 > heapSize ? null : 2 * index + 2;
-
-  // 这里后面都是大于号，如果是小顶堆换成小于号就行
-  if (heap[left] > heap[index] || heap[right] > heap[index]) {
-    const tmp = heap[left] > heap[right] ? left : right;
-    swap(heap, tmp, index);
-    heapify(heap, tmp, heapSize);
-  }
-};
-
-const heapSort = (arr) => {
-  let len = arr.length - 1;
-  // 首先构建大顶堆。
-  // 从第一个叶子元素开始，从上向下原地建堆
+function buildMaxHeap(arr) {
   for (let i = Math.floor(arr.length / 2); i >= 0; i--) {
-    heapify(arr, i);
+    heapify(arr, i, arr.length);
+  }
+}
+
+function heapify(arr, i, size) {
+  const left = 2 * i + 1;
+  const right = 2 * i + 2;
+  let mid = i;
+  // 关键点2：当left和right超出size时，放弃这个值
+  if (left < size && arr[left] > arr[mid]) {
+    mid = left;
   }
 
-  while (len > 0) {
-    swap(arr, 0, len); // 交换第一个元素和最后一个范围内的元素
-    len--; // 范围缩短，因为最后一个元素此时已经是最大
-    heapify(arr, 0, len); //处理范围内的
+  if (right < size && arr[right] > arr[mid]) {
+    mid = right;
+  }
+
+  if (mid !== i) {
+    swap(arr, i, mid);
+    heapify(arr, mid, size);
+  }
+}
+
+function heapSort(arr) {
+  buildMaxHeap(arr);
+  let len = arr.length; // 关键点0：注意size和len是数组长度，而不是最后一项索引，因此相当于是以len为边界+1，left和right都不能等于size或len
+  for (let i = len - 1; i > 0; i--) { // 关键点1：这里i>0终止
+    swap(arr, 0, i);
+    len--;
+    heapify(arr, 0, len);
   }
   return arr;
-};
+}
 ```
 
 ### Top K

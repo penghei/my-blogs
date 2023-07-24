@@ -17,8 +17,18 @@ token的过期处理，如何处理同时多个请求过期导致重复跳转首
 
 TLS不同版本的差异？
 https的证书链
-QUIC协议的原理（深入）
+QUIC协议的原理，如何在udp上实现http？
 如果想在udp的基础上实现http，应该怎么做？https://xiaolincoding.com/network/3_tcp/quic.html
 token相关八股
 发布订阅模式的基础和高级实现，更多的功能（比如异步、错误处理）。可参考[pubsubjs](https://github.com/mroderick/PubSubJS/blob/master/src/pubsub.js)和[tapable](https://github.com/webpack/tapable/blob/master/lib/Hook.js)
+why-did-you-render等调试工具的原理（简历上写的东西都要起码了解原理，还有eslint）
+
+
+
+---
+
+目前的问题
+1. 之前暑期实习面试的时候感觉项目（超管项目）有时候面试官不满意，说了很多内容但面试官还说还有什么可以做的，以及业内是怎么做的。这个应该怎么补充
+2. 第一个项目，轮播图有没有必要说？轮播图和轮播视频如果详述的话，有哪些可扩展的地方显得项目比较有价值呢？
+3. rn的项目对简历或者面试有没有影响，比如做rn的部门可能更好过；如果面试官不懂rn会不会这个项目就跳过了，那不就相当于少了一大块优势，毕竟这个项目是实习的
 

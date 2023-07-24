@@ -1931,7 +1931,132 @@ https://leetcode.cn/problems/convert-json-string-to-object/solutions/2329596/sho
 
 parse的解法其实可以分解成几个部分，即从一个嵌套结构开始，再扩展到多种类型
 
+其实类似的解析类算法都可以采取这个思路。
+从简单的例子来说，如何把这个字符串解析成数组？
 
+```js
+const str = "[[1],2,3,[4,[5]]]"
+```
+
+方法如下：
+1. 设置一个全局的index，始终递增
+2. 每次遍历到`[`，就进入一层递归，同时idx++跳过左括号
+3. 如果str[idx]是数字，那就放到本层递归创建的数组里，然后跳过逗号
+4. 如果遍历到`]`，就返回一层递归即可
+
+```js
+let index = 0;
+const parseArray = (str) => {
+  if(index >= str.length) return []
+  const res = [];
+  while (index < str.length && str[index] !== "]") {
+    if(str[index] === ',') index++ // 跳过逗号
+    if (str[index] === "[") {
+      index++;
+      res.push(parseArray(str)); // 如果是左括号就递归一层
+    } else if (!isNaN(str[index])) {
+      res.push(+str[index]); // 这里只处理1位数，多位数、小数、负数都要到单独处理
+      index++;
+    }
+  }
+  index++; // 跳过右括号
+  return res;
+};
+```
+
+这时一个最简单的括号的parse。那么对象其实也是类似的，不过需要把引号内的key取出来。
+对于一个json来说，可能有的数据就是number/string/boolean/null/Array/Object这几种。对于每个类型我们都可以单独写一个parse函数，这些函数之间还可以互相调用，比如对象在获取key时就需要调parseString来得到具体的key。
+
+代码如下：
+
+```js
+var jsonParse = function(str) {
+  const n = str.length;
+  let index = 0;
+  // 解析字符串
+  function parseString() {
+    let curStr = "";
+    // ++index 是为了直接跳过首个 `"` 字符
+    while(++index < n && str.charAt(index) !== '"') {
+      curStr += str.charAt(index);
+    }
+    // 跳过结束双引号 `"`
+    index++;
+    return curStr
+  }
+  // 解析数值
+  function parseNumber(){
+    let num = '';
+    while(index < n) {
+      cur = str.charAt(index);
+      // 判断是否是数值，包含小数、负数
+      if(!/[\d.\-]/.test(cur)) break;
+      num += cur;
+      index++;
+    }
+    return parseFloat(num)
+  }
+  // 解析数组
+  function parseArray(){
+    let arr = [];
+    // 跳过数组开始括号 `[`
+    index++;
+    while(index < n && str.charAt(index) !==']') {
+      arr.push(parseValue());
+      // 跳过数组中的逗号 
+      if (str.charAt(index) === ',') {
+        index++;
+      }
+    }
+    // 跳过数组结束括号 `]` 
+    index++;
+    return arr;
+  }
+  // 解析对象
+  function parseObject(){
+    let obj = {}
+    // 跳过对象开始括号 `{`
+    index ++;
+    while(index < n && str.charAt(index) !=='}') {
+      const key = parseString();
+      index++;
+      const value = parseValue();
+      obj[key] = value;
+      // 跳过对象中的逗号 
+      if(str.charAt(index) === ',') {
+        index++;
+      }
+    }
+    // 跳过对象结束括号 `}` 
+    index++;
+    return obj;
+  }
+  // 解析值
+  function parseValue() {
+    const first = str.charAt(index);
+    if(first === '"') {
+      return parseString();
+    }else if (first === '[') {
+      return parseArray();
+    }else if (first === '{') {
+      return parseObject();
+    }else if (first === 'f') { // 这里是处理false、true和null
+      index += 5;
+      return false;
+    }else if (first === 't') {
+      index += 4;
+      return true;
+    }else if (first === 'n') {
+      index += 4;
+      return null;
+    }else {
+      return parseNumber();
+    }
+  }
+
+  return parseValue();
+};
+```
 
 
 ## 手写 LazyMan 类

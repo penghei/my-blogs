@@ -15,20 +15,63 @@ token的过期处理，如何处理同时多个请求过期导致重复跳转首
 
 # 关于八股
 
-TLS不同版本的差异？
-https的证书链
-QUIC协议的原理，如何在udp上实现http？
-如果想在udp的基础上实现http，应该怎么做？https://xiaolincoding.com/network/3_tcp/quic.html
-token相关八股
-发布订阅模式的基础和高级实现，更多的功能（比如异步、错误处理）。可参考[pubsubjs](https://github.com/mroderick/PubSubJS/blob/master/src/pubsub.js)和[tapable](https://github.com/webpack/tapable/blob/master/lib/Hook.js)
-why-did-you-render等调试工具的原理（简历上写的东西都要起码了解原理，还有eslint）
+- TLS不同版本的差异？✅
+- https的证书链✅
+- QUIC协议的原理，如果想在udp的基础上实现http，应该怎么做？https://xiaolincoding.com/network/3_tcp/quic.html ✅
+- token相关八股 ✅
+- 发布订阅模式的基础和高级实现，更多的功能（比如异步、错误处理）。可参考[pubsubjs](https://github.com/mroderick/PubSubJS/blob/master/src/pubsub.js)和[tapable](https://github.com/webpack/tapable/blob/master/lib/Hook.js)
+- why-did-you-render等调试工具的原理（简历上写的东西都要起码了解原理，还有eslint）
+    - wdyr的简单原理：重写React.createElement等方法，获取到element对象的props及其他属性。对组件进行监听，更新时比较props
+- SSR！SSR的基本原理和实现方式
+- 新知识，即问题“有没有了解前端领域新知识”这样的
+- IntersectionObserver
 
 
 
----
 
-目前的问题
-1. 之前暑期实习面试的时候感觉项目（超管项目）有时候面试官不满意，说了很多内容但面试官还说还有什么可以做的，以及业内是怎么做的。这个应该怎么补充
-2. 第一个项目，轮播图有没有必要说？轮播图和轮播视频如果详述的话，有哪些可扩展的地方显得项目比较有价值呢？
-3. rn的项目对简历或者面试有没有影响，比如做rn的部门可能更好过；如果面试官不懂rn会不会这个项目就跳过了，那不就相当于少了一大块优势，毕竟这个项目是实习的
+# 关于复习的点
 
+有些地方容易忘，在这里记录一下，面试之前可以重点看看。
+
+## 算法
+
+- 原地删除相邻重复元素，k >= 1的情况和k = 0的情况
+- 链表成环判断和找到入环点
+- KMP算法的next数组计算方式以及之后的匹配代码
+- n进制转十进制，和十进制转n进制
+- 合并K个升序链表
+- 部分翻转链表的代码
+- 归并排序链表
+- LRU，主要是细节
+- 栈实现队列和队列实现栈，主要记得细节，即什么时候清空，往哪里push
+- 二分查找的模板，一共是四个 + 一个基本的
+- 搜索旋转排序的思路，即不同情况下，谁和谁比较，怎么确定范围这些的
+- 平衡二叉树的平衡思路，不需要会代码，但是得记着什么时候转，怎么转
+- 验证有效BST
+- 二叉树最近公共祖先
+- 九种基本回溯代码
+- 选择、插入、冒泡、希尔、快速、归并和堆排序
+- TOP K问题的快速选择算法和堆算法
+- 最长上升子序列的二分查找方法
+- 回文串的长度、判断个数的方式
+- 图的bfs和dfs遍历，无向图的成环判断、路径记录，有向图的成环、路径记录
+- 堆的实现、并查集的大概原理、前缀树的实现（trieNode和trie）
+- 计算器
+- 区间问题
+- 数学题的大多数，主要是思路和移位方式，包括位运算的全部、丑数、众数、只出现一次的数、快速幂、质数筛等，以及小册上的题
+
+## 手写
+
+## 八股
+
+### 计网
+
+
+
+### HTML/CSS
+
+### JS
+
+### React
+
+### 其他

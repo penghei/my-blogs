@@ -2529,6 +2529,47 @@ function myInterval(fn, interval) {
 myInterval(() => console.log(1), 1000);
 ```
 
+### 实现requestAnimationFrame
+
+
+最简单实现rAF的方法就是简单的调用setTimeout：
+
+```js
+const requestAnimationFrame = function (callback, lastTime) {
+  var currTime = new Date().getTime();
+  var id = setTimeout(function () {
+    callback(currTime);
+  }, 16.6);
+  return id;
+};
+```
+但是这里有个问题，如果callback内部执行下一个rAF之前花了一些时间，那么就不一定能保证raf的调用时机准确了。
+
+比如callback内部的同步代码花费了4ms，那么在4ms之后才能调用下一个raf，这样两个raf之间的时间就是20ms了。
+
+为了避免这种情况，我们用lastTime表示上一次调用raf的时间，然后每次raf内部计算上一次和本次调用的时间差，再用16.6减去就可以得到本次应该延迟的时间。这点和setTimeout实现interval中的校准其实是一个原理。
+
+```js
+const requestAnimationFrame = function (callback, lastTime) {
+  var lastTime;
+  if (typeof lastTime === 'undefined') {
+    lastTime = 0
+  }
+  var currTime = new Date().getTime();
+  var timeToCall = Math.max(0, 16.6 - (currTime - lastTime));
+  lastTime = currTime + timeToCall;
+  var id = setTimeout(function () {
+    callback(lastTime);
+  }, timeToCall);
+  return id;
+};
+
+const cancelAnimationFrame = function (id) {
+  clearTimeout(id);
+};
+```
+
+
 ## 手写 dayjs 时间格式化功能
 
 原理：参考 dayjs 源码。核心其实是这个正则的匹配

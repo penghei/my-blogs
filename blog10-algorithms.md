@@ -10448,6 +10448,34 @@ class MinHeap {
       this.shiftDown(tmpIndex);
     }
   }
+  // shiftDown还有一种写法
+  // 判断时按照先left再right，也可以
+  heapify(index, size = this.heap.length) {
+    const left = index * 2 + 1;
+    const right = index * 2 + 2;
+    let mid = index;
+    if (this.type === "min") {
+      if (left < size && this.heap[left] < this.heap[mid]) {
+        mid = left;
+      }
+      if (right < size && this.heap[right] < this.heap[mid]) {
+        mid = right;
+      }
+    } else {
+      if (left < size && this.heap[left] > this.heap[mid]) {
+        mid = left;
+      }
+      if (right < size && this.heap[right] > this.heap[mid]) {
+        mid = right;
+      }
+    }
+
+    if (mid !== index) {
+      this.swap(index, mid);
+      this.heapify(mid, size);
+    }
+  }
+
 }
 ```
 
@@ -10553,14 +10581,16 @@ const heapify = (heap, index, heapSize = heap.length) => {
 图的表示方法：
 
 - 邻接矩阵：最直观，但是比较浪费空间
-  ![](https://pic.imgdb.cn/item/62d3ff7df54cd3f937b234a0.jpg)
+
+![](https://pic.imgdb.cn/item/62d3ff7df54cd3f937b234a0.jpg)
 
 - 邻接表：省空间，常用方法
 
 ![](https://pic.imgdb.cn/item/62d3ff89f54cd3f937b2464c.jpg)
 
 - 关联矩阵：矩阵的行表示顶点，列表示边，如果一个顶点和两个边连接则表示为 1，否则是 0。
-  常用于于边的数量比顶点多的情况，节省内存
+
+常用于于边的数量比顶点多的情况，节省内存
 
 ![](https://pic.imgdb.cn/item/62d40024f54cd3f937b32634.jpg)
 
@@ -10882,6 +10912,32 @@ class Trie {
 
 这里的搜索操作都是迭代，实际上用递归也可以。但是前缀树由于每次只会匹配一条链，因此其实更类似链表，所以迭代看起来要直观的多。
 
+前缀树还有几种变种形式。
+第一种形式是，不需要Tire这个结构，只需要TrieNode，然后根据题意在代码内创建TrieNode并连接。
+
+参考单词搜索II这道题：https://leetcode.cn/problems/word-search-ii/
+
+```js
+class TrieNode {
+  constructor(word = "", children = new Map()) {
+    this.word = word; // 表示截止到这个节点的匹配单词。如果到这个节点已经匹配到了（isEnd），那么word就会是有值的，否则就是空串
+    this.children = children;
+  }
+}
+
+const insert = (str, root) => {
+  let node = root;
+  for (const char of str) {
+    if (!node.children.has(char)) {
+      node.children.set(char, new TrieNode());
+    }
+    node = node.children.get(char);
+  }
+  node.word = str;
+};
+
+```
+
 ### 添加与搜索单词
 
 > 请你设计一个数据结构，支持 添加新单词 和 查找字符串是否与任何先前添加的字符串匹配 。
@@ -11178,6 +11234,7 @@ var hanota = function (A, B, C) {
     // move函数表示把n个盘子按照合法顺序从A移到C
     if (n === 1) {
       C.push(A.pop());
+      return
     }
     move(n - 1, A, C, B);
     C.push(A.pop());
@@ -12417,6 +12474,7 @@ https://leetcode.cn/problems/queue-reconstruction-by-height/
 > 输出：[[5,0],[7,0],[5,2],[6,1],[4,4],[7,1]]
 
 > 套路）：一般这种数对，还涉及排序的，根据第一个元素正向排序，根据第二个元素反向排序，或者根据第一个元素反向排序，根据第二个元素正向排序，往往能够简化解题过程。
+> 类似的排序方式还有动态规划里边的俄罗斯套娃信封问题，也是这么排序的
 
 这道题比较特殊，之前没有做过类似的题目。看了题解才恍然大悟。其实题解的方法还是有不小的技巧性的
 

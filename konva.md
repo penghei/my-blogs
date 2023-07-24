@@ -135,6 +135,15 @@ drawScene(can?: SceneCanvas, top?: Node) {
 }
 ```
 
+这里的bufferCanvas其实相当于一个缓冲的作用，类似于预渲染或者预加载的机制。如果允许使用buffer，那么绘制过程不是直接向sceneCanvas绘制，而是先绘制到bufferCanvas上再drawImage上去。
+
+konva中还有其他利用离屏渲染的地方。比如需要主动调用的cache方法，对于某个节点采用cache时，下次渲染则会渲染这个节点的cache版本，而非执行全部绘制。
+
+不过cache常用于复杂图形的绘制，对于简单的图形，cache反而有可能造成内存问题。
+
+参考：https://konvajs.org/docs/performance/Shape_Caching.html
+
+
 # konva 事件
 
 事件系统是 konva 最具特色的一项。
@@ -558,3 +567,64 @@ const StageWrap = (props) => {
   });
 };
 ```
+
+# 其他部分
+
+## 绘制流程
+
+konva 的绘制开始是从 add 方法开始的
+
+```js
+add(...children: ChildType[]) {
+    const child = children[0];
+    if (child.getParent()) {
+      child.moveTo(this);
+      return this;
+    }
+    this._fire('add', {
+      child: child,
+    });
+    this._requestDraw();
+    // chainable
+    return this;
+  }
+```
+
+然后进入\_requestDraw 方法，调用 batchDraw 方法进行批量绘制
+
+```js
+_requestDraw() {
+    if (Konva.autoDrawEnabled) {
+      const drawNode = this.getLayer() || this.getStage();
+      drawNode?.batchDraw();
+    }
+  }
+batchDraw() {
+    if (!this._waitingForDraw) {
+      this._waitingForDraw = true;
+      Util.requestAnimFrame(() => {
+        this.draw();
+        this._waitingForDraw = false;
+      });
+    }
+    return this;
+  }
+```
+
+注意这里调用了requestAnimFrame来实现绘制过程的控制。通过raf在每一帧执行一次绘制，而不会导致同时有大量的绘制任务执行而导致卡顿。
+
+_waitingForDraw其实就是一种批量渲染的控制方式，类似react老版本中的isBatchedRendering这样的。当这个值为true时，开启批量渲染
+
+draw函数会调用真正的绘制函数drawScene，然后遍历通过add方法加入的子元素（shape），再调用每个元素上的drawScene方法
+
+```js
+_drawChildren(drawMethod, canvas, top) {
+  var context = canvas && canvas.getContext()
+  this.children?.forEach(function (child) {
+    child[drawMethod](canvas, top);
+  });
+}
+```
+
+可以看到这个过程实际上是通过循环的方式绘制每个元素，但同时也有raf等方式来保证一次执行的绘制任务不会太多。
+

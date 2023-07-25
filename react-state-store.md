@@ -68,39 +68,39 @@ reducer 可以有多个，但是最终 redux 会将其合为一个，作为一�
 
 ### action
 
-action是一个包含type和payload?的对象。
-action本身比较简单，但是有个问题是，为什么redux一定需要一个action？
+action 是一个包含 type 和 payload?的对象。
+action 本身比较简单，但是有个问题是，为什么 redux 一定需要一个 action？
 
-显然直接调dispatch传入状态也是完全可以的：
+显然直接调 dispatch 传入状态也是完全可以的：
 
 ```js
-dispatch(someState)
+dispatch(someState);
 ```
 
 主要原因有几个：
 
-1. action体现了redux对状态的可控性、复现性。也就是说，action的存在使得redux可以更好地追踪状态的流向，可以很轻易地跟踪、捕获和预测状态变化。
+1. action 体现了 redux 对状态的可控性、复现性。也就是说，action 的存在使得 redux 可以更好地追踪状态的流向，可以很轻易地跟踪、捕获和预测状态变化。
 
-如果只是一个简单的数据而不是action，当通过dispatch调度时就很难确定这个状态到底是来自哪里、归属于哪个reducer、哪个状态里的修改。
-比如一个action是这样：
+如果只是一个简单的数据而不是 action，当通过 dispatch 调度时就很难确定这个状态到底是来自哪里、归属于哪个 reducer、哪个状态里的修改。
+比如一个 action 是这样：
 
 ```js
 {type: 'todos/todoAdded', payload: todoText}
 ```
 
-这样很容易就能确认，这个action是为了todos状态服务的，且要修改的操作为todoAdded。
-当redux进行调试、测试时，也能很容易捕获状态以及其所指向的状态对象。
+这样很容易就能确认，这个 action 是为了 todos 状态服务的，且要修改的操作为 todoAdded。
+当 redux 进行调试、测试时，也能很容易捕获状态以及其所指向的状态对象。
 
-2. action配合reducer内的条件语句，才能达成更好的状态修改，以保证状态不可变。
+2. action 配合 reducer 内的条件语句，才能达成更好的状态修改，以保证状态不可变。
 
-假如我们只是给reducer传一个状态
+假如我们只是给 reducer 传一个状态
 
 ```js
-reducer(someState)
+reducer(someState);
 ```
 
-那么这个状态是干什么的呢？它应该怎么创建新的state？这个传入的参数只是一个变量，还是原来的整个state？显然这些都很难确定。
-reducer的存在就是为了服务于redux“状态不可变”的理念。redux要求reducer必须传出一个新的状态用以替代原状态，那么reducer就需要知道具体对状态是怎么操作的。
+那么这个状态是干什么的呢？它应该怎么创建新的 state？这个传入的参数只是一个变量，还是原来的整个 state？显然这些都很难确定。
+reducer 的存在就是为了服务于 redux“状态不可变”的理念。redux 要求 reducer 必须传出一个新的状态用以替代原状态，那么 reducer 就需要知道具体对状态是怎么操作的。
 
 ### state
 
@@ -1819,9 +1819,8 @@ function postReducer(state, { type, payload }) {
 
 Recoil 的基本使用不再赘述。
 
-相关学习文档：
-https://bytedance.feishu.cn/wiki/wikcnqR8zdxiE7jKoqbtVc0hsgd#20H8nV
-https://bytedance.feishu.cn/wiki/wikcnX74vA1xU60eGqzqiaG1gvg#hr7PnL
+相关原理文档：
+https://cloud.tencent.com/developer/article/1961153
 
 ## 基本特点
 
@@ -1889,16 +1888,14 @@ atom 就是这样一种方式。为每个 item 创建一个 atom，然后用一�
 
 ```tsx
 const item = atom({
-  key: 'item',
-  defaultValue: {}
-})
+  key: "item",
+  defaultValue: {},
+});
 
 function Item() {
   const [item, setItem] = useRecoilState(itemState);
   // other
-  return (
-    <div>{ item.title }</div>
-  );
+  return <div>{item.title}</div>;
 }
 ```
 
@@ -1906,22 +1903,20 @@ function Item() {
 
 ```tsx
 const itemsList = {};
-export const getItemState = id => {
+export const getItemState = (id) => {
   if (!itemsList[id]) {
     itemsList[id] = atom({
       key: `item-${id}`,
-      default: {}
-    })
+      default: {},
+    });
   }
-  return itemsList[id]
-}
+  return itemsList[id];
+};
 
 function Item({ id }) {
   const [item, setItem] = useRecoilState(getItemState(id));
   // other
-  return (
-    <div>{ item.title }</div>
-  );
+  return <div>{item.title}</div>;
 }
 ```
 
@@ -2214,6 +2209,13 @@ useEffect(() => {
 });
 ```
 
+## 简单原理
+
+Recoil 的原理要比上面两个都要复杂，他在底层做了更多事，同时也引入了更多的概念。
+不过 recoil 大致可以看做，每个 atom 是一个数据源，都是一个单独的发布订阅的类；当我们在组件内调用 useRecoilValue 时，就相当于在这个类上订阅了一个更新。当 atom 更新时触发组件更新，可以通过 setState 或 useSyncExternalStore 等方法。
+
+参考：https://cloud.tencent.com/developer/article/1961153
+
 # 其他状态管理库
 
 ## Flux
@@ -2242,6 +2244,8 @@ flux 的特点可以参考 redux 的特点（redux 是 flux 较为完善的实�
 ![](https://pic.imgdb.cn/item/63da6198ac6ef860167dd17d.jpg)
 
 ### 核心理念
+
+有关 mobx 的原理性内容可以参考：https://juejin.cn/post/7083975275645501448
 
 mobx 推崇一种响应式编程。 mobx 的实现和使用方式和 redux 差距很大。
 
@@ -2561,3 +2565,43 @@ function DoubleCounter() {
 ```
 
 缺点可能就是比较小众的库，维护上不一定比得上 recoil
+
+# 总结
+
+react 状态管理是一个比较麻烦的话题，因为 react 没有官方的解决方案。但是无论选择哪些状态管理库，都离不开几个话题：
+
+1. 状态储存方案。redux 采用的是闭包，mobx 采用的是类，recoil 等原子化状态管理库其实也是采用全局对象（Map）
+
+2. 状态流向。即一个状态如何从产生，到传递到存储结构内，再到具体的组件内部。绝大多数状态管理库都使用了发布订阅。
+
+3. 接入 react 更新。即当状态发生修改时，如何让 react 组件更新？目前主要的方式有三种
+
+- props 传入，比如 redux 的 connect 方法
+- setState 更新，比如通过每次给 setState 传一个新的对象，保证更新
+- useSyncExternalStore。这种方案理论上是最好的，不过对低版本的 react 没有兼容
+
+4. 优化层面。对于状态管理库来说，最大的优化其实就是降低 react 组件的重复渲染。可以从以下几个方面考虑优化
+
+参考：https://github.com/shaozj/blog/issues/36
+
+- 批量更新，通过某些 batch 方法让频繁的触发更新合并为一次更新。比如 redux 提供了一个 batch 方法可以合并 dispatch：
+
+```js
+import { batch } from "react-redux";
+
+function myThunk() {
+  return (dispatch, getState) => {
+    // 应该只导致一个组合重新渲染，而不是两个
+    batch(() => {
+      dispatch(increment());
+      dispatch(increment());
+    });
+  };
+}
+```
+
+- 状态的精准订阅。一个 state 有可能非常大，尤其是 redux 这种把整个应用的 state 都集合在一起的。那么当 reducer 执行时，整个 state 都改变，那么如何保证每个使用了 state 的组件不会发生渲染？换句话说，不同的子组件，需要的只是 store 上的一部分数据，如何在 store 发生变化后，仅仅影响那些用到 store 变化部分 state 的组件？
+
+在 redux 中，不管是 connect 还是 useSelector 方法，都有一个重要逻辑，就是通过比较子组件真正所需数据的变化，来确定是否执行更新。如果组件内部依赖的状态（selector 函数执行结果）在两次 state 变动中没有改变，那么就不会执行组件更新。
+
+其他状态管理库，mobx 采用的是响应式的更新，本身就是一个状态对应一个组件，因此不存在这种问题；recoil 同理

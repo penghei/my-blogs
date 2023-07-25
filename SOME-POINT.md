@@ -22,13 +22,13 @@ token的过期处理，如何处理同时多个请求过期导致重复跳转首
 - QUIC协议的原理，如果想在udp的基础上实现http，应该怎么做？https://xiaolincoding.com/network/3_tcp/quic.html ✅
 - token相关八股 ✅
 - 发布订阅模式的基础和高级实现，更多的功能（比如异步、错误处理）。可参考[pubsubjs](https://github.com/mroderick/PubSubJS/blob/master/src/pubsub.js)和[tapable](https://github.com/webpack/tapable/blob/master/lib/Hook.js)
-- why-did-you-render等调试工具的原理（简历上写的东西都要起码了解原理，还有eslint）
+- why-did-you-render等调试工具的原理（简历上写的东西都要起码了解原理，还有eslint）✅
     - wdyr的简单原理：重写React.createElement等方法，获取到element对象的props及其他属性。对组件进行监听，更新时比较props
 - SSR！SSR的基本原理和实现方式
 - 新知识，即问题“有没有了解前端领域新知识”这样的
 - IntersectionObserver
 - 怎么让倒计时更精准？（与服务端的配合）
-
+- 图片懒加载、预加载方案？
 
 # 关于复习的点
 

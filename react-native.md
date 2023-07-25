@@ -200,7 +200,7 @@ React Native 有好几个列表组件，先简单介绍一下：
 - FlatList：使用 VirtualizedList，实现了一行多列的功能，大部分功能都是 VirtualizedList 提供的
 - SectionList：使用 VirtualizedList，底层使用 VirtualizedSectionList，把二维数据转为一维数据
 
-后三者其实都是虚拟列表，师出同源。rn 的虚拟列表实现方式和简单原理可以参考https://www.cnblogs.com/skychx/p/react-native-flatlist.html。
+后三者其实都是虚拟列表，师出同源。rn 的虚拟列表实现方式和简单原理可以参考 https://www.cnblogs.com/skychx/p/react-native-flatlist.html  
 这篇文章有对源码的简单解析：https://shengshuqiang.github.io/2019/07/17/%E8%BF%9B%E5%87%BBReactNative-FlatList%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90.html
 
 #### rn 中的虚拟列表
@@ -284,7 +284,7 @@ data.push({ id: "xxx", name: "ttt" });
 setData([...data]);
 ```
 
-> 当然这种方式容易造成内存的浪费，如果频繁增加元素，那么每次 data 都需要重新创建。为了优化这个问题，我们可以采用两个数组交替复制的方式。这是一个小技巧，可以参考https://juejin.cn/post/7201425436835151930
+> 当然这种方式容易造成内存的浪费，如果频繁增加元素，那么每次 data 都需要重新创建。为了优化这个问题，我们可以采用两个数组交替复制的方式。这是一个小技巧，可以参考 https://juejin.cn/post/7201425436835151930
 
 除了上面这种情况之外，如果列表还依赖于其他 state，还可以使用 extraData 属性来控制 FlatList 更新。当然 extraData 也和 data 一样，也有浅比较的检查。
 

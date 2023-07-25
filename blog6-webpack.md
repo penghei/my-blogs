@@ -1197,6 +1197,7 @@ module.exports = {
   },
 };
 ```
+
 ### optimization 部分配置
 
 常见的构建速度优化，适用于开发环境

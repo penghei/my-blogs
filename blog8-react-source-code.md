@@ -3318,7 +3318,7 @@ function scheduler() {
     // 执行完任务
   } else {
     // 没执行完，异步安排下一次任务
-    requestIdleCallback(count);
+    requestIdleCallback(() => scheduler());
   }
 }
 
@@ -3436,6 +3436,9 @@ function dispatchAction(fiber, queue, action) {
 ```
 
 ### 更新入口 scheduleUpdateOnFiber
+
+> 这里纠正一个错误：调度的对象，“任务”实际上应该是每个fiber的更新，而不是整个fiber tree的更新。通过setState触发的更新也是通过scheduleUpdateOnFiber在本fiber上调度，而不是直接从根开始。
+> 调和阶段的workLoop每处理一个fiber，都会被调度任务调度一次。
 
 上面所有更新的矛头都指向了 scheduleUpdateOnFiber 这个函数，其内容大致如下：
 

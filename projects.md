@@ -1019,20 +1019,125 @@ _getActiveItem(offset) {
 }
 ```
 
+#### 轮播组件进阶
+
+轮播图的基础实现比较简单，但是重点在于有一些进阶的话题，或者说是不仅限于轮播图，而是上升到抽象组件层面的一些东西。
+
+1. 轮播组件要自己实现的原因，这个可以说因为业务需求，框架特殊性。但是自己实现了之后，需要注意什么地方？这里可以延伸出很多细节来
+
+轮播组件的额外功能，以及为视频组件的嵌入做出的适应。
+基础功能就是基本的自动播放、拖动播放、循环、定位这四个逻辑。
+
+进阶功能：
+
+- 轮播图个数的控制。之所以不采用内部的轮播组件，一个重要原因就是不支持对于多张图的显示。而现在组件中包含了这部分的逻辑。
+
+具体是怎么来的呢？
+
+组件需要被传入的2个计算属性是sliderWidth和itemWidth，其中如果有padding，itemWidth也必须包含padding的值。
+通过这两个值的比例，我们就可以得到可视区域内的元素数量。然后将width设置给具体的list，就可以保证可视区域最多只会有`sliderWidth / itemWidth`个元素。
+然后在`_getActiveItem (offset)`内部，调用`_getCenter`获取当前的中心位置，再遍历元素找到在中心位置附近的元素，将其设为active即可。无论显示多少个，始终只有一个active。
+这样我们只需要改变sliderWidth和itemWidth的比值，让他们能正常显示，就可以做到多张图片显示了。
+
+- loopClonesPerSide的实现。学习到的大部分轮播图在实现loop效果时，通常只会在两边超出时多增加一个元素。这样在多张轮播的情况下，如果用户拖拽到底，就会导致显示出空白。设置了这个api，可以控制在两边额外渲染的元素数量，使得用户即使快速拖动也不会看到很多空白区域。
+
+但是造成的问题是，所有的index都需要对照映射。由于data被扩充，因此在组件内获取的index并不是原来的data对应的index，在`getDataIndex`方法中可以从data内的index获取到真实的index。方法就是判断index、loopClonesPerSide和data.length的大小关系
+
+```js
+if (index >= dataLength + loopClonesPerSide) {
+  // 如果在data的右半边额外数据部分，直接减去前面
+  return index - dataLength - loopClonesPerSide;
+} else if (index < loopClonesPerSide) {
+  // 如果在前半部分
+  if (loopClonesPerSide > dataLength) {
+    // 按照loopClonesPerSide的值创建一个数组，从后向前遍历index找到真实的
+  } else {
+    return index + dataLength - loopClonesPerSide;
+  }
+} else {
+  // 如果在中间，那直接减去前半部分就行
+  return index - loopClonesPerSide;
+}
+```
+
+- api设计。这里就是重头戏了，除了组件能正常渲染所必须的api之外，还要提供一些能帮助实现后期视频功能的props。
+
+下面是不同的api设计内容，大致可以分为几类
+
+1. 必需属性，包括itemWidth、sliderWidth、data和renderItem。其中后两个主要是传递给list的。renderItem进行了重写，可以传递currIndex和items给元素
+
+2. 操作属性，这部分属于可以对轮播图内部设置一些值。包括但不仅限于
+  - activeSlideOffset，控制轮播图偏移多少会到下一个
+  - enableScroll，如果为false就不会响应onScroll、onScrollBeginDrag、onTouch等等事件
+  - useScrollView，因为了解到在一些安卓机型上，FlatList会因为内部错误而导致不能正常渲染，因此可以采用兜底为ScrollView的方式。
+  - loop，循环，主要用在生成新索引、新元素，以及实现索引映射的时候
+  - loopClonesPerSide，上面说过
+  - autoplay相关，还有autoplayDelay和autoplayInterval
+
+3. 样式属性，主要是一些针对slider container的样式，可以附加在list外层的container上。还有一部分样式是针对item组件的。
+  - 为了防止样式影响布局（比如影响itemWidth和sliderWidth的比例关系），样式做了严格的类型限制，只允许部分不会影响布局的属性，比如颜色、外边框等。在处理这两个参数时也只会取这些值。
+4. 回调。回调主要是方便外部组件能获取内部的动态的值，主要包括
+  - onSnapToItem，当移动到一个元素时（完全移动后）触发
+  - onActiveItemScrollToNext：这是一个帮助控制视频组件的回调，在onScroll中传递当前的offset、`offset / center + activeSlideOffset`，并且通过_getActiveItem得到当前activeItem和状态内的不同，就会触发这个api并返回true。如果相同返回false。通过这种设计可以让视频组件元素及时被清除。
+5. ref。通过暴露ref的方法来让外部获取ref，可以通过ref获取到slider实例，调用方法。比如把stopAutoPlay、snapToNext等方法暴露出去
+  - 但是要注意参数的准确性。最好的方法是永远*把暴露的方法和内部方法分开*，内部方法加一个`_`。这样在外部调用方法时可以检查参数，防止出现错误。
+
+对于props的设计，其实有很大的讲究。说到这个就要提一些组件开发需要注意的点了。
+如果这个组件未来可能会发布成库，或者被组内其他人去使用，那么应该更加完善哪些内容？
+
+参考来源：https://www.51cto.com/article/747510.html
+
+1. props设计。主要要考虑：
+  - props的名称，风格要统一，要按照不同类型提供。
+  - props设置默认值，尽可能采取多的默认值。比如轮播组件除了必须的三个属性之外，其他的默认值都要设置好。默认值可以单独维护一个defaultProps
+  - 维护好props的类型IProps，可以通过tsdoc来为方法和属性注明含义和类型限制。
+  - props的兜底处理，当props传入非法值时怎么处理：采取默认值，并进行warn。
+    - 如果是关键props传入有问题，比如类型出错、没传等情况，那么除了error之外，还不能进行渲染。非关键的可以warn，然后取默认值
+2. 其他方面，可能和这个项目关系不大，比如
+  - 增加更多的`slot`。对react来说，其实就是直接渲染传递`ReactNode`。renderItem其实本质也是这种方法
+  - 独立性，这算是老生常谈的话题。让用户只感知到props以及callback回调的数据，内部封装不暴露。其实也是一种开闭原则，对扩展开放，对修改封闭。
+  - 扩展性，比如某些时候某个props的值是boolean，但是如果情况多了的话，两个值就可能不够用。这时再扩展为枚举类型，以支持更多的属性。
+  - 纯粹，一个组件只实现一种效果。比如Input组件，可能还可以扩充为其他用途的组件。
+  - 样式和类名：主要是类名的统一、规范和样式的统一。这个话题展开就非常大了。在antd等组件库中采用的是scss + css module的形式，再加上classNames库，可以实现把props对应的样式设置不同的类名，实现不同的样式。
+    比如这样： ![](https://pic.imgdb.cn/item/64bff9a31ddac507ccac1706.jpg)
+  - 基本的优化：组件内部要避免无意义的渲染，同时如果像轮播图这种内部还引入其他组件的，也需要注意传给内部组件的props使用useMemo。具体有这几方面：
+    - 尽可能不用state，大量变量可以用ref，如果不影响更新就不用state
+    - useMemo、useCallback，尤其是对于style、className等变量
+    - memo或shouldComponentUpdate优化。可以在memo中根据props类型编写专门的比较函数。
+
+ 
 ### 轮播+视频
 
-- 视频的单例。只在页面上放置一个视频组件
-- 视频组件放置在轮播图中心，通过 z-index 控制显隐。轮播图滚动时，控制视频组件更换源，加载完成后显示。主要是放置重复销毁创建的消耗
-- 当页面离开会场页时，销毁视频组件。通过会场页面的回调检测到用户离开
+实现的关键点有：
+
+1. 视频的单例。出于移动端性能和视频组件的考虑，页面上如果同时拥有多个视频组件挂载，即使没有视频源或者出于停止播放状态，也会导致页面内存占用过大，出现卡死闪退等情况。
+
+因此需要在页面保持视频组件只有一个，同时还要实现轮播播放视频效果。
+
+考虑的实现方式有两个：
+
+- 将视频组件放置在轮播图中心，通过 z-index 控制显隐。轮播图滚动时，控制视频组件更换源，加载完成后显示。主要是放置重复销毁创建的消耗
+  
+这种方法简单，但是问题在于观感很差。当轮播图快速滚动时，视频组件就会出现反复显隐的情况，表现为和轮播组件闪烁；
+
+- 将视频组件放置在轮播图内部，和商卡同级，通过active控制挂载。
+
+即在轮播组件中维护一个activeIndex的state，在renderItem中比较activeIndex和参数index。card组件暴露一个控制挂载/卸载video元素的方法，当activeIndex === index时执行挂载。
+
+当onScroll事件发生时，暂停视频元素的播放
+
+当onActiveItemScrollToNext调用并返回true时，修改轮播组件内的state，然后renderItem会执行，清除所有的视频组件挂载，并显示商卡。这个过程是切换的前一个瞬间，在这里完成组件的卸载和商卡显示主要是为了提升观感，让切换过程提前执行，否则有时候商卡已经到了两边，视频还在显示。
+
+当onSnapToItem触发并返回currIndex时，再次修改activeIndex，然后renderItem方法根据index挂载对应的视频组件。
+
+如果没有切换到下一个，那么就只是暂停视频，当松手时继续播放。
+
+
+2. 当页面离开会场页时，销毁视频组件。通过会场页面的回调检测到用户离开
 
 这里其实要说的话，应该要结合轮播图来说。比如，轮播图增加了哪些功能能更好支持视频，否则自行实现轮播而不是采用组件就有些没有意义了。
 
-目前想到的点有
 
-- 视频的预加载和缓冲，比如播放到这个视频时，对下一个/上一个视频预加载。但是有个问题是页面只能有一个视频组件，那么这个功能就不太能实现
-- 一个需求，比如拖拽事件发生的时候，需要隐藏视频显示商品，那么如果这时候发生了“回弹”，视频进度就难以控制。方法可以是组件提供一个回调，当真正切换时（就是偏移量超过了滚动的阈值，一定会发生切换）执行这个回调，这时就可以销毁视频了。否则只是暂停视频，当滑动事件结束之后再继续播放
-- 一个 bug，之前出现过播放时出现两个音轨的情况，主要原因是按索引匹配的时候出现了两个 active 的元素。这个在自行实现的时候可能能通过一些方式避免
--
 
 ### RCF 优化
 

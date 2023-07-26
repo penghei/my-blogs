@@ -1,6 +1,5 @@
-
 轮播图是怎么实现的？
-下面是react-native-snap-carousel的主要代码。忽略animated相关的模块并删除一些非核心代码，剩下的代码主要如下所示。
+下面是 react-native-snap-carousel 的主要代码。忽略 animated 相关的模块并删除一些非核心代码，剩下的代码主要如下所示。
 
 在 rn 上轮播组件的设计可以通过 FlatList 来实现。FlatList 本身具有虚拟列表的优化，即使创建多个元素，也能有较好的性能。
 
@@ -81,9 +80,46 @@ _getActiveItem(offset) {
 }
 ```
 
+3. 自动播放：全局维护两个变量来控制是否自动播放
+
+- autoplaying：是否正在自动播放，如果在播放就无视开启自动播放的调用，如果不在播放也不能停止。
+- \_autoplay：表示是否需要自动播放，从 props 得到。如果为 false 那么不会调用 startAutoPlay
+
+具体实现，其实就是开启一个setInterval，然后在延迟delay之后开始，每次移动到下一个。
+
+pauseAutoPlay用于在触摸事件发生时暂停自动播放。也就说在用户拖动期间不会进行自动播放。
+
+```js
+startAutoplay () {
+    const { autoplayInterval, autoplayDelay } = this.props;
+    this._autoplay = true;
+    if (this._autoplaying) {
+        return;
+    }
+    clearTimeout(this._autoplayTimeout);
+    this._autoplayTimeout = setTimeout(() => {
+        this._autoplaying = true;
+        this._autoplayInterval = setInterval(() => {
+            if (this._autoplaying) {
+                this.snapToNext();
+            }
+        }, autoplayInterval);
+    }, autoplayDelay);
+}
+
+pauseAutoPlay () {
+    this._autoplaying = false;
+    clearTimeout(this._autoplayTimeout);
+    clearTimeout(this._enableAutoplayTimeout);
+    clearInterval(this._autoplayInterval);
+}
+stopAutoplay () {
+    this._autoplay = false;
+    this.pauseAutoPlay();
+}
+```
 
 下面是精简后的全部代码：
-
 
 ```js
 // 根据props选择scrollView或FlatList
@@ -118,7 +154,6 @@ export default class Carousel extends Component {
 
     this._positions = []; // 记录每个元素的start、end偏移量，很重要。通过positions可以确定每个元素的显隐，以及当前active的元素是哪个。
     this._setScrollHandler(props);
-
   }
 
   // 在挂载阶段定位第一个渲染的元素，移动到第一个元素，并启动autoplay
@@ -241,7 +276,6 @@ export default class Carousel extends Component {
       this._setScrollHandler(this.props);
     }
   }
-
 
   // 清除定时器
   componentWillUnmount() {
@@ -411,7 +445,6 @@ export default class Carousel extends Component {
     );
   }
 
-  
   /**
    * 获取ScrollView或FlatList的ScrollOffset，用于用户滚动事件的计算
    * @param {*} event
@@ -651,7 +684,6 @@ export default class Carousel extends Component {
     }
   }
 
-
   // 这个方法同样是会传递给ScrollView，表示用户的滚动操作结束
   _onScrollEnd(event) {
     const { autoplayDelay, enableSnap } = this.props;
@@ -676,7 +708,6 @@ export default class Carousel extends Component {
     }
   }
 
- 
   _snapScroll(delta) {
     const { swipeThreshold } = this.props;
 
@@ -751,7 +782,6 @@ export default class Carousel extends Component {
     this._scrollTo(this._scrollOffsetRef, animated);
 
     this._scrollEndOffset = this._currentContentOffset;
-
   }
 
   startAutoplay() {
@@ -834,7 +864,6 @@ export default class Carousel extends Component {
     this._snapToItem(newIndex, animated, fireCallback);
   }
 
-  
   _getSlideInterpolatedStyle(index, animatedValue) {
     const { layoutCardOffset, slideInterpolatedStyle } = this.props;
 

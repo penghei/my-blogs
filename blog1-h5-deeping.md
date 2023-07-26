@@ -538,6 +538,8 @@ webworker的本质还是运行在浏览器进程内的多线程架构，因此we
 1. Structured Clone：Structured Clone 是 postMessage 默认的通信方式，如下图所示，复制一份线程 A 的 js object 内存给到线程 B，线程 B 能获取和操作新复制的内存。
 Structured Clone 通过复制内存的方式简单有效的隔离了不同线程的内存，避免冲突；且传输的 object 数据结构很灵活，但复制过程中，线程 A 要 同步执行 Object Serialization，线程 B 要 同步执行 Object Deserialization，如果 object 规模过大，会占用大量的线程时间。
 
+这种方式也被称为是“拷贝”，其实是现在最多的通信方式
+
 ![](https://pic.imgdb.cn/item/641d6a8ea682492fccabd1ba.jpg)
 
 2. Transfer Memory

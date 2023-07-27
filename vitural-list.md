@@ -9,11 +9,11 @@
 参考：https://juejin.cn/post/6844903982742110216
 
 用时间分片来更新大量元素：https://juejin.cn/post/6844903938894872589
-用io实现虚拟列表：https://zhuanlan.zhihu.com/p/468212489
+用 io 实现虚拟列表：https://zhuanlan.zhihu.com/p/468212489
 
 # 基本实现
 
-整理一下虚拟列的实现关键
+整理一下虚拟列表的实现关键
 
 1. 关键高度：容器高度（可视区域高度）、滚动高度（滚动区域内部高度）、元素高度（可能不固定）
 2. 初始化渲染 n 条数据，通过 data.slice 的方式来选择；n = containerHeight / itemHeight
@@ -188,9 +188,85 @@ getStartIndex(scrollTop = 0){
 ```
 
 然后其他的值获取方式类似：
-- 顶部偏移量：顶部元素的bottom
-- 可视区域的元素个数：查找top >= scrollHeight的元素
-等等
 
+- 顶部偏移量：顶部元素的 bottom
+- 可视区域的元素个数：查找 top >= scrollHeight 的元素
+  等等
 
 这种实现方式其实还有一些问题：直接拉到底部再往上滚动，无法避免列表内容发生上下偏移。原因就是上面还未来得及渲染的列表，在渲染之后，其真实高度和预估高度有偏差，导致顶部占据高度发生变化。
+
+## IntersectionObserver 实现
+
+IntersectionObserver 可以用于监听元素是否出现在可视区域，具体用法参考 IntersectionObserver 的讲解。
+
+通过 IntersectionObserver 来实现虚拟列表的方式有点类似于懒加载，设置一个底部和顶部元素，当滚动到底部或顶部元素时，修改 start 和 end 来实现列表的更新。但是列表项的个数仍然始终保持 n 个，不会像懒加载一样一直增加。
+
+IntersectionObserver 的具体用法：
+
+```js
+const intiateScrollObserver = () => {
+  const Observer = new IntersectionObserver(
+    (entries, observer) => {
+      entries.forEach((entry) => {
+        const dataLength = data.length;
+        if (entry.isIntersecting && entry.target.id === "bottom") {
+          const maxStartIndex = dataLength - 1 - THRESHOLD;
+          const maxEndIndex = dataLength - 1;
+          const newStart = end - 5 <= maxStartIndex ? end - 5 : maxStartIndex;
+          const newEnd = end + 10 <= maxEndIndex ? end + 10 : maxEndIndex;
+          setStart(newStart);
+          setEnd(newEnd);
+        }
+        if (entry.isIntersecting && entry.target.id === "top") {
+          const newEnd =
+            end === THRESHOLD
+              ? THRESHOLD
+              : end - 10 > THRESHOLD
+              ? end - 10
+              : THRESHOLD;
+          const newStart = start === 0 ? 0 : start - 10 > 0 ? start - 10 : 0;
+          setStart(newStart);
+          setEnd(newEnd);
+        }
+      });
+    },
+    {
+      root: null,
+      rootMargin: "0px",
+      threshold: 0.1,
+    }
+  );
+
+  if (topElement.current) {
+    Observer.observe(topElement.current);
+  }
+
+  if (bottomElement.current) {
+    Observer.observe(bottomElement.current);
+  }
+
+  setObserver(Observer);
+};
+```
+
+在元素实现上，实际上是默认把第一个和最后一个元素当做 top 和 bottom。每个元素的位置是通过设置定位高度得来的。当 start 和 end 变化时，所有元素的 top 都会发生变化，然后展示不同的位置。
+
+```js
+return (
+  <div style={{ position: "relative", textAlign: "center" }}>
+    {updatedList.map((item, index) => {
+      const top = height * (index + start) + "px"; // 相对于start元素的偏移
+      const refVal = getReference(index, index === lastIndex);
+      const id = index === 0 ? "top" : index === lastIndex ? "bottom" : "";
+      return (
+        <Item
+          key={item.key}
+          style={{ top }} // 这里设置每个元素高度
+          ref={refVal}
+          id={id}
+        />
+      );
+    })}
+  </div>
+);
+```

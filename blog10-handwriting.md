@@ -692,6 +692,58 @@ function curry(func) {
 }
 ```
 
+### 柯里化占位符
+
+在lodash的柯里化实现中有一个功能，可以通过传入一个占位符让某个位置上的参数暂时“占位”，然后在后续的调用中把后面的参数放到这个占位符上。比如
+
+```js
+const _ = {}
+curryFn(1)(2,3)(4)
+// 相当于
+curryFn(1)(_,3)(2)(4) // 2被填充到了占位符上
+```
+
+这个要怎么实现呢？基本思路是，还是按照基本柯里化的方式收集参数，同时收集占位符。对于占位符和参数有不同处理：
+- 如果当前元素是占位符，就放入占位符数组，放入的值是当前参数在所有参数的索引
+  - 如果当前是占位符且前面有占位符，那么就把前面的占位符删掉，以后面的为准。
+- 如果当前元素是正常值并且前面有一个占位符，那么通过索引删除前面的占位符，然后将参数插入占位符所在的index
+
+实现如下，关键点是收集参数和占位符数组：
+
+```js
+function curried(fn, holder) {
+  return curry(fn, fn.length, holder, [], []);
+}
+
+function curry(fn, argsLen, holder, holderList, argsList) {
+  return function (...args) {
+    const _argsList = [...argsList];
+    const _holderList = [...holderList];
+    args.forEach((arg, idx) => {
+      if (arg === holder) {
+        if (_holderList.length) {
+          _holderList.shift();
+        }
+        _holderList.push(_argsList.length);
+      } else {
+        if (_holderList.length) {
+          const lastHolder = _holderList.shift();
+          _argsList.splice(lastHolder, 1, arg); // 删掉占位符，并用参数替换
+        } else {
+          _argsList.push(arg);
+        }
+      }
+    });
+    if (_argsList.length >= argsLen) {
+      if (holderList.length === 0) return fn.apply(this, _argsList);
+    } else {
+      return curry(fn, argsLen, holder, _holderList, _argsList);
+    }
+  };
+}
+```
+
+
 ## 手写懒计算函数
 
 > 实现一个无限累加的 sum 函数如下所示：
@@ -746,6 +798,8 @@ map1  args --> id ---> key
 map2  id --> value
 ```
 
+举个栗子，sum函数接受两个参数。比如第一次调用的是`sum(1,2)`那么就会有`map{1 => 0, 2 => 1}`，每次调用通过item获取到id并拼接就可以得到专门的key。如果这两个参数乱序或者不同，那么key也肯定不同，将会重新计算缓存。
+
 代码如下：
 
 ```js
@@ -756,6 +810,7 @@ function memoize(fn) {
   return function (...args) {
     let key = "";
     for (let item of args) {
+      // 注意这里的映射关系是item对应id，而不是反过来
       if (!argToIdMap.has(item)) argToIdMap.set(item, id++);
       key += argToIdMap.get(item);
     }
@@ -1801,6 +1856,86 @@ const deFlat = (object) => {
 };
 ```
 
+数组情况：数组的处理其实主要要在解析键上增加逻辑。之前解析键的方式是直接split，现在需要遍历str，根据得到的字符不同解析键。具体来说：
+- 如果当前字符不是`.`/`[`/`]`的一个，那么就继续向后，直到统计完标准键为止
+- 如果是`.`，那么把前面的key视作是一个对象的key，在返回结果中加入一个`type: 'object'`字段，表示这个键应该创建一个对象
+- 如果是`[`，同理，这时加入的是`type:'array'`表示这个键应该创建一个数组
+
+```js
+const parseKey = (str) => {
+  if (!str || !str?.length) return [];
+  const keys = [];
+  const isValidKey = (char) =>
+    char != null && char !== "." && char !== "[" && char !== "]";
+  let index = 0;
+  while (index < str.length) {
+    let word = "";
+    while (isValidKey(str[index]) && index < str.length) {
+      word += str[index++];
+    }
+    if (index < str.length) {
+      if (str[index] === ".") {
+        keys.push({
+          key: word,
+          type: "object",
+        });
+      } else if (str[index] === "[") {
+        keys.push({
+          key: word,
+          type: "array",
+        });
+      } else if (str[index] === "]") {
+        if (str[index + 1] === ".") {
+          keys.push({
+            key: word,
+            type: "object",
+          });
+          index++; // 跳过右括号
+        }
+      }
+      index++;
+    }
+    // 处理最后一个属性是点的情况，比如`a[0].c`，最后一个c
+    if (index >= str.length && word.length > 0) {
+      keys.push({
+        key: word,
+        type: "object",
+      });
+    }
+  }
+  return keys;
+};
+```
+
+然后在代码中遍历这个数组，根据type创建不同的对象即可。
+
+```js
+// 和上面的代码方法略有出入，逻辑是一样的
+const decodeObject = (object) => {
+  const res = {};
+  for (const key of Object.keys(object)) {
+    const keysArr = parseKey(key);
+    dfs(0, keysArr, res, object[key]);
+  }
+
+  function dfs(level, keys, obj, value) {
+    if (level === keys.length - 1) {
+      obj[keys[level].key] = value;
+      return;
+    }
+    const { key, type } = keys[level];
+    if (Object.keys(obj).includes(key)) {
+      dfs(level + 1, keys, obj[key], value);
+    } else {
+      obj[key] = type === "object" ? {} : []; //这里
+      dfs(level + 1, keys, obj[key], value);
+    }
+  }
+  return res
+};
+```
+
+
 ## 手写虚拟 dom 转化为真实 dom
 
 虚拟 dom 的大致结构如下：
@@ -1883,6 +2018,70 @@ function render(vnode, container) {
   }
   container.appendChild(node);
 }
+```
+
+还有一种方法，可以让render函数返回一个创建好的对象。如下代码：
+具体可以根据虚拟dom结构调整，但是整体思路就是这样。
+
+
+```js
+const getType = (val) => Object.prototype.toString.call(val).slice(8, -1);
+
+const render = (node) => {
+  if (!node) return null;
+  const nodeType = getType(node);
+  if (nodeType === "String") {
+    return document.createTextNode(node);
+  } else if (nodeType === "Object") {
+    const element = document.createElement(node.tag);
+    // 对象类型的虚拟dom，如果有children就遍历
+    for (const child of node.children) {
+      // 依次渲染子元素并插入到element上
+      const childElement = render(child);
+      // 这里是针对children内的某一项可能是数组的情况，比如列表渲染
+      // 如果是数组就会返回一个数组，里边是创建好的元素，这里遍历并插入element
+      if (Array.isArray(childElement)) {
+        for (const cElem of childElement) {
+          element.appendChild(cElem);
+        }
+      } else element.appendChild(childElement);
+    }
+    return element;
+  } else if (nodeType === "Array") {
+    // 处理node是数组的情况。返回一个数组
+    const elements = [];
+    for (const elem of node) {
+      elements.push(render(elem));
+    }
+    return elements;
+  }
+  return null;
+};
+
+// 虚拟dom结构
+// const virtualNode = {
+//   type: "div",
+//   children: [
+//     {
+//       type: "div",
+//       children: ["aaa"],
+//     },
+//     {
+//       type: "p",
+//       children: ["bbb"],
+//     },
+//     {
+//       type: "ul",
+//       children: [
+//         [
+//           { type: "li", children: ["a"] },
+//           { type: "li", children: ["b"] },
+//           { type: "li", children: ["c"] },
+//         ],
+//       ],
+//     },
+//   ],
+// };
 ```
 
 ## 手写 JSON.stringify
@@ -2489,20 +2688,39 @@ upload("hello world", 3000);
 
 js 的 setTimeout、setInterval 的执行是不准确的。由于 js 单线程的缘故，有些情况可能会导致实际的 timeout 比设定的长，或实际的 interval 比指定的 interval 长。
 
-gui 渲染、同步代码执行、微任务执行都会造成 timeout 的不准确。因此可以实现一个基本的校准机制，即通过每次计算任务前后的事件差来更改 timeout 的时间
+gui 渲染、同步代码执行、微任务执行都会造成 timeout 的不准确。这些部分我们无法获取，只能通过时间差值来知道误差是多少，然后再减去误差执行。
 
-如下代码。当 doSomeWork 函数内有耗时比较长的代码（比如 react 更新）时，offset 就会有比较明显的值。
+我们设定一个全局变量count，以及一个开始时间startTime（默认计时器开始的时间）。每次递归count自增；
+如果时间没有误差，那么count表示经历过的倒计时次数，即`count * interval + startTime = now`。存在误差时，实际的now会更大，因此通过减去的方式计算误差，在下一次递归中去掉误差。
+
+方法参考来源：https://segmentfault.com/a/1190000043829997
 
 ```js
-function startTimer() {
+let count = 0;
+const loop = () => {
+  count++;
+  callback(); // 可能会有的callback
   const now = Date.now();
-  let timeout = null;
-  doSomeWork();
-  const post = Date.now();
-  const offset = post - now;
-  timeout = setTimeout(startTimer, 1000 - offset);
-}
+  const gap = now - (count * interval + startTime);
+  setTimeout(loop, interval - gap);
+};
+setTimeout(loop, interval);
 ```
+
+也可以不用count，而是保存一个上次调用时间。基本逻辑是一样的：
+
+```js
+let pre = Date.now()
+const loop = () => {
+  callback(); // 可能会有的callback
+  const now = Date.now();
+  const gap = now - pre;
+  pre = now
+  setTimeout(loop, interval - gap);
+};
+setTimeout(loop, interval);
+```
+
 
 ### 用 setTimeout 实现 setInterval
 
@@ -2529,6 +2747,57 @@ function myInterval(fn, interval) {
 myInterval(() => console.log(1), 1000);
 ```
 
+除了interval本身，还需要一个clearInterval来让定时器停下来。实现clearInterval的思路有两种：
+- interval函数直接返回一个clear函数，调用这个函数就可以清除
+- 维护一个全局变量，interval每次递归时修改这个全局变量，当clear调用时清除
+
+下面是两种实现：
+
+```js
+const myInterval = (callback, interval) => {
+  let timeout = null;
+  const loop = () => {
+    callback();
+    timeout = setTimeout(loop, interval);
+  };
+  timeout = setTimeout(loop, interval);
+  return () => clearTimeout(timeout);
+};
+
+const clear = myInterval(() => console.log(1), 1000);
+```
+
+全局变量
+用对象保存的原因是考虑多个interval的情况。每个interval持有一个id，通过id在timer对象中获取具体的timeout，再在clear中清除。
+
+```js
+const timer = {}
+let id = 0
+
+const myInterval = (callback, interval) => {
+  const timerKey = id++
+  const loop = () => {
+    callback();
+    timer[timerKey] = setTimeout(loop, interval);
+  };
+  timer[timerKey] = setTimeout(loop, interval);
+  return timerKey;
+};
+
+const clearMyInterval = (timerKey) => {
+  const timeout = timer[timerKey]
+  clearTimeout(timeout)
+}
+
+const timeout = myInterval(() => console.log(1),1000)
+
+setTimeout(() => {
+  clearMyInterval(timeout)
+}, 3500);
+
+```
+
+
 ### 实现requestAnimationFrame
 
 
@@ -2550,15 +2819,11 @@ const requestAnimationFrame = function (callback, lastTime) {
 为了避免这种情况，我们用lastTime表示上一次调用raf的时间，然后每次raf内部计算上一次和本次调用的时间差，再用16.6减去就可以得到本次应该延迟的时间。这点和setTimeout实现interval中的校准其实是一个原理。
 
 ```js
-const requestAnimationFrame = function (callback, lastTime) {
-  var lastTime;
-  if (typeof lastTime === 'undefined') {
-    lastTime = 0
-  }
-  var currTime = new Date().getTime();
-  var timeToCall = Math.max(0, 16.6 - (currTime - lastTime));
-  lastTime = currTime + timeToCall;
-  var id = setTimeout(function () {
+const requestAnimationFrame = function (callback) {
+  const currTime = new Date().getTime();
+  const timeToCall = Math.max(0, 16.6 - currTime));
+  const lastTime = currTime + timeToCall;
+  const id = setTimeout(function () {
     callback(lastTime);
   }, timeToCall);
   return id;

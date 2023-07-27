@@ -6761,10 +6761,46 @@ canvas.addEventListener("mousedown", (e) => {
 
 3. pageX、pageY：也是基于文档左上角，但是如果有滚动时，要考虑到滚动的位置。比如一个页面高度为1000px，实际显示500px，滚动了500px。那么这时如果点击可视区域的左上角，pageY的值是500，因为它基于原本的左上角计算的。
 
-
-
-
-
 # IntersectionObserver
 
 
+
+
+# 滚动smooth动画
+
+通过scrollTo方法滚动时，实现类似平滑滚动的效果。
+如果浏览器支持，那么直接使用api即可：
+
+```js
+window.scrollTo({
+  top: pos,
+  behavior: 'smooth'
+})
+```
+
+如果不支持，那么需要手动实现。基本方法就是通过rAF控制，每次通过rAF传入的currentTime和起始时间计算出progress，然后移动progress段距离，直到移动到目标坐标。
+
+```js
+let start = null
+time = time || 500
+window.requestAnimationFrame(function step (currentTime) {
+  start = !start ? currentTime : start
+  if (currentPos < pos) {
+    const progress = currentTime - start
+    window.scrollTo(0, ((pos - currentPos) * progress / time) + currentPos)
+    if (progress < time) {
+      window.requestAnimationFrame(step)
+    } else {
+      window.scrollTo(0, pos)
+    }
+  } else {
+    const progress = currentTime - start
+    window.scrollTo(0, currentPos - ((currentPos - pos) * progress / time))
+    if (progress < time) {
+      window.requestAnimationFrame(step)
+    } else {
+      window.scrollTo(0, pos)
+    }
+  }
+})
+```

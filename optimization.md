@@ -141,6 +141,8 @@ el.offsetTop - document.documentElement.scrollTop <= viewPortHeight;
 - webpack 魔法注释：通过魔法注释可以直接通过 webpack 实现 prefetch & preload；
 - 应用框架工具库：比如 react-loadable；
 
+预加载的意义在于，让浏览器还在解析html的时候就对指定资源进行加载，而不是解析到了对应资源的html元素或者js时才去加载。
+
 ### preload 和 prefetch
 
 preload：对资源进行预加载，加载会在 html 的主要渲染之前，可以通过在预加载标签中添加一些媒体元素或者包含请求的 js 来加快渲染之后的资源加载速度。一般需要和 as 属性配合确定预加载的资源属于哪种类型
@@ -335,7 +337,13 @@ RAIL 是 Response, Animation, Idle, 和 Load 的首字母缩写, 是⼀种由 Go
 - DCL（DOMContentLoaded），DOM 解析完毕。
 - FP（First Paint），表示渲染出第一个像素点。FP 一般在 HTML 解析完成或者解析一部分时候触发。FP 事件的触发也可以被看作是白屏时间的结束，即从输入 URL 回车开始，到显示出页面上的第一个元素的时间被称为**白屏时间**，白屏时间的结束就是 FP 事件的触发。
 - FCP（First Contentful Paint），表示渲染出第一个内容，这里的“内容”可以是文本、图片、canvas。FCP 的触发可以看作是**首屏时间**的结束，表示浏览器第一屏渲染完成
-- FMP（First Meaningful Paint），首次渲染有意义的内容的时间，“有意义”没有一个标准的定义，FMP 的计算方法也很复杂。大体思路是，将页面中最大布局变化后的第一次渲染事件作为 FMP 事件，并且计算中考虑到了可视区的因素。FMP 在逐渐被 LCP 代替，因为相对于 LCP 和 FCP，FMP 不太好确定具体的细节。
+- FMP（First Meaningful Paint），首次渲染有意义的内容的时间，“有意义”没有一个标准的定义，一般来说 FMP 是页面主要元素渲染完成，比如视频页面的视频，列表页的列表项等等。
+
+这三者大致如下：
+![](https://pic.imgdb.cn/item/64c518c01ddac507cce19505.jpg)
+
+计算方式：FP、FCP 和下面的 LCP 都可以通过 Performance API 计算，FMP 则需要依赖 MutationObserver API 去主动监听 dom 元素变动来计算。详见下
+
 - LCP（largest contentful Paint），最大内容渲染时间，具体是指页面开始加载到最大文本块内容或图片显示在页面中（必须是渲染完成）的时间。LCP 是对以往的通过 load、DCL 判断渲染性能的方式的改进，也就是说可以不使用 load、DCL，而是改用判断 LCP。
   由于页面的动态加载，最大的元素可能发生变化。比如图片加载出来之前最大元素是某个 div，加载出来后最大元素可能就是 img；为了解决这种情况，浏览器会在绘制第一帧后立即分发一个`largest-contentful-paint`类型的`PerformanceEntry`，用于识别最大内容元素。如果最大内容元素发生变化，就会分发另一个 PerformanceEntry，其中的 element 属性就会更改为新的最大元素。
   对比 FCP 和 LCP，可以看到 LCP 在图片加载出来后发生变化
@@ -486,6 +494,112 @@ new PerformanceObserver((entryList) => {
 }).observe({ type: "layout-shift", buffered: true });
 ```
 
+### FMP
+
+参考：https://segmentfault.com/a/1190000017092752
+
+FMP 的计算方式可以参考这张图：
+
+![](https://pic.imgdb.cn/item/64c520a21ddac507ccf196c5.jpg)
+
+大致可以分为两个部分：
+
+- 通过 MutationObserver 监听元素，统计各个元素的加载时间点
+- 根据元素类型计算权重，在根据权重和加载时间综合计算，得到权重最高的元素渲染时间就是 FMP 的时间
+
+统计各个元素的加载完成时间的方式是通过 MutationObserver，比如下面这段
+
+```js
+initObserver() {
+    this.firstSnapshot(); // 初始化开始时间
+
+    this.observer = new MutationObserver(() => {
+      let t = Date.now() - START_TIME;
+      let bodyTarget = document.body;
+      // 从根元素开始，dfs给每个当前存在的元素打上callbackCount
+      if (bodyTarget) {
+        this.doTag(bodyTarget, this.callbackCount++);
+      }
+      // 记录这一批元素的加载时间，通过callbackCount就可以获取到
+      this.statusCollector.push({
+        t
+      });
+    });
+
+    this.observer.observe(document, {
+      childList: true,
+      subtree: true
+    });
+    // 当页面元素加载完成后，开始计算
+    if (document.readyState === "complete") {
+      this.calFinallScore();
+    } else {
+      window.addEventListener(
+        "load",
+        () => {
+          this.calFinallScore();
+        },
+        true
+      );
+    }
+  }
+```
+
+doTag 内的代码大致如下，其实就是 dfs 所有元素，给新插入的元素打上一个 tag
+这里的 tag 是按批次插入的。比如说，本次 dom 变动插入了 10 个元素，那么这 10 个元素的 callbackCount 都是 2，并在 statusCollector 内记录的时间相同。后面在计算加载时间的时候，只需要在 statusCollector 内获取一下对应的 callbackCount， 就可以得到该元素的加载时间了。
+
+```js
+doTag(target, callbackCount) {
+  let tagName = target.tagName;
+  if (IGNORE_TAG_SET.indexOf(tagName) === -1) {
+    let childrenLen = target.children ? target.childrenlength : 0;
+    if (childrenLen > 0) {
+      // dfs打上标签
+      for (let childs = target.children, i = childrenLen -1; i >= 0; i--) {
+        if (childs[i].getAttribute("f_c") === null) {
+          childs[i].setAttribute("f_c", callbackCount);
+        }
+        this.doTag(childs[i], callbackCount);
+      }
+    }
+  }
+}
+
+// 计算结果的方式，简化版
+calResult(resultSet) {
+  let rt = 0;
+  resultSet.forEach(item => {
+    let t = 0;
+    // 通过属性获取到这个元素记录的id，然后得到这个元素的加载时间
+    let index = +item.node.getAttribute("f_c") - 1;
+    t = this.statusCollector[index].t;
+    console.log(t, item.node);
+    rt < t && (rt = t);
+  });
+  return rt;
+}
+
+```
+
+注意像图片这样的静态资源，应该以资源加载完成时间为定，可以通过performance.getEntries获取：
+
+```js
+performance.getEntries().forEach(item => {
+  this.mp[item.name] = item.responseEnd;
+});
+```
+
+接下来就是计算的过程了。
+计算过程主要有三个重要指标：
+1. 加载时间，以及记录过
+2. 权重。我们可以设定一个权重，比如普通元素是1，图片是2，canvas是4等等，按照页面重要程度来定。
+3. 元素得分，以当前元素在页面上的显示面积得出，可以通过`width * height * weight * 元素在viewport的面积占比`得到。如果该元素的子元素得分比该元素高，就替换为得分最高的子元素。这样可以得到每个可视元素的得分。
+
+最后，根据得分和加载时间，确定FMP的时间。
+即，得分最高、权重最大的元素，它的加载时间，就应该是FMP的时间。（可以考虑把权重和得分乘起来得到乘积最大值。）
+
+总结一下就是遍历所有元素得到加载时间，然后再计算权重最大的那个元素的加载时间就可以。这个依赖于开发者定义的dom结构，因此需要我们自己去测算。
+
 ### web-vitals
 
 实际开发中有一个 web-vitals 库，通过它就可以建议获取三大关键指标的值
@@ -514,3 +628,49 @@ getLCP(console.log);
 LightHouse 是谷歌浏览器自带的一个性能检测工具。通过 LightHouse 测试页面，chrome 会给出上面各个指标的计算结果，并给出优化建议。
 ![](https://pic.imgdb.cn/item/637de71e16f2c2beb1108c9c.jpg)
 ![](https://pic.imgdb.cn/item/637de75c16f2c2beb110cc5a.jpg)
+
+# 专项优化
+
+## 端内h5优化
+
+参考：
+https://heapdump.cn/article/3676881
+https://xiaobaiha.gitbook.io/tech-share/engineering/c-duan-xing-neng-you-hua
+https://developer.aliyun.com/article/1054030
+
+之前面试被问到过这个问题。
+首先先明确什么是端内h5：端内就是通过native提供的webview来显示的h5页面，而端外就是通过浏览器加载的h5。
+端内由于是在native底层启动，因此端内h5通常可以通过一些手段来达到更好的优化效果，从用户体验上来说要好于端外。
+
+端内的h5优化方式主要有：
+
+- 离线资源。借助 native 通过 webview 统一拦截 url，将资源映射到本地离线包，打开或者更新应用的时候对版本资源检测，下载和维护本地缓存目录中的资源。
+
+也就是说把h5相关的静态资源、js、css等通过预下载的形式存储在本地，当打开页面的时候不再需要，或者只需要非首屏的网络请求
+
+![](https://pic.imgdb.cn/item/64c547c11ddac507cc423716.jpg)
+
+这个方法也有不足的点，比如离线包的体积可能会非常大。因此有一种折中方案，就是通过ssr和离线结合的方式。
+入口html使用ssr，当用户访问入口时在服务端发起请求；对这些请求，如果命中离线资源就使用离线，否则就正常请求。相当于只让一部分资源离线。
+这些请求的资源还可以通过cdn来优化
+
+- 预请求。以空间换时间的方式，在用户跳转页面同时请求该页面所需数据，与 html 加载并行执行。预请求指的是首屏显示所需要的接口数据的预请求，预请求可以被提前到webview加载的时间；
+
+当js开始请求数据时，先检查是否存在已经预请求的资源，有就使用，否则 js 也会发起接口请求并开启竞速模式。
+
+![](https://pic.imgdb.cn/item/64c54a1a1ddac507cc473f67.jpg)
+
+- ssr。ssr的基本优化其实还是那一套，就是通过服务端请求数据并填入。
+
+ssr的最大问题在于服务器压力，由于每个h5页面加载都需要服务端进行直出，因此大量请求会对服务器造成很大压力。
+
+解决方法是利用缓存，缓存的方向有几个：
+  - 接口缓存，即对ssr填入数据所需的接口进行缓存，请求时直接取数据
+  - 静态页面缓存，对于无状态的、无身份鉴权或者说没有太多变动的页面，不需要重复渲染，请求时直接返回缓存的html
+  - 如果是变动比较大的页面，那就退化为csr。
+
+- 预渲染。预渲染主要是针对spa，可以把一些指定的路由页面直接生成html。
+
+这种优化方式依赖的webpack插件有点过时，可能有新的方式来做。可以参考：https://juejin.cn/post/6844903689656893454
+
+

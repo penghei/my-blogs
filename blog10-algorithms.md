@@ -3354,8 +3354,6 @@ var search = function (arr, target) {
 };
 ```
 
-
-
 ## 搜索旋转排序数组的最小值
 
 这道题有一个基本版和一点点变种，后者和前者的区别只是数组中添加了重复元素：
@@ -4733,6 +4731,9 @@ const rson = dfs(root.right, p, q);
 (lson && rson) ||
   ((root.val === p.val || root.val === q.val) && (lson || rson));
 ```
+
+**注意这个条件是用于判断当前节点是不是合法的最近公共祖先的，而不是函数的返回值**。返回值应该表示在该树中是否存在 p 或者 q 的一个或多个，因此是`l || r || node.val === q.val || node.val === p.val`，即有一种情况成立就可以
+
 
 解释：
 

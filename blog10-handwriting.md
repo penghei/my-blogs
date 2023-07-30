@@ -2821,7 +2821,7 @@ const requestAnimationFrame = function (callback, lastTime) {
 ```js
 const requestAnimationFrame = function (callback) {
   const currTime = new Date().getTime();
-  const timeToCall = Math.max(0, 16.6 - currTime));
+  const timeToCall = Math.max(0, 16.6 - currTime);
   const lastTime = currTime + timeToCall;
   const id = setTimeout(function () {
     callback(lastTime);

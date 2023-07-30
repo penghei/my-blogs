@@ -2903,6 +2903,62 @@ css 对于暗黑模式的处理大体分为两种思路
 
 获取到样式规则后，DarkReader 通过一定的色值计算，将色值反转为暗黑模式下的色值。最后将新的规则插入到页面中。这里并没有直接覆盖原来的值，而是新生成 style 标签，对原有样式进行覆盖；行内样式则是通过新增 CSS Variable 进行覆盖。
 
+## 镂空遮罩
+
+如果要实现一个蒙层，中间100*100挖空，有什么方式
+
+基本方式是通过flex、grid等布局手段，形成类似多栏布局的形式，中间空出来就可以。
+
+其他的实现方式，可以依靠border或者box-shadow来实现蒙层阴影，然后空白区域就是元素本身。元素本身是透明的。
+
+参考：https://juejin.cn/post/6844903919059992584
+
+代码如下：
+可以看到大致思路是让inner通过绝对定位和content对齐，然后改变inner的border，盖住其他部分，就形成了遮罩效果。
+box-shadow也是类似方法
+
+```html
+<body>
+    <div class="outer">
+      <div class="content">
+        <p>这是要露出来的部分</p>
+      </div>
+      <div class="inner"></div>
+    </div>
+  </body>
+  <style>
+    body{
+        margin: 0;
+    }
+    .outer {
+      position: relative;
+      background: darksalmon;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .content {
+      width: 100px;
+      height: 100px;
+    }
+    .inner {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%,-50%);
+      width: 100px;
+      height: 100px;
+      border-color: rgba(0, 0, 0, 0.5);
+      border-style: solid;
+      border-width: calc((100vh - 100px) / 2) calc((100vw - 100px) / 2);
+      background: transparent;
+    }
+  </style>
+
+```
 # CSS 布局
 
 ## 圣杯布局

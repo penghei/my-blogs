@@ -646,41 +646,81 @@ export default function compose(...funcs: Function[]) {
 const a = (num) => num++
 const b = (num) => num--
 
-compose(a,b) === (...args) => a(b(...args))
+compose(a,b) === (num) => a(b(num)) === (num) => a(num--) === (num) => (num--)++
 ```
 
 compose 的返回值是一个函数，这个函数接收的参数将会作为最内部的 compose 函数的参数调用，然后最内部的函数的返回值交给下一个函数，依次类推。
-注意 compose 的返回值的返回值还是一个函数，因此实际调用是这样的：
 
-```ts
-compose(...chain)(store.dispatch)(action);
+再举个栗子，下面这里用到了compose来合并两个print函数，合并的结果是是什么？
+
+```js
+const compose = (...fn) =>
+  [...fn].reduce(
+    (f, g) =>
+      (...args) =>
+        f(g(...args))
+  );
+const print1 = (next) => (action) => {
+  const res = next(action); // 这个next实际上就是print2
+  return res;
+};
+const print2 = (next) => (action) => {
+  const res = next(action);
+  return res;
+};
+const fnComposed = compose(print1, print2);
+fnComposed()
 ```
 
-上面说过 chain 函数的形式就是 wrapDispatch 这种类型。那么通过 compose 合并之后就会形成一个链式调用。传入的 store.dispatch 会传给最内层的（也就是最后面的）中间件函数
-因此**第一个中间件函数的参数 next 实际上是 store.dispatch。而后面的中间件的 next 则是前一个中间件的返回值，即前一个中间件的 handleAction 函数**。最终，最后一个调用的中间件（即第一个参数）的返回值将作为 dispatch 函数的返回值。
+应该是这样：
 
-最后，当 compose 合并完成后会赋给 dispatch 函数，这个 dispatch 会覆盖前面的 dispatch 并最终返回。因此最后的 dispatch 就是这个包装好的函数
+```js
+const print1 = (next) => (action) => {
+  const res = next(action);
+  return res;
+};
+const print2Fn = (action) => {
+  ...
+}
+fnComposed 
+= (...args) => print1(print2Fn)
 
-```ts
-dispatch = compose<typeof dispatch>(...chain)(store.dispatch);
+// print1内部，next就是print2Fn
+(print2Fn) => (action) => {
+  const res = print2Fn(action);
+  return res;
+};
 
-return {
-  ...store,
-  dispatch,
+// 调用之后返回的就是这个
+(action) => {
+  const res = print2Fn(action);
+  return res;
+};
+
+// 即
+fnComposed = (action) => {
+  const res = print2Fn(action);
+  return res;
 };
 ```
 
-当调用 dispatch 时，实际上是在调用最后一个中间件的最后一层的 handleAction 函数。将 action 传入，然后调用真实的 dispatch 去执行 reducer。
+所以，这里print1的next，就是下一个middleWare的内层函数，也就是接受action为参数的函数。
+如果print2还有下一个，那么就是print3的内层函数，依次类推。最后一层的next实际上是传入的标准dispatch函数
+标准dispatch函数会返回调用时传入的action，也就是最后一层的action。
 
-```ts
-function handleAction(action) {
-  return next(action);
-}
+
+```js
+// compose(...chain) 的结果是一个 (next) => (action) => {...} 
+
+dispatch = compose(...chain)(store.dispatch); // 最后一个middleWare的next是标准dispatch
 ```
 
-然后就是上面说的步骤，handleAction 函数交给下一个 wrapDispatch，在执行一次上面的步骤，直到所有的中间件函数都被执行完。
+每个middleWare的返回值，都在上一层中表示为`next(action)`。每一层可以在前一层的返回值基础上返回，也可以单独返回
 
-注意：中间件本身的返回值并不重要（即 handleAction 的返回值），重要的是 wrapDispatch 函数的返回值，即 handleAction 函数本身；wrapDispatch 函数的返回值将传递给下一个 wrapDispatch 函数使用，这期间和 handleAction 函数内部并无关系。因此除了最后一个调用的中间件，其他中间件的返回值都不重要
+注意：合并的时候调用顺序是从后向前的，但是合并时候的函数是参数为next的函数，返回值是一个接受action的函数，并不是最终调用的结果。
+在把所有的middleWare都合并之后，最后得到了一个接受action，返回调用结果的函数，这个就是我们的最终dispatch。
+**当调用这个dispatch时，实际上是按照从前到后的顺序调用中间件**。比如就会按照print1、print2、print3的传入顺序调用。
+
 
 ## 基本使用
 
@@ -765,10 +805,7 @@ const asyncFunctionMiddleware = (storeAPI) => (next) => (action) => {
 
 ```ts
 const fetchSomeData = (dispatch, getState) => {
-  request.get("todos").then((todos) => {
-    dispatch({ type: "todos/todosLoaded", payload: todos });
-    const allTodos = getState().todos;
-  });
+   
 };
 
 store.dispatch(fetchSomeData);
@@ -776,7 +813,34 @@ store.dispatch(fetchSomeData);
 
 这样当执行 dispatch 时，实际上就是执行 fetchSomeData 这个函数。当异步请求完成后，调用同步的 dispatch。由于此时 action 不再是一个函数，因此会正常更新。
 
-redux 存在这样一个中间件，叫做 redux-thunk
+redux 存在这样一个中间件，叫做 redux-thunk。thunk自动提供了一个异步中间件，开发者只需要编写对应的函数，在函数内执行请求并dispatch，就可以实现异步效果。
+
+标准的函数如下：
+
+```js
+const fetchSomeData = async (dispatch, getState) => {
+  const res = await doSomeAsyncJob()
+  dispatch({type:'',payload:res})
+};
+
+store.dispatch(fetchSomeData);
+
+```
+
+如果需要一个传入值，比如做一个请求的时候需要请求参数，那么我们可以在外面包一层
+
+```js
+const sendData = (data) => {
+  return const sendSomeData = async (dispatch, getState) => {
+    const res = await doSomeAsyncJob(data)
+    dispatch({type:'',payload:res})
+  };
+}
+
+store.dispatch(sendData(someData));
+```
+
+示例如下：
 
 ```ts
 import thunkMiddleware from "redux-thunk";
@@ -787,16 +851,45 @@ const composedEnhancer = applyMiddleware(thunkMiddleware);
 const store = createStore(rootReducer, composedEnhancer);
 export default store;
 
-//...
-store.dispatch(async (dispatch, getState) => {
+const fetchSomeData = async (dispatch, getState) => {
   const response = await client.get("/fakeApi/todos");
   log("before", getState());
   dispatch({ type: "todos/todosLoaded", payload: response.todos });
   log("after", getState());
-});
+}
+
+store.dispatch(fetchSomeData);
 ```
 
 其中，getState 方法可以获取实时的 state 值，用在 dispatch 前后就可以获取更新前后的值。
+
+### thunk
+
+redux-thunk代码其实非常简单，就只是判断action的类型。如果是函数就直接调用action，如果不是就通过next调用action
+
+```js
+function createThunkMiddleware<
+  State = any,
+  BasicAction extends Action = AnyAction,
+  ExtraThunkArg = undefined
+>(extraArgument?: ExtraThunkArg) {
+  const middleware: ThunkMiddleware<State, BasicAction, ExtraThunkArg> =
+    ({ dispatch, getState }) =>
+    next =>
+    action => {
+      if (typeof action === 'function') {
+        return action(dispatch, getState, extraArgument)
+      }
+
+      return next(action)
+    }
+  return middleware
+}
+
+export const thunk = createThunkMiddleware()
+
+```
+
 
 # React-Redux
 

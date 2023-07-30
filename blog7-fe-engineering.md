@@ -1762,8 +1762,14 @@ turbopack 的缺点也很明显
 4. 网络请求异常：这种一般只能在开发时由开发者增加网络请求异常的捕获，比如Promise.catch，xhr.onerror等。
 
 5. 跨域脚本执行异常：浏览器对跨域脚本中的异常，不会报告错误的细节，它的 msg 只有 'Script error' 信息，没有具体的行、列、类型信息。
-  - 设置script crossorigin，采用cors获取脚本，从而获取详细信息
+  - 设置script crossorigin，然后服务端返回`Access-Control-Allow-Origin`，也就是采用cors获取脚本，从而获取详细信息
   - 再通过第一种方式捕获
+
+
+> window.onerror和window.addEventListener('error')的区别：
+> - onerror含有详细的error堆栈信息，存在error.stack中，而后者不行
+> - onerror会比addEventListener('error')后触发
+> - addEventListener('error')可以捕获全局的资源加载错误，因为资源加载错误不冒泡
 
 ### 监控方式
 
@@ -1771,7 +1777,7 @@ turbopack 的缺点也很明显
 
 1. 开发者代码添加，即通过添加一些捕获代码来实现错误捕获和处理，防止出现uncaught的错误。
   - trycatch捕获，可以是针对网络请求，也可以放到比较大的一个范围
-  - 通过windo.error捕获
+  - 通过window.error捕获
   - react错误边界等框架捕获的方式
 2. 第三方监控工具。通常是利用注入代码的方式来捕获错误；捕获的原理和手动添加代码相同，但通常会采取合适的上报方式和对错误信息的自动整理、筛选等。
 

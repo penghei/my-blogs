@@ -152,7 +152,10 @@ rn 的性能主要关注点有以下几个：
 
 ### RAM Bundles 和内联引用优化
 
-类似于在 web 端进行的分包优化，在 rn 中也有一些手段可以对模块进行分包、动态加载等方式。具体来说有两种
+严格来说，这种优化方式不能称作“分包”，而应该叫做**代码分割**。
+分包的场景一般出现在 Native 为主，React Native 为辅的场景里。因此大多数分包工作是由native完成的，分包的对象一般是整个JSBundle，按照业务代码和基础包（React、rn等库代码）进行分割。
+
+类似于在 web 端进行的代码分割，在 rn 中也有一些手段可以对模块进行分割、手动加载等方式。具体来说有两种
 
 - 使用 RAM 格式的包
 - 通过 require 方式进行内联引用优化。其实就是一种代码分割
@@ -176,7 +179,65 @@ RN官⽅打包⼯具 metro 对于 RAM bundle 提供了两种实现，分别是�
 
 注意，内联引用是一种“懒执行”而非“懒加载”。也就是说内联引用的包在初始化时也被加载到了主包里边，只是没有执行。
 举个例子，如果我们采用import导入一个组件，那么这个组件内的代码会在一开始就被执行。
-但如果通过内联引用，实现的效果就是执行到require之后才会执行，然后把模块的导出值返回。这样其实减小的是执行、加载包的时间，而非下载包的时间。
+但如果通过内联引用，实现的效果就是执行到require之后才会执行，然后把模块的导出值返回。这样其实分离的是包执行的时间，而包在执行之前需要的解析、加载时间没有减少。
+
+因此为了实现更加彻底的“分割”，就需要配合RAMBundles使用。RAM将包按照文件分成一个个模块，然后加载时从入口代码开始，按照导入顺序去依次加载各个模块。
+
+这里有两个点要注意：
+- RAM并不是必须和require绑定，通过普通的import也能正常导入分包后的代码。require是提供了一种手动加载的方式，当调用require时，会通过bridge向native发起模块请求，然后加载、编译模块。
+- 使用RAM后，所有模块默认都会被分离，而需要在首屏加载的模块不应该也被分离，否则需要从入口模块开始一一加载，会浪费时间和性能。因此需要把可能的首屏模块通过预加载的方式和入口模块打包在一起。
+
+具体的操作方法是，把模块加载情况输出，然后把首次导入的模块输出，再把这些模块输出成一个对象，添加到metro的配置中。metro为这些模块开通一个“黑名单”，即这些模块不会进行分包，会和入口模块一起被加载。
+
+```js
+const modules = require.getModules();
+const moduleIds = Object.keys(modules);
+const loadedModuleNames = moduleIds
+  .filter(moduleId => modules[moduleId].isInitialized)
+  .map(moduleId => modules[moduleId].verboseName);
+const waitingModuleNames = moduleIds
+  .filter(moduleId => !modules[moduleId].isInitialized)
+  .map(moduleId => modules[moduleId].verboseName);
+
+// make sure that the modules you expect to be waiting are actually waiting
+console.log(
+  'loaded:',
+  loadedModuleNames.length,
+  'waiting:',
+  waitingModuleNames.length
+);
+
+// grab this text blob, and put it in a file named packager/modulePaths.js
+console.log(`module.exports = ${JSON.stringify(loadedModuleNames.sort())};`);
+
+// metro.config.js
+const modulePaths = require('./packager/modulePaths');
+const resolve = require('path').resolve;
+const fs = require('fs');
+
+// Update the following line if the root folder of your app is somewhere else.
+const ROOT_FOLDER = resolve(__dirname, '..');
+
+const config = {
+  transformer: {
+    getTransformOptions: () => {
+      const moduleMap = {};
+      modulePaths.forEach(path => {
+        if (fs.existsSync(path)) {
+          moduleMap[resolve(path)] = true;
+        }
+      });
+      return {
+        preloadedModules: moduleMap,
+        transform: { inlineRequires: { blacklist: moduleMap } },
+      };
+    },
+  },
+  projectRoot: ROOT_FOLDER,
+};
+
+module.exports = config;
+```
 
 
 ## 组件
@@ -972,7 +1033,10 @@ wdyr可以检测执行的组件的渲染情况，在控制台打印出渲染原�
 
 下面是一个codesandbox例子：https://codesandbox.io/s/why-did-you-render-sandbox-forked-q73lpx
 
+
 wdyr还可以用来检查redux的useSelector，具体可参考官方文档https://github.com/welldone-software/why-did-you-render
+关于useSelector的一个例子（注意wdyr依赖应该更新到最新）：https://codesandbox.io/s/why-did-you-render-4-tracking-of-pure-components-forked-k2g4h4?file=/src/App.js
+
 
 ### Profiler
 

@@ -1068,6 +1068,148 @@ subscription 上的 listeners 是在 useSelector 函数内部被加入的，在�
 
 ### selector 和 useSelector
 
+#### 旧版useSelector
+
+参考：https://juejin.cn/post/6960838627945349151
+旧版的useSelector其实逻辑比较简单，这里直接贴出源码：
+
+```js
+const refEquality = (a, b) => a === b
+
+function useSelectorWithStoreAndSubscription(
+  selector,
+  equalityFn,
+  store, // 通过context获取的store，context始终不会改变，改变的是store.getState
+  contextSub
+) {
+  // 通过传入状态来强制更新
+  const [, forceRender] = useReducer(s => s + 1, 0)
+
+  // 订阅全局更新
+  const subscription = useMemo(() => new Subscription(store, contextSub), [
+    store,
+    contextSub
+  ])
+
+  const latestSelector = useRef() // 上一个selector函数
+  const latestSelectedState = useRef() // 上一个select的状态
+
+  let selectedState
+
+  try {
+    // 如果本次的select状态和上一次不相等
+    if (
+      selector !== latestSelector.current
+    ) {
+      // 调用selector计算得到本次的select状态
+      // 从这里可以看出，如果selector函数返回一个对象，那么selectedState永远都是最新的，永远不可能和上次状态相等
+      selectedState = selector(store.getState())
+    } else {
+      selectedState = latestSelectedState.current
+    }
+  }
+
+  useIsomorphicLayoutEffect(() => {
+    function checkForUpdates() {
+      try {
+        const newSelectedState = latestSelector.current(store.getState())
+        // 比较新旧select状态
+        if (equalityFn(newSelectedState, latestSelectedState.current)) {
+          return
+        }
+
+        latestSelectedState.current = newSelectedState
+      }
+      // 如果改变，执行更新
+      forceRender({})
+    }
+
+    subscription.onStateChange = checkForUpdates
+    subscription.trySubscribe()
+
+    checkForUpdates()
+
+    return () => subscription.tryUnsubscribe()
+  }, [store, subscription])
+
+  return selectedState
+}
+
+export function createSelectorHook(context = ReactReduxContext) {
+  const useReduxContext =
+    context === ReactReduxContext
+      ? useDefaultReduxContext
+      : () => useContext(context)
+  return function useSelector(selector, equalityFn = refEquality) { // 这里就是useSelector函数
+    const { store, subscription: contextSub } = useReduxContext()
+
+    return useSelectorWithStoreAndSubscription(
+      selector,
+      equalityFn,
+      store,
+      contextSub
+    )
+  }
+}
+export const useSelector = /*#__PURE__*/ createSelectorHook()
+```
+
+核心内容其实就是下面几点：
+1. 通过selector函数得到派生状态，也就是组件中真正需要的状态
+2. 通过useRef记录上一次的派生状态
+3. 每次订阅到state改变时，通过本次的selector计算得到本次的select状态，然后和上一次的状态进行比较。比较的函数是equalityFn，默认就是索引比较。如果不相等，那么触发一次更新
+4. 触发更新的方式是一个setState
+
+从这里可以很明显看出，当selector函数返回的是一个新建的对象时，那就永远不会和旧state相等，也就始终会导致组件更新。
+同样的，如果selector取得的状态比较顶层，也会有这个问题。比如：
+
+```js
+const initState = {
+  list:{
+    listOffset:0,
+    listData:[],
+  }
+}
+
+const reducer = (state,{type,payload}) => {
+  case 'list/updateOffset':
+    return {...state,payload.listOffset}
+}
+
+// ...
+const listData = useSelector(state => state.list)
+```
+上面的useSelector内部直接取的是整个list对象，那么当listOffset变化时，整个list都会被重新创建，这时比较结果肯定不同，就会引起不必要的渲染。
+
+另一方面，如果在useSelector中使用filter等会返回新对象的方法时，也会有这个问题：
+
+```js
+const postsForUser = useSelector(state => {
+  const allPosts = selectAllPosts(state)
+  return allPosts.filter(post => post.user === userId)
+})
+```
+
+同样的问题，当调用selector时返回的一定是一个新的状态。
+
+这个问题的解决方式是使用reselect库，在redux中则是直接使用createSelector方法来创建一个“记忆化的”selector：
+
+```js
+export const selectPostsByUser = createSelector(
+  [selectAllPosts, (state, userId) => userId],
+  (posts, userId) => posts.filter(post => post.user === userId)
+)
+const postsForUser = useSelector(state => selectPostsByUser(state, userId))
+```
+
+经过包装后的selector，只会在 posts 或 userId 发生变化时重新执行输出 selector
+reselect的原理可以参考：https://juejin.cn/post/7147294478074658823
+
+基本原理可以总结为：reselect 使用闭包保存上一次的参数 lastArgs 与结果 lastResult ，只有当依赖中的某个 Redux state 发生了变化，导致前后参数比对不一致了，才会触发 selector 的再次计算。selector重新计算，那么就和上面逻辑一样，根据比较判断是否需要更新。
+
+
+#### 新版useSelector
+
 useSelector 简化如下：
 
 ```ts
@@ -1089,9 +1231,9 @@ function useSelector<TState, Selected extends unknown>(
 }
 ```
 
-可以看到核心的函数实际上是一个 useSyncExternalStoreWithSelector。这个函数其实是基于 useSyncExternalStore 的封装，后者是 React18 新的 hook。
-useSyncExternalStoreWithSelector 的逻辑和 useSyncExternalStore 基本差不多，只是添加了 selector 用于取到指定的 state，以及 equalityFn 用于比较 state 是否改变。
-同样，当调用 dispatch 改变 state 时，会执行更新并返回最新的 state 供 React 使用
+可以看到核心的函数实际上是一个 useSyncExternalStoreWithSelector。这个函数和useSyncExternalStore一样都是React18提供的新hook，前者增加了selector和equalityFn的接入，便于以“selector”的方式来订阅更新。
+
+简单来说就是会在state发生变动时，通过selector得到state的派生状态，然后比较两次派生state是否相等（默认索引相等，比较函数就是equalityFn），如果不相等就会更新。
 
 #### useSyncExternalStore
 
@@ -1237,7 +1379,7 @@ export function configureStore(options) {
 }
 ```
 
-## api
+## 其他api
 
 ### connect
 

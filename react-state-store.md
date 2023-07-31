@@ -651,7 +651,7 @@ compose(a,b) === (num) => a(b(num)) === (num) => a(num--) === (num) => (num--)++
 
 compose 的返回值是一个函数，这个函数接收的参数将会作为最内部的 compose 函数的参数调用，然后最内部的函数的返回值交给下一个函数，依次类推。
 
-再举个栗子，下面这里用到了compose来合并两个print函数，合并的结果是是什么？
+再举个栗子，下面这里用到了 compose 来合并两个 print 函数，合并的结果是是什么？
 
 ```js
 const compose = (...fn) =>
@@ -669,7 +669,7 @@ const print2 = (next) => (action) => {
   return res;
 };
 const fnComposed = compose(print1, print2);
-fnComposed()
+fnComposed();
 ```
 
 应该是这样：
@@ -682,7 +682,7 @@ const print1 = (next) => (action) => {
 const print2Fn = (action) => {
   ...
 }
-fnComposed 
+fnComposed
 = (...args) => print1(print2Fn)
 
 // print1内部，next就是print2Fn
@@ -704,25 +704,25 @@ fnComposed = (action) => {
 };
 ```
 
-所以，这里print1的next，就是下一个middleWare的内层函数，也就是接受action为参数的函数。
-如果print2还有下一个，那么就是print3的内层函数，依次类推。最后一层的next实际上是传入的标准dispatch函数
-标准dispatch函数会返回调用时传入的action，也就是最后一层的action。
-
+所以，这里 print1 的 next，就是下一个 middleWare 的内层函数，也就是接受 action 为参数的函数。
+如果 print2 还有下一个，那么就是 print3 的内层函数，依次类推。最后一层的 next 实际上是传入的标准 dispatch 函数
+标准 dispatch 函数会返回调用时传入的 action，也就是最后一层的 action。
 
 ```js
-// compose(...chain) 的结果是一个 (next) => (action) => {...} 
+// compose(...chain) 的结果是一个 (next) => (action) => {...}
 
 dispatch = compose(...chain)(store.dispatch); // 最后一个middleWare的next是标准dispatch
 ```
 
-每个middleWare的返回值，都在上一层中表示为`next(action)`。每一层可以在前一层的返回值基础上返回，也可以单独返回
+每个 middleWare 的返回值，都在上一层中表示为`next(action)`。每一层可以在前一层的返回值基础上返回，也可以单独返回
 
-注意：合并的时候调用顺序是从后向前的，但是合并时候的函数是参数为next的函数，返回值是一个接受action的函数，并不是最终调用的结果。
-在把所有的middleWare都合并之后，最后得到了一个接受action，返回调用结果的函数，这个就是我们的最终dispatch。
-**当调用这个dispatch时，实际上是按照从前到后的顺序调用中间件**。比如就会按照print1、print2、print3的传入顺序调用。
-
+注意：合并的时候调用顺序是从后向前的，但是合并时候的函数是参数为 next 的函数，返回值是一个接受 action 的函数，并不是最终调用的结果。
+在把所有的 middleWare 都合并之后，最后得到了一个接受 action，返回调用结果的函数，这个就是我们的最终 dispatch。
+**当调用这个 dispatch 时，实际上是按照从前到后的顺序调用中间件**。比如就会按照 print1、print2、print3 的传入顺序调用。
 
 ## 基本使用
+
+### 栗子
 
 下面是官方文档上的一个例子：
 
@@ -804,27 +804,24 @@ const asyncFunctionMiddleware = (storeAPI) => (next) => (action) => {
 然后可以编写一个异步的 action 函数：
 
 ```ts
-const fetchSomeData = (dispatch, getState) => {
-   
-};
+const fetchSomeData = (dispatch, getState) => {};
 
 store.dispatch(fetchSomeData);
 ```
 
 这样当执行 dispatch 时，实际上就是执行 fetchSomeData 这个函数。当异步请求完成后，调用同步的 dispatch。由于此时 action 不再是一个函数，因此会正常更新。
 
-redux 存在这样一个中间件，叫做 redux-thunk。thunk自动提供了一个异步中间件，开发者只需要编写对应的函数，在函数内执行请求并dispatch，就可以实现异步效果。
+redux 存在这样一个中间件，叫做 redux-thunk。thunk 自动提供了一个异步中间件，开发者只需要编写对应的函数，在函数内执行请求并 dispatch，就可以实现异步效果。
 
 标准的函数如下：
 
 ```js
 const fetchSomeData = async (dispatch, getState) => {
-  const res = await doSomeAsyncJob()
-  dispatch({type:'',payload:res})
+  const res = await doSomeAsyncJob();
+  dispatch({ type: "", payload: res });
 };
 
 store.dispatch(fetchSomeData);
-
 ```
 
 如果需要一个传入值，比如做一个请求的时候需要请求参数，那么我们可以在外面包一层
@@ -856,7 +853,7 @@ const fetchSomeData = async (dispatch, getState) => {
   log("before", getState());
   dispatch({ type: "todos/todosLoaded", payload: response.todos });
   log("after", getState());
-}
+};
 
 store.dispatch(fetchSomeData);
 ```
@@ -865,7 +862,7 @@ store.dispatch(fetchSomeData);
 
 ### thunk
 
-redux-thunk代码其实非常简单，就只是判断action的类型。如果是函数就直接调用action，如果不是就通过next调用action
+redux-thunk 代码其实非常简单，就只是判断 action 的类型。如果是函数就直接调用 action，如果不是就通过 next 调用 action
 
 ```js
 function createThunkMiddleware<
@@ -888,6 +885,130 @@ function createThunkMiddleware<
 
 export const thunk = createThunkMiddleware()
 
+```
+
+### 请求状态处理
+
+实际上通过 thunk 实现异步请求的过程不只是简单调用 dispatch 传入一个请求函数这么简单。还要考虑的其他方面有：
+
+- 错误处理
+- 加载状态处理
+- 请求数据传入
+
+对于前两种，其实我们需要在原本 state 的基础上增加 pending 和 error 处理的 state。当请求发出时触发 pending，返回时根据结果去触发 error 或 fulfilled 的 state。
+比如最基础的版本是这样：
+
+```js
+const fetchSomeData = async (dispatch, getState) => {
+  const res = await doSomeAsyncJob();
+  dispatch({ type: "", payload: res });
+};
+
+store.dispatch(fetchSomeData);
+```
+
+我们加上对错误和 loading 状态的处理
+
+```js
+const fetchSomeData = async (dispatch, getState) => {
+  dispatch({ type: "data/loading" });
+  try {
+    const res = await doSomeAsyncJob();
+    dispatch({ type: "data/succeed", payload: res });
+  } catch (err) {
+    dispatch({ type: "data/failed", payload: err });
+  }
+};
+
+store.dispatch(fetchSomeData);
+```
+
+在组件内部，需要对这几种状态处理。比如当loading状态时显示loading内容，其他情况处理结果和错误
+
+```js
+export const PostsList = () => {
+  const dispatch = useDispatch()
+  const posts = useSelector(state => state.data.dataList)
+  // status也是个状态，包括idle/succeeded/failed/loading四种状态
+  const postStatus = useSelector(state => state.data.status)
+  const error = useSelector(state => state.data.error)
+
+  useEffect(() => {
+    // 空闲时在useEffect内请求
+    if (postStatus === 'idle') {
+      dispatch(fetchSomeData())
+    }
+  }, [postStatus, dispatch])
+
+  let content
+
+  if (postStatus === 'loading') {
+    content = <Spinner text="Loading..." />
+  } else if (postStatus === 'succeeded') {
+    content = ... // 正常数据返回
+  } else if (postStatus === 'failed') {
+    content = <div>{error}</div>
+  }
+
+  return (
+    <section className="posts-list">
+      <h2>Posts</h2>
+      {content}
+    </section>
+  )
+}
+```
+
+redux提供了一个createAsyncThunk可以方便创建上面所需的函数。配合createSlice的extraReducers，就可以简化上述步骤。
+在slice内部的extraReducers下，通过builder添加的case可以包含不同状态的thunk对应的type。如下所示，即我们不再需要单独在reducer中自己处理关于这几种状态的的case了。
+
+```js
+export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
+  const response = await client.get('/fakeApi/posts')
+  return response.data
+})
+
+const initialState = {
+  posts: [],
+  status: 'idle',
+  error: null
+}
+
+const postsSlice = createSlice({
+  name: 'posts',
+  initialState,
+  reducers: {
+    // 处理其他type
+  },
+  extraReducers(builder) {
+    builder
+      .addCase(fetchPosts.pending, (state, action) => {
+        state.status = 'loading'
+      })
+      .addCase(fetchPosts.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        // Add any fetched posts to the array
+        state.posts = state.posts.concat(action.payload)
+      })
+      .addCase(fetchPosts.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.error.message
+      })
+  }
+})
+```
+
+createAsyncThunk还可以接受参数，以实现发送数据的效果
+
+```js
+
+export const addNewPost = createAsyncThunk(
+  'posts/addNewPost',
+  async initialPost => {
+    const response = await client.post('/fakeApi/posts', initialPost)
+    return response.data
+  }
+)
 ```
 
 

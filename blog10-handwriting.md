@@ -868,6 +868,7 @@ function memoize(fn) {
 
 ## 手写 Promise
 
+
 ### 基础 Promise
 
 原理:<a href="https://juejin.cn/post/6844903625769091079">具体原理可以看这里</a>
@@ -1158,6 +1159,16 @@ const resolvePromise = (thenPromise, returnValueFromThen, resolve, reject) => {
 ```
 
 ### Promise Api
+
+手写Promise Api类型的题目一定要注意：
+注意什么时候是需要创建一个新的promise，什么时候是一直只用原来的promise。
+在循环、递归等方法中，要注意**每次需要调用函数创建一个新的promise**，而不是一直在一个promise上操作。一个promise操作之后状态就会改变，后续的then、await等都不会再生效。
+
+尤其注意的题目：
+
+- Promise.retry的递归调用，应该是每次创建新的promise进行重试，而不是重试旧的
+- 红绿灯，同理，每次await之后下一次应该是一个新的promise，否则旧的promise await不会生效，递归就会死循环。
+
 
 #### `Promise.prototype.finally`
 
@@ -3903,6 +3914,9 @@ function green() {
 function yellow() {
   console.log("yellow");
 }
+
+// 注意注意：light函数应该每次都返回一个新的promise，而不是之前的promise
+// 之前在这里出过错，不能提前调用light获取promise，那样的话相当于是把一个promise用了多次，第一次执行之后就不会再执行了
 const light = (timer, cb) => {
   return new Promise((resolve) => {
     setTimeout(() => {

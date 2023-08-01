@@ -628,3 +628,213 @@ _drawChildren(drawMethod, canvas, top) {
 
 可以看到这个过程实际上是通过循环的方式绘制每个元素，但同时也有raf等方式来保证一次执行的绘制任务不会太多。
 
+
+# react-konva优化
+
+## react-konva和recoil的结合
+
+在react-konva中，绘制大量元素的方式基本上和绘制长列表差不多，因此一些适用于长列表优化的方式也适用于绘制大量元素。
+
+举个栗子，官网上有[这样](https://konvajs.org/docs/react/Events.html)一个demo，绘制了很多星星。每个星星的状态由stars数组统一控制。
+
+```js
+
+const INITIAL_STATE = generateShapes(); // 生成星星
+
+const App = () => {
+  const [stars, setStars] = React.useState(INITIAL_STATE);
+
+  const handleDragStart = (e) => {
+    const id = e.target.id();
+    setStars(
+      stars.map((star) => {
+        return {
+          ...star,
+          isDragging: star.id === id,
+        };
+      })
+    );
+  };
+  const handleDragEnd = (e) => {
+    setStars(
+      stars.map((star) => {
+        return {
+          ...star,
+          isDragging: false,
+        };
+      })
+    );
+  };
+
+  return (
+    <Stage width={window.innerWidth} height={window.innerHeight}>
+      <Layer>
+        <Text text="Try to drag a star" />
+        {stars.map((star) => (
+          <Star
+            //...省略一大堆属性
+          />
+        ))}
+      </Layer>
+    </Stage>
+  );
+};
+```
+
+这有一个显然的问题，当更改一个星星的状态时，整个stars数组都会被更新，所有星星都会被渲染。
+
+那怎么优化呢？最通用的一个方法是把Star单独抽离出来，用React.memo包裹。然后在函数内对star进行浅比较，我们可以自定义一个浅比较函数，检查star对象的每个属性是否改变，如果不变就不更新
+
+```js
+const INITIAL_STATE = generateShapes();
+
+const App = () => {
+  const [stars, setStars] = React.useState(INITIAL_STATE);
+
+  return (
+    <Stage width={window.innerWidth} height={window.innerHeight}>
+      <Layer>
+        <Text text="Try to drag a star" />
+        {stars.map((star) => (
+          <MyStar star={star} />
+        ))}
+      </Layer>
+    </Stage>
+  );
+};
+
+const MyStar = React.memo(({ star }) => {
+
+
+  return (
+    <Star
+      // ... 省略一大堆属性
+    />
+  );
+},(preProps,nextProps) => {
+  //...浅比较
+});
+
+
+```
+
+**还有一种方法，同样适用于长列表的渲染**。即，我们把id和数据抽离出来，让数据成为id -> data的形式，比如：
+
+```js
+data = [
+  '1': {...},
+  '2': {...}
+]
+```
+
+然后子组件通过id从数据中取到具体的data，单独维护即可。这样父组件只需要传递id，子组件内部单独维护每个具体的data。
+
+这个思路在redux官方文档上又讲过，叫做数据的**序列化**。参考[这篇文章](http://qingbob.com/redux-performance-01-basic/)有更详细的讲解。
+
+star里就是这样：
+
+```js
+function generateShapes() {
+  return [...Array(2)].map((_, i) => ({
+    id: i.toString(),
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    rotation: Math.random() * 180,
+    isDragging: false
+  }));
+}
+
+const INITIAL_STATE = generateShapes();
+
+const App = () => {
+  const [stars, setStars] = React.useState(INITIAL_STATE);
+
+  return (
+    <Stage width={window.innerWidth} height={window.innerHeight}>
+      <Layer>
+        // 这里标准的写法应该是还要单独维护一个id数组，遍历id数组渲染
+        {stars.map((star) => (
+          <MyStar
+            starId={star.id}
+            handleDragEnd={handleDragEnd}
+            handleDragStart={handleDragStart}
+          />
+        ))}
+      </Layer>
+    </Stage>
+  );
+};
+
+const MyStar = React.memo(({ starId }) => {
+  useEffect(() => {
+    console.log("update", starId);
+  });
+  // 这里写的不规范，因为starId本身就是star的索引，才这么用
+  // 标准的写法应该是再开一个items数组，然后用id取
+  const [star, setStar] = useState(INITIAL_STATE[starId]);
+
+  const handleDragStart = (e) => {
+    setStar({
+      ...star,
+      isDragging: true
+    });
+  };
+  const handleDragEnd = (e) => {
+    setStar({
+      ...star,
+      isDragging: false
+    });
+  };
+
+  return (
+    <Star
+      //...一大堆属性
+    />
+  );
+});
+
+```
+
+说了这么多，其实最主要想说的就是，react-konva拥有和普通react类似的优化方式，像这类的优化手段在react-konva中也常用。通过减少无意义渲染，也能提高canvas的性能。
+
+那和recoil有什么关系呢？
+主要是recoil提供了一个atomFamily，正好是用于id和atom的对应。我们在子组件里，通过id去调用atomFamily
+
+```js
+const starList = atom({
+  key: 'StarList',
+  default: []
+})
+
+const starFamily = selectorFamily({
+  key: 'StarFamily',
+  get: ({ id }) => ({ get }) => {
+    return get(starList)[id]
+  },
+});
+
+const MyStar = React.memo(({ starId }) => {
+  const [star, setStar] = useRecoilState(starFamily(starId));
+
+  const handleDragStart = (e) => {
+    setStar({
+      ...star,
+      isDragging: true
+    });
+  };
+  const handleDragEnd = (e) => {
+    setStar({
+      ...star,
+      isDragging: false
+    });
+  };
+
+  return (
+    <Star
+      //...一大堆属性
+    />
+  );
+});
+
+```
+

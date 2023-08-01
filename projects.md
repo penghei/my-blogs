@@ -1176,7 +1176,8 @@ export default function CarouselContainer(){
 - 性能监控和错误监控的方案
 - 性能指标的采集方式，在跨端上的采集方式
 - 一些非常规的优化手段，比较专项的方案。以及更多没有在项目中实际应用的方案，比如深度预加载、页面直出等等。这些内容需要多看一些技术文章来应对
-
+- profiler、performance、memory等调试工具的具体使用细节
+- webview
 
 ## 项目难点
 

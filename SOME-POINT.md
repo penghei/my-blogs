@@ -28,7 +28,9 @@ token的过期处理，如何处理同时多个请求过期导致重复跳转首
 - 新知识，即问题“有没有了解前端领域新知识”这样的
 - IntersectionObserver
 - 怎么让倒计时更精准？（与服务端的配合）
-- 图片懒加载、预加载方案？
+- 图片懒加载、预加载方案？如何实现一个懒加载组件，如何在h5、rn中手动预加载图片或视频
+- rn判断可视区域的方法、曝光检查方法[react-native-intersection-observer](https://github.com/zhbhun/react-native-intersection-observer#readme)；rn吸顶方法
+- canvas深入
 
 # 关于复习的点
 

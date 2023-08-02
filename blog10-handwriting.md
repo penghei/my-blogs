@@ -1388,6 +1388,95 @@ const MyPromiseMap = (promises, limit) => {
 };
 ```
 
+#### `Promise.retry`自动重试
+
+`Promise.retry(promiseFn, retryTimes)`，接受一个创建promise的函数，如果该promise正常返回就正常resolve，如果reject就重试，最多重试retryTimes次。
+
+实现方式有两种，一种是递归，一种是await循环：
+
+```js
+// 递归内部函数
+Promise.retry = function (promise, retryTimes) {
+  let index = 0;
+  return new Promise((resolve, reject) => {
+    function promiseFn(promise, retryTimes, err) {
+      if (retryTimes === 0 && err != null) {
+        reject(err);
+        return;
+      }
+      promise().then(
+        (res) => {
+          resolve(res);
+          return;
+        },
+        (err) => {
+          console.log(index++);
+          promiseFn(promise, retryTimes - 1, err);
+        }
+      );
+    }
+    promiseFn(promise, retryTimes, null);
+  });
+};
+
+// 直接调用Promise.retry也行
+Promise.retry = function (promise, retryTimes) {
+  return new Promise((resolve, reject) => {
+      if (retryTimes === 0 && err != null) {
+        reject(err);
+        return;
+      }
+      promise().then(
+        (res) => {
+          resolve(res);
+          return;
+        },
+        (err) => {
+          console.log(index++);
+          Promise.retry(promise, retryTimes - 1);
+        }
+      );
+    })
+};
+
+// while写法
+Promise.retry = function (promise, times) {
+  return new Promise(async (resolve, reject) => {
+    while (times > 0) {
+      try {
+        const res = await promise();
+        resolve(res);
+      } catch (e) {
+        times--;
+        if (times === 0) reject(e);
+      }
+    }
+  });
+};
+```
+
+测试函数：
+
+```js
+const getMyPromise = () =>
+  new Promise((res, rej) => {
+    setTimeout(() => {
+      rej("error");
+    }, 1000);
+  });
+
+Promise.retry(getMyPromise, 3).catch(console.log);
+```
+
+**注意，函数里调用的promiseFn应该是一个创建promise的函数，而不是同一个promise**。同一个promise状态改变之后就不能再then了。记住这种情况，一定要重新调用创建promise的函数创建一个新的promise！
+
+```js
+getPromiseFn().then(...);
+
+// 不能，因为promise不能多次调用
+promise.then(...)
+```
+
 ## 手写 async pool
 
 async pool 和 promise map 的功能类似，即限制 promise 任务的并发数量，但是实现方式不同，下面是一种实现方式：

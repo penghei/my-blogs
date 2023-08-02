@@ -1678,6 +1678,22 @@ export default counterSlice.reducer;
 
 Redux 官方文档除了介绍 Redux 的使用之外，还讲述了不少 Redux 的使用哲学，这些思维模式不仅仅可以用于 redux，也适用于平时的 react 项目。
 
+## 三大原则
+
+redux的三大原则是
+
+- 单一数据源：整个应用的 全局 state 被储存在一棵 object tree 中，并且这个 object tree 只存在于唯一一个 store 中。
+  - 维持数据的单一来源，便于状态的调试和监控，只需要在顶层检查即可
+  - 在ssr或其他应用中，可以很方便实现数据持久化、序列化等，比如从服务端初始化后序列化发送给客户端并注入
+- state只读，是immutable的，改变state需要通过派发action。主要原因在于
+  - redux中包含很多通过浅比较来判断是否需要更新的地方，比如selector
+  - 维持数据的可追踪性，任何时候只需要回溯不同的action，就可以得到旧的或新的状态，也可以被方便地打印、储存、调试、测试等等
+  - state应该是可序列化的，即不能包含类、函数这样的类型
+- 纯函数：用于改变state的reducer是一个纯函数
+  - 直接更改state，state的值会改变，但state本身没有改变。在需要浅比较更新的地方，比较结果就会相同，导致无法触发更新。
+
+
+
 ## xxxManager
 
 官方文档在介绍动态替换 Reducer 是，介绍了一个对象，即 reducerMangaer。manager 本质上是一个维护一些方法的对象，这些方法会对某个数据结构进行增删改等操作。该对象由一个 createXxxManager 创建，该对象内的方法将作为闭包，使用 createXxxManager 函数内的变量作为自己维护的数据。
@@ -2171,6 +2187,23 @@ function postReducer(state, { type, payload }) {
 
 这部分内容其实和 redux 没啥关系，但是文档提出了一种实现 undo-redo 的方式，可以学习一下。
 
+## redux的性能
+
+关于redux的性能问题其实很大程度上是react本身的state性能问题，即当state改变后，如何最小程度上降低渲染消耗，同时还能保持组件正常渲染。
+
+在react-redux中，可能造成重渲染的点主要有两个
+1. useContext和Provider。当context改变时，所有使用该context的组件都会更新；但在react-redux中，context初始化为{store, subscription}之后就不会再变动，后续状态更新都是通过store.getState获取，以发布订阅模式来通知更新。
+2. useSelector。前面讲过useSelector的原理和引起更新的情况，因此针对useSelector导致的重渲染，解决方案就是考虑selector函数的合理性，以及使用reselect来保存selector函数执行结果。
+
+剩下的重复渲染问题本质上都是react的问题。比如经典的10k列表问题（10k个列表元素，点击一个改变状态），其实放在useState中也是一样的，解决方法都是要么给子组件加上memo，要么不要触发父组件的重渲染。
+
+还有一些其他的性能问题考虑，和react无关的一些，比如
+- reducer的调用消耗：因为每个dispatch都会执行所有的reducer内部逻辑。但是reducer内部其实真正执行的代码不多
+- 拷贝状态的内存消耗：react推崇的是状态的浅拷贝而非深拷贝。如果只需要修改其中几个属性，其他属性直接复用就可以了。当然更好的优化方式是直接使用immutable数据或immer（redux的状态可以是immutable类型的）。当然如果state嵌套过深，就需要考虑扁平化state
+- 批量更新：redux的多个dispatch不会被react自动批处理，因为不在同一更新内。因此redux提供了一个batch函数用于合并多个同步dispatch的更新。不过react18内不再需要了
+
+
+
 # Recoil
 
 Recoil 的基本使用不再赘述。
@@ -2182,7 +2215,7 @@ https://cloud.tencent.com/developer/article/1961153
 
 ### 原子化
 
-即 recoil 的基本特点，Reocil 推崇 state 分散管理，我们可以单独定义应用中各个独立的子状态。一个状态可以放在一个 atom 里，每个状态独立，而不用像在 redux 中将其整合在一个 reducer 中。
+即 recoil 的基本特点，Recoil 推崇 state 分散管理，我们可以单独定义应用中各个独立的子状态。一个状态可以放在一个 atom 里，每个状态独立，而不用像在 redux 中将其整合在一个 reducer 中。
 原子化的 state 主要特点有：
 
 1. 清晰易辨。由于状态都是以最小单位 atom 保存的，因此不同的 atom 之间相互独立

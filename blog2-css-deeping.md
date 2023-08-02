@@ -504,6 +504,65 @@ css 的相对像素和物理像素的比值可以通过`window.devicePixelRato`�
   如在 iPhone6 上，屏幕宽度为 375px，共有 750 个物理像素，则 750rpx = 375px = 750 物理像素，1rpx = 0.5px = 1 物理像素。
   rpx 为小程序中使用的相对单位，用法和 rem 类似， 1rpx = 屏幕宽度/750 px, 所以在屏幕宽度为 750 的设计稿中，1rpx = 1px，其他的按比例计算。
 
+#### rem和rpx计算
+
+响应式布局rem计算方式：
+参考：https://segmentfault.com/a/1190000018977129
+
+有两种计算方法
+
+1. `newFontSize = 16px * 需要适配的设备宽度 / 原设计稿宽度`。
+假如设计稿宽度是750px，页面宽度（document.documentElement.clientWidth）为375px，那么1rem = 32px。
+所以我们把根节点的font-size设置为32px，让1rem=16px。
+在css中的所有px值，直接除以16就是对应的rem值。
+
+```css
+.btn {
+  width: 699px; /* 699/16 => 43.6875rem; */
+  height: 90px; /* 90/16px => 5.625rem;  */
+  background: rgba(90, 173, 246, 1);
+  border-radius: 6px; /* 6/16=> 0.375rem; */
+}
+```
+
+2. `newFontSize = 100px * 需要适配的设备宽度 / 原设计稿宽度`。直接把默认font-size设置为100px
+
+这种方法好处在于px和rem的映射更方便计算。这时1px就等于0.01rem
+同时，因为比如chrome设置的最小字体大小是12px，上一种方法在计算字体小于12px时就不会生效。所以采用这种方式最好，一般不会出现过小的情况。
+
+```css
+.btn {
+  width: 699px; /* 699/100 => 6.99rem; */
+  height: 90px; /* 90/100 => 0.9rem;  */
+  background: rgba(90, 173, 246, 1);
+  border-radius: 6px; /* 6/100=> 0.06rem; */
+}
+```
+
+那么rem的计算时机是什么呢？
+
+计算rem的手段也有两个
+
+1. 通过js计算，计算公式就是上面的两种。当页面初始化(DOMContentLoaded)、resize事件之后，触发计算函数来修改rem值。
+
+用js计算有几个注意点
+- 要考虑到最大屏幕的问题。rem应该有个上限，比如屏幕宽度超过780px之后就不再增大rem值
+- 如果浏览器禁用js，那么布局不能实现怎么办？可以考虑用媒体查询方案兜底
+- 如果js执行在dom布局之后，那么相当于布局已经出现，再去修改rem，就会出现瞬间布局变动的情况，具体来说是body元素的布局问题。解决方法有几种
+  - 把用于布局计算的js提前到dom加载之前，让样式先计算
+  - 先隐藏body元素（visibility），计算完成后再让body显示
+- 在安卓手机上，键盘弹出会影响viewport的大小。如果rem的设置和宽高比有关，那么键盘弹出有可能会导致宽高比计算异常。同时安卓上键盘弹出也会触发resize事件
+  - 解决方法的主要思路是，不要让视口发生变化。在一开始进入页面时获取视口高度后，后面如果触发resize事件，我们仍将body元素的高度设置为视口高度。
+
+2. 通过媒体查询。根据不同的屏幕宽度设置不同的font-size；但是很明显的缺点是媒体查询只能是分段式的，不能做到js设置的完美契合。
+
+---
+
+rpx的计算就比较简单了，可以理解为rpx就是rem的特定情况。
+rpx布局规定，一个页面的宽度始终为750rpx；750这个值永远不变；如果实际宽度是375px，那么1rpx=0.5px，依次类推。
+rpx的适用范围较小，除非在预处理器或后处理器中设置，否则浏览器默认不能支持rpx布局。
+
+
 #### auto
 
 在 CSS 中，将一个属性值设置为 "auto" 通常意味着让浏览器来决定该属性的值，根据元素的默认特性和布局算法来自动计算属性值。
@@ -1017,7 +1076,7 @@ IFC 的特性常常会带来一些布局问题，参考：https://mengsixing.git
 什么是清除？其实就是让这个元素位于被清除的浮动元素的下方。具体有这样几个条件：
 
 1. 浮动元素在html中，应该处于非浮动元素前面
-2. 非浮动元素应用了float，并且值和浮动元素的值匹配
+2. 非浮动元素应用了clear，并且值和浮动元素的值匹配
 
 这样，非浮动元素会被置于浮动元素的下方。
 
@@ -1478,15 +1537,58 @@ input::-webkit-input-placeholder {
 
 ---
 
-`line-height`属性设置文本每行之间的高，可以接受大多数单位。
+`line-height`属性设置文本每行之间的高，可以接受大多数单位。大致可以分为两类
+- 具体的单位，比如px、em、rem等，包括百分比
+- 一个无单位的数值，比如1.5
 
-当值没有单位时作为乘数，相当于`font-size`的倍数，比如 1.5 就是字体大小的 1.5 倍。这是官方推荐的方式，并且建议的 line-height 最好为 1.5 以上
+这两种设置方式是结果如何呢？
+- 如果是具体单位，那么就是确切的值。如果是百分比，那就是相对于当前设置元素的字体的百分比大小。比如在父元素上设置80%，那么就是父元素字体的80%
+- 如果是无单位数值，则是这个值乘以该元素的字体大小。如果该元素没有设置字体大小，就会继承父元素的，一直到html元素为止（font-size是一个继承属性）
 
-当值为百分比时给定的百分比值乘以元素计算出的字体大小
+区别在哪里呢？在于继承
+- 如果父级的line-height属性值有单位或百分比，那么子级继承的值则是换算后的一个具体的px级别的值；
+- 如果父级的line-height属性值没有单位，则子级会直接继承这个“数值”，而非计算后的具体值，此时子级的line-height会根据本身的font-size值重新计算得到新的line-height值。
 
+我们知道line-height本质上是一种继承，真正作用于文本元素和行内元素。这两种布局的最大区别在于集成到真正作用的子元素时的区别。
+
+下面有个例子：
+
+```html
+<div class="box green">
+  <h1>Avoid unexpected results by using unitless line-height.</h1>
+</div>
+
+<div class="box red">
+  <h1>Avoid unexpected results by using unitless line-height.</h1>
+</div>
+
+<style>
+.green {
+  line-height: 1.1;
+}
+
+.red {
+  line-height: 1.1em;
+}
+
+h1 {
+  font-size: 30px;
+}
+
+.box {
+  width: 18em;
+  display: inline-block;
+  font-size: 15px;
+}
+
+</style>
 ```
-line-height: 1.5;
-```
+
+这里的green和red内部的h1元素字体大小不相同。
+- 对于red，由于div元素设置了line-height为1.1em，根据计算得到1.1 * 15px = 16.5px；这个值会直接继承到h1上，不会再改变
+- 对于green，在div元素上的值也是`1.1*5`，但是继承到h1元素上时，继承的是这个1.1而不是具体的值。h1元素会单独进行计算，以h1元素自己的字体大小为准。计算得到`1.1*30=33px`
+
+也就是说，无单位值在继承到子元素后，相对的是子元素自己的font-size，而不是一个确定的值。反之则是在设置的那个元素上计算的值，不会改变。
 
 ---
 
@@ -1526,27 +1628,13 @@ p {
 参考来源：https://github.com/sisterAn/JavaScript-Algorithms/issues/130
 
 ```css
-//1:单行文本溢出
-.textTruncate {
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
-}
-
-//2:按行数-多行文本溢出(兼容性不好)
-.mulLineTruncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-}
-//3:按高度-多行文本溢出(没有省略号)
+// 按高度-多行文本溢出(没有省略号)
 .mulLineTruncate {
   max-height: 40px;
   overflow: hidden;
   line-height: 20px;
 }
-//4:解决3方案没有省略号的情况
+// 解决3方案没有省略号的情况
 .mulLineTruncate {
   position: relative;
   max-height: 40px;
@@ -2057,6 +2145,7 @@ flex 有一个主轴和交叉轴的概念。
 注意, 如果一个元素设定 `margin-right/left` 为 `auto`, 就会吞掉剩下所有空间从而把其他元素挤在一边
 
 > `justify-item` 和 `justify-self` 是用在 grid 里边的, 不要搞错了
+> 如果希望实现justify-self的效果，有可能需要对单个元素调整margin、translate等
 
 - align-items: 设置元素在交叉轴上的位置和对齐方式
   - flex-start：元素和交叉轴的起点对齐。
@@ -2144,6 +2233,8 @@ CSS flex-shrink 属性指定了 flex 元素的收缩规则。flex 元素**仅在
 
 2. 对行内元素设置 shrink：和 grow 相同，行内元素也会发生收缩，不会保持其定宽。
 
+3. 缩小的最小值是元素的内容宽度，如果没有子元素则是内部文本的宽度，都没有就会缩小到0。
+
 #### flex-basis
 
 用于设置 flex 元素在主轴方向上的初始大小。如果不使用 box-sizing 改变盒模型的话，那么这个属性就决定了 flex 元素的内容盒（content-box）的尺寸。
@@ -2200,7 +2291,7 @@ basis 有两个特殊的值：0 和 auto
 最后，如果触发 shrink，那么第一个元素不会再缩小，而第二个元素也会缩小到 content 大小之后，不再会缩小。
 ![](https://pic.imgdb.cn/item/63ea363e4757feff33edada4.jpg)
 
-总结：设置了`basis: 0`的元素会缩小到最小大小，即 content 的大小，如果通过 flex-grow 让其伸展，也会从 0 开始计算。
+总结：设置了`basis: 0`的元素会缩小到最小大小而无视通过width等属性设置的元素大小，即缩小到 content 的大小，如果通过 flex-grow 让其伸展，也会从 0 开始计算。
 
 - 如果元素的 basis 设置为 auto，那就是它的默认大小，和 width：auto 类似。即如果元素设置了宽度那就是它的宽度，如果没设置就是其内容的宽度
 
@@ -2959,6 +3050,7 @@ box-shadow也是类似方法
   </style>
 
 ```
+
 # CSS 布局
 
 ## 圣杯布局

@@ -31,6 +31,40 @@ token的过期处理，如何处理同时多个请求过期导致重复跳转首
 - 图片懒加载、预加载方案？如何实现一个懒加载组件，如何在h5、rn中手动预加载图片或视频
 - rn判断可视区域的方法、曝光检查方法[react-native-intersection-observer](https://github.com/zhbhun/react-native-intersection-observer#readme)；rn吸顶方法
 - canvas深入
+- rem的设置，rem布局如何用js设置合适的font-size，值应该是多少？js执行滞后导致页面布局变化怎么办？移动端键盘弹出导致rem变化怎么处理？媒体查询实现的缺点（不能覆盖全部情况）
+
+（rem的设置找了段代码）
+```js
+docEl = document.documentElement
+var clientWidth = docEl.clientWidth;
+var clientHeight = docEl.clientHeight;
+if (!clientWidth || !clientHeight) return;
+var ratio = clientHeight / clientWidth;
+if (ratio < 1.7 && ratio > 1) {
+  // 防屏幕过矮
+  clientWidth = Math.round(clientHeight / 1.7);
+}
+if (ratio < 0.526) {
+  // 防屏幕过矮
+  clientWidth = Math.round(clientHeight / 0.526);
+}
+//主要是对宽高的比较
+if (clientWidth < clientHeight) {
+  //竖屏
+  docEl.style.fontSize = 100 * (clientWidth / 750) + "px";
+} else {
+  //横屏
+  docEl.style.fontSize = 100 * (clientWidth / 1400) + "px";
+}
+```
+
+- modal的实现和封装，定位方式和背景遮罩实现，背景滚动控制
+- useContext底层
+- 上传和下载的区别（不太清楚具体考什么，请求格式？）
+- 线上错误监控，之前考过
+- 报警组件，react错误边界，包含处理网络请求、异步错误
+- 线程，为什么有的应用需要很多线程，IO密集型和计算密集型
+- 进程间通信的具体实现方式，管道实现方式
 
 # 关于复习的点
 

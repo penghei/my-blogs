@@ -187,6 +187,8 @@ script 标签还有一些特殊的属性：
 - async：该属性指定 JavaScript 代码为异步执行，即异步请求（不挤占 html 解析）、但立即执行（请求完成后依然会占用 html 解析时间执行）
 - defer：该属性指定 JavaScript 代码不是立即执行，即异步请求（和 async 一样）、末尾执行（整个 html 加载完毕后才执行）
 
+> async和defer都不会影响css的解析。defer会在dom和cssom都解析之后才执行；async下载完毕后会立即执行，即使仍有未解析的css，也不会去解析css
+
 具体来说，是在html解析到script标签时启动请求，然后在dom树构建完毕后开始执行，并在DomContentLoaded之前完成执行。
 
 ![](https://pic.imgdb.cn/item/6224a74b5baa1a80ab63d1c8.jpg)

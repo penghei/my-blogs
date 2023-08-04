@@ -2095,30 +2095,6 @@ function outer() { // outer函数内部为闭包函数提供一个闭包作用�
 outer();
 ```
 
-
-2. 回调函数；在定时器、事件监听、Ajax 请求、跨窗口通信、Web Workers 或者任何异步中，只要使用了回调函数，实际上就是在使用闭包。
-
-比如下面这个例子中，callback 函数就是一个闭包，因为他引用了 getUserInput 函数内部的 input 变量
-
-```js
-function getUserInput(callback) {
-  const input = document.getElementById("input").value;
-  callback(input);
-}
-
-getUserInput((value) => {
-  console.log(value);
-});
-```
-
-其他类型的回调函数也是同理，比如 addEventListener 的回调函数：
-
-```js
-domElement.addEventListener("click", (e) => {
-  //...
-});
-```
-
 3. IIFE 立即执行函数
 
 ```js
@@ -6227,7 +6203,7 @@ if (true) {
 - `interactive` – document 已经解析完毕时触发，几乎与`DOMContentLoaded`同时发生，但在`DOMContentLoaded`事件之前触发。
 - `complete` – 文档和资源加载完成时触发，几乎与`window.onload`同时发生，但在`onload`事件之前触发。
 
-一般来说，大多数的操作我们都应该放在 DOMContentLoaded 事件中执行，而不要放在 window.onload 中执行。
+一般来说，大多数的操作我们都应+该放在 DOMContentLoaded 事件中执行，而不要放在 window.onload 中执行。
 
 当用户离开页面时，会触发后两个事件：
 

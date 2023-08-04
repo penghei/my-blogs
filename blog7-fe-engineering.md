@@ -1828,7 +1828,15 @@ window.setTimeout = function() {
 
 还可以覆写addEventListener等方法。覆写的目的是方便得到错误的来源。这样来自于异步、网络请求、事件等不同来源的错误都会被标记出到底是哪里的错误。
 
+### 注意事项
 
+有一些特殊情况可能会影响错误上报：
+- 脚本跨域。即上面说的script标签是跨域请求的脚本，只会返回一个script error
+解决方法是设置为`<script crossorigin="anonymous"></script>`，*同时服务端也要返回Access-Control-Allow-Origin*。其实就是相当于跨域请求脚本了。
+- sourceMap。线上的产物通常是webpack经过压缩、打包过的产物，因此会出现调用栈报错代码无法指明原本位置的情况。解决方法是开启sourceMap。
+但是sourceMap只在部分浏览器上支持，因此通过加入map文件的形式就会出现兼容问题。解决的方式是换个途径使用sourceMap，即：
+  - 使用能在客户端和服务端都能运行的库来生成sourceMap，比如[这个库](https://github.com/mozilla/source-map)
+  - 只在服务端通过sourceMap解析，将错误信息上报在服务端分析，也能防止代码泄漏的问题。
 
 
 ## 性能监控
@@ -1839,6 +1847,50 @@ window.setTimeout = function() {
 
 一些前端监控平台也可以对性能进行监控，比如当加载速度过慢时，就会上报一个警告。监控和上报的方式和错误上报类似。
 
+
+## 错误监控和性能监控的上报方式
+
+不仅是适用于这两个方面，前端的日志上报、埋点上报其实都可以参考下面的方式。
+如果每个日志都采用fetch/xhr的形式来上报，那么如果出现大量错误，就会造成请求的阻塞，可能会影响页面正常请求。
+
+解决方法是避开xhr的请求方式，采用一些其他方法来上报，具体包括：
+
+1. 构造空Image对象，利用图片请求，原因是请求图片并不涉及到跨域的问题
+
+```js
+var url = 'xxx';
+new Image().src = url;
+```
+
+不过浏览器和服务器对于GET请求其实有url的长度限制，过长的url可能不能这样发送。
+
+2. HEAD方法上报：还是使用http，不过因为我们不需要请求体，也不需要响应，因此可以通过HEAD方法来进行上报，最小化请求。
+
+但是http请求上报就需要考虑跨域问题了。
+
+3. [sendBeacon](https://developer.mozilla.org/zh-CN/docs/Web/API/Navigator/sendBeacon)方法，这个方法可用于通过 HTTP POST 将少量数据 异步 传输到 Web 服务器。
+
+```js
+navigator.sendBeacon(url);
+navigator.sendBeacon(url, data);
+```
+sendBeacon方法常用于在页面卸载之前，也就是用户离开页面之前向服务端发送数据，它不会延迟页面的卸载或影响下一导航的载入性能，并且是可靠的。
+
+如果采用在unload或beforeunload中发送xhr请求的方式，那么会有几个问题：
+
+- 移动端不一定会触发 unload、beforeunload 或 pagehide 事件
+- 在这些事件中，xhr请求不能保证发送
+- 如果采用同步xhr，又会造成阻塞
+
+因此采用sendBeacon，一般在`visibilitychange`事件或 `pagehide` 事件中发送。
+
+```js
+document.addEventListener("visibilitychange", function logData() {
+  if (document.visibilityState === "hidden") {
+    navigator.sendBeacon("/log", analyticsData);
+  }
+});
+```
 
 
 # 关于项目中技术选型的替换问题

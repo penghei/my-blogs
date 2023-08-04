@@ -153,3 +153,36 @@ https://juejin.cn/post/6844903919059992584
 
 - React如果一个状态嵌入特别深，在一个很深的层级内去更新，可能会出现不能及时更新的情况，或者更新消耗过大，怎么优化？（没太听懂这个问题，但是他说的解决方案是deepClone一个状态确保更新，我附加答了一个immutable）
 - FMP的计算方式
+
+
+# 百度一面
+
+没答好的：
+- package-lock.json锁版本号的意义，如果在package.json中写死会怎么样？
+
+lock锁版本号主要是为了保证依赖版本可用，并且包含package的直接依赖和间接依赖（库自己的依赖）
+如果想要更新，需要手动修改package.json中的版本号
+
+
+- 性能监控和错误监控上报的方式，除了发请求之外还有什么特别的方法？
+- ts infer的使用
+- 手写题：
+```js
+const html = parse("<div>{{content}}, my name is {{ user.name }}</div>", {
+  content: "hello",
+  user: {
+    name: "foo",
+  },
+});
+```
+
+# 练手面试
+
+- 知乎实习一面
+    - 还是priority组件，怎么去触发下一个组件的渲染？如果不通过手动执行的方式，有没有一些兜底？比如组件网络请求之后才触发下一个优先级的组件渲染，那么假如没有请求成功，怎么处理？
+    - ts问题
+        - 怎么生成一个包含任意索引的type的类型，工具方法？（Record）
+        - Pick方法
+        - async函数的ts类型是什么
+    - react问题
+        - react state闭包问题，注意是在事件或定时器内部，通过`setState(newState => {...})`解决

@@ -82,10 +82,12 @@ var _const = function (name, val, scopeObj = window) {
 - filter 会在返回为 false 时去除该元素
 - indexOf 会返回第一个找到的该元素的索引; 如果有重复元素则显然 indexOf 只返回第一个该元素, 不会等于当前 index,就会返回 false 从而筛掉
 
+**注意**：是indexOf和index比较，没有lastIndexOf的事
+
 ```js
 function unique(arr) {
   let res = arr.filter((item, index, array) => {
-    return array.indexOf(item) === index;
+    return arr.indexOf(item) === index;
   });
   return res;
 }
@@ -289,6 +291,39 @@ function clone(target, map = new WeakMap()) {
     newTarget[key] = clone(target[key], map); //把当前的map传下去
   }
   return newTarget;
+}
+```
+
+### BFS 深拷贝
+
+基本思路是同步处理origin和target。origin每次取一个子节点，target也就相应的向下走一层；
+queue内是当前的origin对象和target对象，他俩的层级应该是相同的。
+
+
+```js
+function deepClone(obj) {
+  const res = Array.isArray(obj) ? [] : {};
+  const queue = [];
+  queue.push([obj, res]);
+  const map = new WeakMap();
+  map.set(obj, res);
+  while (queue.length) {
+    const [curr, target] = queue.shift();
+    for (const key of Object.keys(curr)) {
+      const val = curr[key];
+      if (map.has(val)) {
+        target[key] = map.get(val);
+        continue;
+      }
+      if (typeof val !== "object") target[key] = val;
+      else {
+        target[key] = Array.isArray(val) ? [] : {};
+        queue.push([curr[key], target[key]]);
+        map.set(curr[key], target[key]);
+      }
+    }
+  }
+  return res;
 }
 ```
 
@@ -499,8 +534,9 @@ function isEqual(x, y) {
 另外一种写法，思路上有点像比较两棵树；但是由于对象的键可能大于 2，因此写出来更像回溯：
 
 注意几个边界情况
-1. 对象的key顺序可能不同，可以使用sort将其排个序
-2. value相同key不同的情况也要注意，要排序后再比较一下key
+
+1. 对象的 key 顺序可能不同，可以使用 sort 将其排个序
+2. value 相同 key 不同的情况也要注意，要排序后再比较一下 key
 3. `[0]`和`{"0":0}`表现是一样的，但不是同一类，要注意区分，可以判断一下两者类型。
 
 ```js
@@ -510,27 +546,27 @@ function isEqual(x, y) {
  * @return {boolean}
  */
 var areDeeplyEqual = function (o1, o2) {
-    if (!o1 && !o2) return o1 == o2
-    if (o1 && !o2 || !o1 && o2) return false
-    if (!isObject(o1) && !isObject(o2)) return o1 === o2
-    if (getType(o1) !== getType(o2)) return false
-    const keys1 = Object.keys(o1).sort()
-    const keys2 = Object.keys(o2).sort()
-    if (keys1.length !== keys2.length) return false
-    let flag = true
-    for (let i = 0; i < keys1.length; i++) {
-        const key1 = keys1[i]
-        const key2 = keys2[i]
-        flag = flag && key1 === key2 && areDeeplyEqual(o1[key1], o2[key2])
-    };
-    return flag
-}
+  if (!o1 && !o2) return o1 == o2;
+  if ((o1 && !o2) || (!o1 && o2)) return false;
+  if (!isObject(o1) && !isObject(o2)) return o1 === o2;
+  if (getType(o1) !== getType(o2)) return false;
+  const keys1 = Object.keys(o1).sort();
+  const keys2 = Object.keys(o2).sort();
+  if (keys1.length !== keys2.length) return false;
+  let flag = true;
+  for (let i = 0; i < keys1.length; i++) {
+    const key1 = keys1[i];
+    const key2 = keys2[i];
+    flag = flag && key1 === key2 && areDeeplyEqual(o1[key1], o2[key2]);
+  }
+  return flag;
+};
 function isObject(obj) {
-    return typeof obj === "object" && obj != null
+  return typeof obj === "object" && obj != null;
 }
 
 function getType(val) {
-    return Object.prototype.toString.call(val).slice(8, -1)
+  return Object.prototype.toString.call(val).slice(8, -1);
 }
 ```
 
@@ -694,19 +730,20 @@ function curry(func) {
 
 ### 柯里化占位符
 
-在lodash的柯里化实现中有一个功能，可以通过传入一个占位符让某个位置上的参数暂时“占位”，然后在后续的调用中把后面的参数放到这个占位符上。比如
+在 lodash 的柯里化实现中有一个功能，可以通过传入一个占位符让某个位置上的参数暂时“占位”，然后在后续的调用中把后面的参数放到这个占位符上。比如
 
 ```js
-const _ = {}
-curryFn(1)(2,3)(4)
+const _ = {};
+curryFn(1)(2, 3)(4);
 // 相当于
-curryFn(1)(_,3)(2)(4) // 2被填充到了占位符上
+curryFn(1)(_, 3)(2)(4); // 2被填充到了占位符上
 ```
 
 这个要怎么实现呢？基本思路是，还是按照基本柯里化的方式收集参数，同时收集占位符。对于占位符和参数有不同处理：
+
 - 如果当前元素是占位符，就放入占位符数组，放入的值是当前参数在所有参数的索引
   - 如果当前是占位符且前面有占位符，那么就把前面的占位符删掉，以后面的为准。
-- 如果当前元素是正常值并且前面有一个占位符，那么通过索引删除前面的占位符，然后将参数插入占位符所在的index
+- 如果当前元素是正常值并且前面有一个占位符，那么通过索引删除前面的占位符，然后将参数插入占位符所在的 index
 
 实现如下，关键点是收集参数和占位符数组：
 
@@ -742,7 +779,6 @@ function curry(fn, argsLen, holder, holderList, argsList) {
   };
 }
 ```
-
 
 ## 手写懒计算函数
 
@@ -789,7 +825,7 @@ function sum(...args1) {
 
 缓存的实现是这道题的核心，具体来说方式有两种：
 
-1. 计算key。不过这里要用到两个map，一个map用于记录具体的args，然后对应一个id值作为key（其他任何不重复的也行）；另一个map就是id和函数运行结果的映射。
+1. 计算 key。不过这里要用到两个 map，一个 map 用于记录具体的 args，然后对应一个 id 值作为 key（其他任何不重复的也行）；另一个 map 就是 id 和函数运行结果的映射。
 
 之所以要两个，是因为题目需要的其实是两个地方的缓存判断，一个是比较各个参数，在参数全部相同的情况下才会取缓存；另一个是存具体的缓存值。
 
@@ -798,7 +834,7 @@ map1  args --> id ---> key
 map2  id --> value
 ```
 
-举个栗子，sum函数接受两个参数。比如第一次调用的是`sum(1,2)`那么就会有`map{1 => 0, 2 => 1}`，每次调用通过item获取到id并拼接就可以得到专门的key。如果这两个参数乱序或者不同，那么key也肯定不同，将会重新计算缓存。
+举个栗子，sum 函数接受两个参数。比如第一次调用的是`sum(1,2)`那么就会有`map{1 => 0, 2 => 1}`，每次调用通过 item 获取到 id 并拼接就可以得到专门的 key。如果这两个参数乱序或者不同，那么 key 也肯定不同，将会重新计算缓存。
 
 代码如下：
 
@@ -827,47 +863,45 @@ function memoize(fn) {
 
 2. 利用前缀树，把每个参数看作是一个树节点，整个函数的参数列表就形成了一条查询路径，在查询逻辑的末尾和其他前缀树一样，设置一个值用于表示是否匹配到相同的参数列表，以及值是多少
 
-这种方法的好处在在于节省内存，因为相同的参数只会复用同一个map，每个map存的并不多。
+这种方法的好处在在于节省内存，因为相同的参数只会复用同一个 map，每个 map 存的并不多。
 
-更进一步的方法是，如果参数的某一项是对象类型的，那就使用weakMap以节省内存。
+更进一步的方法是，如果参数的某一项是对象类型的，那就使用 weakMap 以节省内存。
 
 ```js
 class DictNode {
-    res = undefined; // 如果这个节点是某个函数参数列表匹配的位置，这里存的就是函数返回值
-    save = false; // 类似前缀树的isEnd
-    primitive = new Map(); // 存储基本类型参数
-    object = new WeakMap(); // 存储引用类型参数
-    setResult(res) {
-      this.res = res; 
-      this.save = true;
-      return res
-    };
+  res = undefined; // 如果这个节点是某个函数参数列表匹配的位置，这里存的就是函数返回值
+  save = false; // 类似前缀树的isEnd
+  primitive = new Map(); // 存储基本类型参数
+  object = new WeakMap(); // 存储引用类型参数
+  setResult(res) {
+    this.res = res;
+    this.save = true;
+    return res;
+  }
 }
 
 function isObject(arg) {
-    return typeof arg === 'function' || (typeof arg === 'object' && arg !== null);
+  return typeof arg === "function" || (typeof arg === "object" && arg !== null);
 }
 
 function memoize(fn) {
-    const root = new DictNode();
-    return function (...args) {
-        let node = root
-        for (const item of args) {
-            const map = isObject(item) ? node.object : node.primitive;
-            if (!map.has(item)) map.set(item, new DictNode());
-            node = map.get(item);
-        }
-        if (node.save) return node.res;
-        else return node.setResult(fn(...args));
+  const root = new DictNode();
+  return function (...args) {
+    let node = root;
+    for (const item of args) {
+      const map = isObject(item) ? node.object : node.primitive;
+      if (!map.has(item)) map.set(item, new DictNode());
+      node = map.get(item);
     }
+    if (node.save) return node.res;
+    else return node.setResult(fn(...args));
+  };
 }
 ```
 
-在React中也有类似的实现：https://github.com/facebook/react/blob/ee4233bdbc71a7e09395a613c7dde01194d2a830/packages/react/src/ReactCache.js#L50
-
+在 React 中也有类似的实现：https://github.com/facebook/react/blob/ee4233bdbc71a7e09395a613c7dde01194d2a830/packages/react/src/ReactCache.js#L50
 
 ## 手写 Promise
-
 
 ### 基础 Promise
 
@@ -1160,15 +1194,14 @@ const resolvePromise = (thenPromise, returnValueFromThen, resolve, reject) => {
 
 ### Promise Api
 
-手写Promise Api类型的题目一定要注意：
-注意什么时候是需要创建一个新的promise，什么时候是一直只用原来的promise。
-在循环、递归等方法中，要注意**每次需要调用函数创建一个新的promise**，而不是一直在一个promise上操作。一个promise操作之后状态就会改变，后续的then、await等都不会再生效。
+手写 Promise Api 类型的题目一定要注意：
+注意什么时候是需要创建一个新的 promise，什么时候是一直只用原来的 promise。
+在循环、递归等方法中，要注意**每次需要调用函数创建一个新的 promise**，而不是一直在一个 promise 上操作。一个 promise 操作之后状态就会改变，后续的 then、await 等都不会再生效。
 
 尤其注意的题目：
 
-- Promise.retry的递归调用，应该是每次创建新的promise进行重试，而不是重试旧的
-- 红绿灯，同理，每次await之后下一次应该是一个新的promise，否则旧的promise await不会生效，递归就会死循环。
-
+- Promise.retry 的递归调用，应该是每次创建新的 promise 进行重试，而不是重试旧的
+- 红绿灯，同理，每次 await 之后下一次应该是一个新的 promise，否则旧的 promise await 不会生效，递归就会死循环。
 
 #### `Promise.prototype.finally`
 
@@ -1377,6 +1410,7 @@ const MyPromiseMap = (promises, limit) => {
       index++; //每次递归都先自增
       if (promises[currIndex]) {
         // 递归边界
+        // 注意递归边界一定是在next的同步代码里的
         promises[currIndex].then((res) => {
           results[currIndex] = res;
           if (++count === promises.length) resolve(results);
@@ -1390,9 +1424,9 @@ const MyPromiseMap = (promises, limit) => {
 
 #### `Promise.retry`自动重试
 
-`Promise.retry(promiseFn, retryTimes)`，接受一个创建promise的函数，如果该promise正常返回就正常resolve，如果reject就重试，最多重试retryTimes次。
+`Promise.retry(promiseFn, retryTimes)`，接受一个创建 promise 的函数，如果该 promise 正常返回就正常 resolve，如果 reject 就重试，最多重试 retryTimes 次。
 
-实现方式有两种，一种是递归，一种是await循环：
+实现方式有两种，一种是递归，一种是 await 循环：
 
 ```js
 // 递归内部函数
@@ -1422,21 +1456,21 @@ Promise.retry = function (promise, retryTimes) {
 // 直接调用Promise.retry也行
 Promise.retry = function (promise, retryTimes) {
   return new Promise((resolve, reject) => {
-      if (retryTimes === 0 && err != null) {
-        reject(err);
+    if (retryTimes === 0 && err != null) {
+      reject(err);
+      return;
+    }
+    promise().then(
+      (res) => {
+        resolve(res);
         return;
+      },
+      (err) => {
+        console.log(index++);
+        Promise.retry(promise, retryTimes - 1);
       }
-      promise().then(
-        (res) => {
-          resolve(res);
-          return;
-        },
-        (err) => {
-          console.log(index++);
-          Promise.retry(promise, retryTimes - 1);
-        }
-      );
-    })
+    );
+  });
 };
 
 // while写法
@@ -1468,7 +1502,7 @@ const getMyPromise = () =>
 Promise.retry(getMyPromise, 3).catch(console.log);
 ```
 
-**注意，函数里调用的promiseFn应该是一个创建promise的函数，而不是同一个promise**。同一个promise状态改变之后就不能再then了。记住这种情况，一定要重新调用创建promise的函数创建一个新的promise！
+**注意，函数里调用的 promiseFn 应该是一个创建 promise 的函数，而不是同一个 promise**。同一个 promise 状态改变之后就不能再 then 了。记住这种情况，一定要重新调用创建 promise 的函数创建一个新的 promise！
 
 ```js
 getPromiseFn().then(...);
@@ -1819,10 +1853,9 @@ total = (...args) => f(h(...args)) = f(g(h(..args)))
 // 依次类推
 ```
 
-## 手写immerjs的produce函数效果
+## 手写 immerjs 的 produce 函数效果
 
 参考：https://leetcode.cn/problems/immutability-helper/solutions/2287059/proxychao-shi-by-yuan-zhi-b-e667//
-
 
 ## 手写对象扁平化和逆扁平化
 
@@ -1956,9 +1989,10 @@ const deFlat = (object) => {
 };
 ```
 
-数组情况：数组的处理其实主要要在解析键上增加逻辑。之前解析键的方式是直接split，现在需要遍历str，根据得到的字符不同解析键。具体来说：
+数组情况：数组的处理其实主要要在解析键上增加逻辑。之前解析键的方式是直接 split，现在需要遍历 str，根据得到的字符不同解析键。具体来说：
+
 - 如果当前字符不是`.`/`[`/`]`的一个，那么就继续向后，直到统计完标准键为止
-- 如果是`.`，那么把前面的key视作是一个对象的key，在返回结果中加入一个`type: 'object'`字段，表示这个键应该创建一个对象
+- 如果是`.`，那么把前面的 key 视作是一个对象的 key，在返回结果中加入一个`type: 'object'`字段，表示这个键应该创建一个对象
 - 如果是`[`，同理，这时加入的是`type:'array'`表示这个键应该创建一个数组
 
 ```js
@@ -2007,7 +2041,7 @@ const parseKey = (str) => {
 };
 ```
 
-然后在代码中遍历这个数组，根据type创建不同的对象即可。
+然后在代码中遍历这个数组，根据 type 创建不同的对象即可。
 
 ```js
 // 和上面的代码方法略有出入，逻辑是一样的
@@ -2031,10 +2065,9 @@ const decodeObject = (object) => {
       dfs(level + 1, keys, obj[key], value);
     }
   }
-  return res
+  return res;
 };
 ```
-
 
 ## 手写虚拟 dom 转化为真实 dom
 
@@ -2120,9 +2153,8 @@ function render(vnode, container) {
 }
 ```
 
-还有一种方法，可以让render函数返回一个创建好的对象。如下代码：
-具体可以根据虚拟dom结构调整，但是整体思路就是这样。
-
+还有一种方法，可以让 render 函数返回一个创建好的对象。如下代码：
+具体可以根据虚拟 dom 结构调整，但是整体思路就是这样。
 
 ```js
 const getType = (val) => Object.prototype.toString.call(val).slice(8, -1);
@@ -2184,6 +2216,91 @@ const render = (node) => {
 // };
 ```
 
+## 手写类似Vue模板字符串转化
+
+即实现类似效果：
+
+```js
+const html = parse(
+  `<div>{{content}}, I am {{ user.name }}, here is my age: {{ages[0].val }}</div>`,
+  {
+    content: "hello",
+    user: {
+      name: "zzx",
+    },
+    ages: [
+      {
+        val: 18,
+      },
+      27,
+      36,
+    ],
+  }
+);
+
+html;
+// <div>hello, I am zzx, here is my age: 18</div>
+```
+
+这道题其实是两道题的结合：即一方面通过正则表达式取出双括号内部的值，一方面通过类似lodash.get方法来获取对象的具体值。
+
+正则表达式应该匹配的是
+- 双括号内部
+- 双括号两边包含0-n个空格
+- 可能有点运算符或中括号
+
+因此：
+```js
+const parseRegExp = /\{\{(\s?[a-zA-Z0-9\.\[\]]+\s?)\}\}/;
+```
+
+然后通过exec方法获取到括号内的匹配值。
+**注意**：关键点来了，exec方法只能取到其中的第一个匹配结果，如果想匹配完全就需要用循环
+每次去通过replace修改原字符串，然后把修改后的字符串再做exec，直到返回null为止
+
+```js
+while (parseRegExp.exec(str) != null) {
+  const content = parseRegExp.exec(str)[1];
+  let val = getDataByKeys(data, content);
+  str = str.replace(`{{${content}}}`, val);
+}
+```
+
+替换的方式可以直接用拼接字符串替换。这里的content就是之前匹配取出来的内容，也包括空白、点、中括号等各个部分，因此可以完全替换掉。
+
+最后就是实现一个类似lodash.get的效果。
+全部代码如下：
+
+```js
+const getDataByKeys = (obj, keyStr) => {
+  // 把数组索引替换为点访问索引的方法
+  keyStr = keyStr.trim().replace(/\[(\w+)\]/, ".$1");
+  const keys = keyStr.split(".");
+  let res = obj;
+  for (let i = 0; i < keys.length; i++) {
+    if (res[keys[i]] != null) res = res[keys[i]];
+    else return null;
+  }
+  return res;
+};
+
+const parse = (str, data) => {
+  const parseRegExp = /\{\{(\s?[a-zA-Z0-9\.\[\]]+\s?)\}\}/;
+  while (parseRegExp.exec(str) != null) {
+    const content = parseRegExp.exec(str)[1]; // 这里要取第二项
+    let val = getDataByKeys(data, content);
+    if (
+      typeof val !== "string" &&
+      typeof val !== "number" &&
+      typeof val !== "boolean"
+    )
+      val = "";
+    str = str.replace(`{{${content}}}`, val);
+  }
+  return str;
+};
+```
+
 ## 手写 JSON.stringify
 
 利用递归逐层解析并转化为 json 格式。
@@ -2197,28 +2314,28 @@ const render = (node) => {
 代码：
 
 ```js
-const isObject = (object) => typeof object == 'object' && object != null
-const isArray = Array.isArray
+const isObject = (object) => typeof object == "object" && object != null;
+const isArray = Array.isArray;
 const toString = (val) => {
-    if (typeof val === "number" || typeof val === "boolean") return val
-    if (typeof val === "string") return `"${val}"`
-    if (val == null) return "null"
-}
+  if (typeof val === "number" || typeof val === "boolean") return val;
+  if (typeof val === "string") return `"${val}"`;
+  if (val == null) return "null";
+};
 var jsonStringify = function (object) {
-    if (object === null || typeof object !== 'object') return toString(object)
-    let str = isArray(object) ? '[' : '{'
-    const keys = [...Object.entries(object)]
-    for (let i = 0; i < keys.length; i++) {
-        const [key, value] = keys[i]
-        if (isArray(object)) {
-            str += jsonStringify(value)
-        } else {
-            str += `"${key}":${jsonStringify(value)}`
-        }
-        str += i === keys.length - 1 ? '' : ','
+  if (object === null || typeof object !== "object") return toString(object);
+  let str = isArray(object) ? "[" : "{";
+  const keys = [...Object.entries(object)];
+  for (let i = 0; i < keys.length; i++) {
+    const [key, value] = keys[i];
+    if (isArray(object)) {
+      str += jsonStringify(value);
+    } else {
+      str += `"${key}":${jsonStringify(value)}`;
     }
-    str += isArray(object) ? ']' : '}'
-    return str
+    str += i === keys.length - 1 ? "" : ",";
+  }
+  str += isArray(object) ? "]" : "}";
+  return str;
 };
 ```
 
@@ -2228,28 +2345,29 @@ var jsonStringify = function (object) {
 
 https://leetcode.cn/problems/convert-json-string-to-object/solutions/2329596/shou-xie-jsonparse-fang-fa-by-alex-pang-toii/
 
-parse的解法其实可以分解成几个部分，即从一个嵌套结构开始，再扩展到多种类型
+parse 的解法其实可以分解成几个部分，即从一个嵌套结构开始，再扩展到多种类型
 
 其实类似的解析类算法都可以采取这个思路。
 从简单的例子来说，如何把这个字符串解析成数组？
 
 ```js
-const str = "[[1],2,3,[4,[5]]]"
+const str = "[[1],2,3,[4,[5]]]";
 ```
 
 方法如下：
-1. 设置一个全局的index，始终递增
-2. 每次遍历到`[`，就进入一层递归，同时idx++跳过左括号
-3. 如果str[idx]是数字，那就放到本层递归创建的数组里，然后跳过逗号
+
+1. 设置一个全局的 index，始终递增
+2. 每次遍历到`[`，就进入一层递归，同时 idx++跳过左括号
+3. 如果 str[idx]是数字，那就放到本层递归创建的数组里，然后跳过逗号
 4. 如果遍历到`]`，就返回一层递归即可
 
 ```js
 let index = 0;
 const parseArray = (str) => {
-  if(index >= str.length) return []
+  if (index >= str.length) return [];
   const res = [];
   while (index < str.length && str[index] !== "]") {
-    if(str[index] === ',') index++ // 跳过逗号
+    if (str[index] === ",") index++; // 跳过逗号
     if (str[index] === "[") {
       index++;
       res.push(parseArray(str)); // 如果是左括号就递归一层
@@ -2263,92 +2381,93 @@ const parseArray = (str) => {
 };
 ```
 
-这时一个最简单的括号的parse。那么对象其实也是类似的，不过需要把引号内的key取出来。
-对于一个json来说，可能有的数据就是number/string/boolean/null/Array/Object这几种。对于每个类型我们都可以单独写一个parse函数，这些函数之间还可以互相调用，比如对象在获取key时就需要调parseString来得到具体的key。
+这时一个最简单的括号的 parse。那么对象其实也是类似的，不过需要把引号内的 key 取出来。
+对于一个 json 来说，可能有的数据就是 number/string/boolean/null/Array/Object 这几种。对于每个类型我们都可以单独写一个 parse 函数，这些函数之间还可以互相调用，比如对象在获取 key 时就需要调 parseString 来得到具体的 key。
 
 代码如下：
 
 ```js
-var jsonParse = function(str) {
+var jsonParse = function (str) {
   const n = str.length;
   let index = 0;
   // 解析字符串
   function parseString() {
     let curStr = "";
     // ++index 是为了直接跳过首个 `"` 字符
-    while(++index < n && str.charAt(index) !== '"') {
+    while (++index < n && str.charAt(index) !== '"') {
       curStr += str.charAt(index);
     }
     // 跳过结束双引号 `"`
     index++;
-    return curStr
+    return curStr;
   }
   // 解析数值
-  function parseNumber(){
-    let num = '';
-    while(index < n) {
+  function parseNumber() {
+    let num = "";
+    while (index < n) {
       cur = str.charAt(index);
       // 判断是否是数值，包含小数、负数
-      if(!/[\d.\-]/.test(cur)) break;
+      if (!/[\d.\-]/.test(cur)) break;
       num += cur;
       index++;
     }
-    return parseFloat(num)
+    return parseFloat(num);
   }
   // 解析数组
-  function parseArray(){
+  function parseArray() {
     let arr = [];
     // 跳过数组开始括号 `[`
     index++;
-    while(index < n && str.charAt(index) !==']') {
+    while (index < n && str.charAt(index) !== "]") {
       arr.push(parseValue());
-      // 跳过数组中的逗号 
-      if (str.charAt(index) === ',') {
+      // 跳过数组中的逗号
+      if (str.charAt(index) === ",") {
         index++;
       }
     }
-    // 跳过数组结束括号 `]` 
+    // 跳过数组结束括号 `]`
     index++;
     return arr;
   }
   // 解析对象
-  function parseObject(){
-    let obj = {}
+  function parseObject() {
+    let obj = {};
     // 跳过对象开始括号 `{`
-    index ++;
-    while(index < n && str.charAt(index) !=='}') {
+    index++;
+    while (index < n && str.charAt(index) !== "}") {
       const key = parseString();
       index++;
       const value = parseValue();
       obj[key] = value;
-      // 跳过对象中的逗号 
-      if(str.charAt(index) === ',') {
+      // 跳过对象中的逗号
+      if (str.charAt(index) === ",") {
         index++;
       }
     }
-    // 跳过对象结束括号 `}` 
+    // 跳过对象结束括号 `}`
     index++;
     return obj;
   }
   // 解析值
   function parseValue() {
     const first = str.charAt(index);
-    if(first === '"') {
+    if (first === '"') {
       return parseString();
-    }else if (first === '[') {
+    } else if (first === "[") {
       return parseArray();
-    }else if (first === '{') {
+    } else if (first === "{") {
       return parseObject();
-    }else if (first === 'f') { // 这里是处理false、true和null
+    } else if (first === "f") {
+      // 这里是处理false、true和null
       index += 5;
       return false;
-    }else if (first === 't') {
+    } else if (first === "t") {
       index += 4;
       return true;
-    }else if (first === 'n') {
+    } else if (first === "n") {
       index += 4;
       return null;
-    }else {
+    } else {
       return parseNumber();
     }
   }
@@ -2356,7 +2475,6 @@ var jsonParse = function(str) {
   return parseValue();
 };
 ```
-
 
 ## 手写 LazyMan 类
 
@@ -2790,8 +2908,8 @@ js 的 setTimeout、setInterval 的执行是不准确的。由于 js 单线程�
 
 gui 渲染、同步代码执行、微任务执行都会造成 timeout 的不准确。这些部分我们无法获取，只能通过时间差值来知道误差是多少，然后再减去误差执行。
 
-我们设定一个全局变量count，以及一个开始时间startTime（默认计时器开始的时间）。每次递归count自增；
-如果时间没有误差，那么count表示经历过的倒计时次数，即`count * interval + startTime = now`。存在误差时，实际的now会更大，因此通过减去的方式计算误差，在下一次递归中去掉误差。
+我们设定一个全局变量 count，以及一个开始时间 startTime（默认计时器开始的时间）。每次递归 count 自增；
+如果时间没有误差，那么 count 表示经历过的倒计时次数，即`count * interval + startTime = now`。存在误差时，实际的 now 会更大，因此通过减去的方式计算误差，在下一次递归中去掉误差。
 
 方法参考来源：https://segmentfault.com/a/1190000043829997
 
@@ -2802,20 +2920,6 @@ const loop = () => {
   callback(); // 可能会有的callback
   const now = Date.now();
   const gap = now - (count * interval + startTime);
-  setTimeout(loop, interval - gap);
-};
-setTimeout(loop, interval);
-```
-
-也可以不用count，而是保存一个上次调用时间。基本逻辑是一样的：
-
-```js
-let pre = Date.now()
-const loop = () => {
-  callback(); // 可能会有的callback
-  const now = Date.now();
-  const gap = now - pre;
-  pre = now
   setTimeout(loop, interval - gap);
 };
 setTimeout(loop, interval);
@@ -2847,9 +2951,10 @@ function myInterval(fn, interval) {
 myInterval(() => console.log(1), 1000);
 ```
 
-除了interval本身，还需要一个clearInterval来让定时器停下来。实现clearInterval的思路有两种：
-- interval函数直接返回一个clear函数，调用这个函数就可以清除
-- 维护一个全局变量，interval每次递归时修改这个全局变量，当clear调用时清除
+除了 interval 本身，还需要一个 clearInterval 来让定时器停下来。实现 clearInterval 的思路有两种：
+
+- interval 函数直接返回一个 clear 函数，调用这个函数就可以清除
+- 维护一个全局变量，interval 每次递归时修改这个全局变量，当 clear 调用时清除
 
 下面是两种实现：
 
@@ -2868,14 +2973,14 @@ const clear = myInterval(() => console.log(1), 1000);
 ```
 
 全局变量
-用对象保存的原因是考虑多个interval的情况。每个interval持有一个id，通过id在timer对象中获取具体的timeout，再在clear中清除。
+用对象保存的原因是考虑多个 interval 的情况。每个 interval 持有一个 id，通过 id 在 timer 对象中获取具体的 timeout，再在 clear 中清除。
 
 ```js
-const timer = {}
-let id = 0
+const timer = {};
+let id = 0;
 
 const myInterval = (callback, interval) => {
-  const timerKey = id++
+  const timerKey = id++;
   const loop = () => {
     callback();
     timer[timerKey] = setTimeout(loop, interval);
@@ -2885,23 +2990,20 @@ const myInterval = (callback, interval) => {
 };
 
 const clearMyInterval = (timerKey) => {
-  const timeout = timer[timerKey]
-  clearTimeout(timeout)
-}
+  const timeout = timer[timerKey];
+  clearTimeout(timeout);
+};
 
-const timeout = myInterval(() => console.log(1),1000)
+const timeout = myInterval(() => console.log(1), 1000);
 
 setTimeout(() => {
-  clearMyInterval(timeout)
+  clearMyInterval(timeout);
 }, 3500);
-
 ```
 
+### 实现 requestAnimationFrame
 
-### 实现requestAnimationFrame
-
-
-最简单实现rAF的方法就是简单的调用setTimeout：
+最简单实现 rAF 的方法就是简单的调用 setTimeout：
 
 ```js
 const requestAnimationFrame = function (callback, lastTime) {
@@ -2912,11 +3014,12 @@ const requestAnimationFrame = function (callback, lastTime) {
   return id;
 };
 ```
-但是这里有个问题，如果callback内部执行下一个rAF之前花了一些时间，那么就不一定能保证raf的调用时机准确了。
 
-比如callback内部的同步代码花费了4ms，那么在4ms之后才能调用下一个raf，这样两个raf之间的时间就是20ms了。
+但是这里有个问题，如果 callback 内部执行下一个 rAF 之前花了一些时间，那么就不一定能保证 raf 的调用时机准确了。
 
-为了避免这种情况，我们用lastTime表示上一次调用raf的时间，然后每次raf内部计算上一次和本次调用的时间差，再用16.6减去就可以得到本次应该延迟的时间。这点和setTimeout实现interval中的校准其实是一个原理。
+比如 callback 内部的同步代码花费了 4ms，那么在 4ms 之后才能调用下一个 raf，这样两个 raf 之间的时间就是 20ms 了。
+
+为了避免这种情况，我们用 lastTime 表示上一次调用 raf 的时间，然后每次 raf 内部计算上一次和本次调用的时间差，再用 16.6 减去就可以得到本次应该延迟的时间。这点和 setTimeout 实现 interval 中的校准其实是一个原理。
 
 ```js
 const requestAnimationFrame = function (callback) {
@@ -2933,7 +3036,6 @@ const cancelAnimationFrame = function (id) {
   clearTimeout(id);
 };
 ```
-
 
 ## 手写 dayjs 时间格式化功能
 
@@ -3626,6 +3728,8 @@ console.log("start");
 
 注意`promise`在`timer2`之前，因为`Promise.resolve().then`内的是微任务，和`timer2`的`setTimeout`宏任务相比要更优先。
 即会先执行完第一个`setTimeout`内的代码，才会执行第二个，并且第一个内的代码执行期间，第二个`setTimeout`仍然是异步宏任务，并不会和第一个一起同时把回调放入宏任务队列。
+
+**注意**：Promise.resolve/reject的参数如果是个函数，不会执行这个函数，它的作用只是将参数Promise化。
 
 ## 2.
 
@@ -4547,7 +4651,7 @@ function Foo() {
   return this;
 }
 Foo.prototype.getName = function () {
-  console.log(1);
+  console.log(this);
 };
 console.log(Foo());
 console.log(new Foo());
@@ -4597,34 +4701,34 @@ document.querySelectorAll("*").forEach((element) => {
 
 ## 颜色单位互相转换
 
-### 16进制转rgb
+### 16 进制转 rgb
 
-方法就是把16进制的每2位通过parseInt转化为10进制的数即可。
+方法就是把 16 进制的每 2 位通过 parseInt 转化为 10 进制的数即可。
 
 代码如下：
 
 ```js
 function hexToRgb(color) {
   const colorStrArr = color.split("");
-  colorStrArr.shift();// 去掉开头的#
-  let colors = colorStrArr.join('')
+  colorStrArr.shift(); // 去掉开头的#
+  let colors = colorStrArr.join("");
   // 如果是简写，每个位置都要加倍一次
-  if(colors.length === 3){
-    const newColors = new Array(6)
-    for(let i = 0;i < colorStrArr.length;i++){
-      newColors[i * 2] = colorStrArr[i]
-      newColors[i * 2 + 1] = colorStrArr[i]
+  if (colors.length === 3) {
+    const newColors = new Array(6);
+    for (let i = 0; i < colorStrArr.length; i++) {
+      newColors[i * 2] = colorStrArr[i];
+      newColors[i * 2 + 1] = colorStrArr[i];
     }
-    colors = newColors.join('')
+    colors = newColors.join("");
   }
-  const r = parseInt(colors.slice(0,2),16)
-  const g = parseInt(colors.slice(2,4),16)
-  const b = parseInt(colors.slice(4,6),16)
+  const r = parseInt(colors.slice(0, 2), 16);
+  const g = parseInt(colors.slice(2, 4), 16);
+  const b = parseInt(colors.slice(4, 6), 16);
   console.log(`rgb(${r}, ${g}, ${b})`);
 }
 ```
 
-### rgb转16进制
+### rgb 转 16 进制
 
 如下：
 
@@ -4644,5 +4748,4 @@ function rgbToHex(color) {
 }
 ```
 
-这里的关键其实是用exec循环提取数字。然后转成16进制数即可。padEnd可以很方便地填充字符以保证2位数。
-
+这里的关键其实是用 exec 循环提取数字。然后转成 16 进制数即可。padEnd 可以很方便地填充字符以保证 2 位数。

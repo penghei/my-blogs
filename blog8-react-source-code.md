@@ -7,6 +7,8 @@ cover: /img/react.png
 sticky: 7
 ---
 
+关于调度如果有不太清楚的，可以看这个：https://segmentfault.com/a/1190000039101758
+
 # React jsx
 
 ## jsx 的解析
@@ -4043,6 +4045,76 @@ while (workQueue.length > 0) {
 
 这种方式可以更灵活地检测用户输入，从而保证不会阻塞用户的输入。
 
+
+#### workLoop 内每个任务的处理
+
+参考：https://segmentfault.com/a/1190000039101758
+
+workLoop是通过循环去执行taskQueue中的任务，这些任务一般是一个`performXXXWorkOnRoot`。也就是说这些任务是一个完整的调和过程，那么肯定就会出现调和过程中时间片完，需要在调和中中断的情况。
+
+这对于workLoop来说，并不是迭代到了下一个任务，而是当前正在处理的任务还没完成，下一个任务暂时还不能执行。相当于任务不是一个原子化的结构，而是可中断的。
+
+所以workLoop需要知道这个任务是否完成，如果完成了就迭代下一个，否则下一次调度的循环还是从这个任务继续。
+
+**workLoop是通过判断任务函数的返回值去识别任务的完成状态的**。当开始调度后，调度者调度执行者去执行任务，实际上是执行任务上的callback（也就是任务函数）。如果执行者判断callback返回值为一个function，说明未完成，那么会将返回的这个function再次赋值给任务的callback，由于任务还未完成，所以并不会被剔除出taskQueue，currentTask获取到的还是它，while循环到下一次还是会继续执行这个任务，直到任务完成出队，才会继续下一个。
+
+也就是说performXXXWorkOnRoot如果中断，那么返回的是一个停在当前fiber的新的performXXXWorkOnRoot函数。这时workLoop就不会替换到下一个任务，而是把当前的task.callback替换成它。这样，下一次取task.callback来执行的时候，就执行的是这个函数了。
+
+```js
+function workLoop(hasTimeRemaining, initialTime) {
+  let currentTime = initialTime;
+  // 开始执行前检查一下timerQueue中的过期任务，
+  // 放到taskQueue中
+  advanceTimers(currentTime);
+  // 获取taskQueue中最紧急的任务
+  currentTask = peek(taskQueue);
+
+  // 循环taskQueue，执行任务
+  while (
+    currentTask !== null &&
+    !(enableSchedulerDebugging && isSchedulerPaused)
+  ) {
+    if (
+    ) {
+      // 时间片的限制，中断任务
+      break;
+    }
+    // 执行任务 ---------------------------------------------------
+    const callback = currentTask.callback;
+    if (typeof callback === 'function') {
+      // 调用当前的callback（即performConcurrentWorkOnRoot），获取返回值。
+      // 返回值将作为判断当前任务是否完成的依据
+      const continuationCallback = callback(didUserCallbackTimeout);
+      if (typeof continuationCallback === 'function') {
+        // 这里就是替换callback
+        currentTask.callback = continuationCallback;
+      } else {
+        // 如果不再返回函数，说明这个任务执行完了，就执行下一个
+        if (currentTask === peek(taskQueue)) {
+          pop(taskQueue);
+        }
+      }
+    } else {
+      pop(taskQueue);
+    }
+    currentTask = peek(taskQueue);
+  }
+  if (currentTask !== null) {
+    // 当前还有任务没执行，继续调度
+    return true;
+  } else {
+    // 若任务完成，去timerQueue中找需要最早开始执行的那个任务，作为下一次调度的开始
+    // 但是这里返回的是false，因为直到timerQueue中的第一个元素到时间的时候才会重新调度。本次调度结束了
+   return false
+  }
+}
+```
+
+还有一种情况，我们可以在任务还没完成时，强制返回一个null，而不是返回一个函数。
+这种操作的目的就是让这个没执行完的任务强行中断掉。这样workLoop就会去取下一个任务执行。
+常出现于，高优先级任务进入，当前优先级任务就应该被放弃执行，或者安排到稍后执行。此时的调和内部，workInProgress等值也会被还原，完全重新调度一次。
+
+
 ## 渲染中断
 
 react 的 concurrent 模式下还有一个非常重要的地方，就是渲染的可中断。
@@ -6078,6 +6150,8 @@ A & (A | B) = 0011 & 0001 = 0001 !== N
 
 ## Lane
 
+### 基本定义
+
 React 定义的 Lane 如下：
 
 ```ts
@@ -6126,6 +6200,21 @@ export function intersectLanes(a: Lanes | Lane, b: Lanes | Lane): Lanes {
   return a & b;
 }
 ```
+
+### lane和expirationTime
+
+React 为什么要用lane，而抛弃了以前的expirationTime架构？
+
+其实总结起来就是一句话：效率更高。
+
+相比于 lane，expiration time（ET） 是有一些很明显的缺点的
+- 缺点1： 比如现有 10 个task，各自有各自的 ET，那么，我要选择出符合当前渲染条件的 task，我得循环一遍，每个都去比较一个范围
+- 缺点2，如果场景复杂一些，现有ET：[1ms, 5ms]（左闭右闭），我就要执行 ET 在 [1, 2] 以及 [4,5] 的 task，实际操作就会复杂很多。
+
+相比之下， lane 架构可以很轻松的解决上述两个问题，直接执行 root.pendingLanes &= fiber.lane 就行了（位运算的操作会快很多），全挂载到 root 上的一个二进制属性上，这样可以快速的找出来位于哪些 lane 上的 task 需要在这一次 render 中执行。
+
+从功能角度来讲，优先级调度、高优先级任务中断等等操作都并非是只有lane能完成的。ET也能完成任务，不过从方便程度和算法复杂度上，lane明显更胜一筹
+
 
 ### 优先级分离
 
@@ -6502,6 +6591,20 @@ function readContext<T>(context: ReactContext<T>): T {
 4. 回到 updateContextProvider，调用 reconcileChildren 执行后续的调和。在第 3 步中提升优先级的组件将会在后面被更新
 
 # React 优先级机制
+
+## 常见任务的优先级
+
+状态更新由用户交互产生，用户心里对交互执行顺序有个预期。React根据人机交互研究的结果中用户对交互的预期顺序为交互产生的状态更新赋予不同优先级。
+
+比如：（这些都是指内部的更新任务）
+
+- 生命周期方法：同步执行。
+- 受控的用户输入：比如输入框内输入文字，同步执行。
+- 非连续的事件：比如onClick，同步
+- 交互事件：比如动画，高优先级执行。
+- useEffect、useLayoutEffect的回调：高优先
+- 定时器、网络请求等异步更新：较低优先级
+
 
 ## React 与 Scheduler 的结合
 

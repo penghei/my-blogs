@@ -101,10 +101,20 @@ unknown 类型和 any 类型都可以用来表示任意类型的值，但它们�
 
 - any 类型可以随意赋值给任何类型，而 unknown 类型不能直接赋值给其他类型，除非进行类型断言或类型细化。
 
+```ts
+let a: unknown;
+let b = 2;
+b = a; // 不能将类型“unknown”分配给类型“number”
+```
+
 - any 类型可以调用任何方法和属性，而 unknown 类型只能调用 any 类型或 unknown 类型上共有的方法和属性。这是因为 unknown 类型是一种更加安全的类型，它要求在使用前必须先进行类型检查或类型细化。
 
-- any 类型可以作为函数的参数和返回值类型，而 unknown 类型只能作为函数的参数类型。
-
+```ts
+let a:any;
+let b:unknown
+a.hello()
+b.hello() // 不能在unknown类型上访问任何属性或方法
+```
 
 简单来说，就是：
 - unknown不能访问任何方法和属性
@@ -1038,6 +1048,9 @@ function useIt(numOrStr: number | string) {
 ```
 
 也就是说 isString 函数的返回值这里只是通过代码显式返回了布尔值，但是并不意味着是一个判断的结果。
+
+只返回布尔值的话，这个函数并没有对类型进行**收束**，只是从js角度返回了一个值。
+
 因此需要改变 isString 函数的返回值，让 ts 能将其识别为区别类型的函数，而不是只是返回一个布尔值的函数。
 这里需要一个`is`表达式，相当于告诉 ts，这个函数的返回值是在判断参数 arg 是（is）string 类型的正确与否。
 
@@ -1407,7 +1420,7 @@ namespace Food {
 }
 
 // yyy.ts
-<reference path="xxx.ts" />;
+/// <reference path="xxx.ts" />;
 
 let meat: Food.Meat;
 let fruits: Food.Fruits;

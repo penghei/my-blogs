@@ -1855,7 +1855,7 @@ total = (...args) => f(h(...args)) = f(g(h(..args)))
 
 ## 手写 immerjs 的 produce 函数效果
 
-参考：https://leetcode.cn/problems/immutability-helper/solutions/2287059/proxychao-shi-by-yuan-zhi-b-e667//
+参考：https://leetcode.cn/problems/immutability-helper/solutions/2287059/proxychao-shi-by-yuan-zhi-b-e667/
 
 ## 手写对象扁平化和逆扁平化
 
@@ -3007,8 +3007,8 @@ setTimeout(() => {
 
 ```js
 const requestAnimationFrame = function (callback, lastTime) {
-  var currTime = new Date().getTime();
   var id = setTimeout(function () {
+    var currTime = new Date().getTime();
     callback(currTime);
   }, 16.6);
   return id;

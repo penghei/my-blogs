@@ -7556,8 +7556,7 @@ for (let i = 1; i < weight.length; i++) {
     else dp[i][j] = max(dp[i - 1][j], dp[i - 1][j - weight[i]] + value[i]);
   }
 }
-```
-
+``` 
 完整代码如下：
 
 ```js

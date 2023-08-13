@@ -1,13 +1,5 @@
 # 超管项目
 
-项目重点：
-
-- 技术选型，即
-  - konva 和其他 canvas 框架的技术选型，以及 canvas 本身的 api、性能优化相关
-  - recoil 和其他状态管理库的技术选型（可以说的：redux、mobx、zustand、joita 等），从哪些方面考虑，这些状态管理库的通用特点有哪些。（可以参考那篇飞书文档）
-- 项目规范
-  - 代码可读性、规范性、复用性各方面
-
 ## STAR 总结
 
 1. S: 背景
@@ -139,360 +131,6 @@ const Point = ({ point }) => {
 - 应用了部分优化手段，保证了在点位数量大的情况下的性能稳定，并通过 performance 来检查性能。
 
 ## 遇到问题
-
-### 代码规范
-
-规范主要有四类规范：
-
-- （文件）命名规范
-- ts 规范
-- React 规范
-- git 规范
-
-规范来源：
-
-- 部门规范
-- 公司内规范
-- 个人建议/自用规范
-
-#### 命名规范
-
-1. 文件名、目录：
-
-- kebab-case 形式。语义要明确，比如 modal 组件的文件名称都叫 modal-xxx
-- 不要简写
-- 目录要对于复数结构采取复数形式。
-
-#### ts 规范
-
-1. 类的私有方法前要加 private 和下划线
-2. 接口 PascalCase，前面要加 I
-3. 枚举 PascalCase
-4. 常量使用 UPPER_CASE ，禁用魔法数字和魔法字符串
-5. 注释：
-
-需要为以下内容添加注释
-
-- class
-  - 需要在 class 的顶部添加注释，说明该类的主要作用，比如为 React class/hooks component 添加注释
-  - 需要为 class 中的每个成员变量添加注释说明字段含义，无论是 public、protected、private
-  - 需要为 class 中的每个函数添加注释，具体参见下方 function
-- enum
-  - 需要为枚举添加注释，以及为枚举中的每个成员添加注释说明
-- interface
-  - 需要为 interface 添加注释，并为其中的字段添加注释说明，如果该 interface 对应了后台接口，还需要链接相关接口文档
-- function
-  - 需要注释说明函数的作用，每个入参的含义并给出相关示例，说明返回值含义及给出示例，对于复杂的逻辑，需要给出该函数实现的核心逻辑思想
-  ```ts
-  /**
-   * 返回两个数的平均值 ---- 函数作用
-   *
-   * @param x 第一个数，例如 1
-   * @param y 第二个数，例如 2
-   * @returns “x”和“y”的算数平均值
-   */
-  function getAverage(x: number, y: number): number {
-    return (x + y) / 2.0;
-  }
-  ```
-- 全局 let/const
-  - 需要为 class 或 function 外部的 let/const 变量添加注释
-
-格式遵循 TSDoc
-
-6. 尽量不使用 any，可以用 unknown 代替
-7. 字符串拼接统一使用模版字符串
-8. 使用 interface 定义对象结构体，而不是使用 type，对于 interface 接口名前要有 I
-9. 使用 async/await 代替 Promise，并且避免 async/await 与 Promise 混用
-10. 使用统一的 import 顺序，按 内置库 → 外部库 → 内部模块 的顺序进行 import。
-
-#### react 项目规范
-
-1. useCallback、useMemo、React.memo 一起结合使用才能减少不必要的子组件渲染，分工如下：
-
-- 父组件：在父组件中应该使用 useCallback() 和 useMemo() 尽量确保相应的 fn 或 value 不变，这样才能确保传递给子组件的 prop 不变。
-- 子组件：在子组件中应该使用 React.memo() 包裹原始的子函数组件，从而可以通过利用浅比较 props 的方式尽量使得子组件在 prop 没有发生变化时不进行渲染。
-
-2. 不要在 JSX 中写 JavaScript/TypeScript
-   在 JSX 中写代码，会让调试变得困难。(这个可以详细说一下)
-
-```js
-// Bad
-
-return (
-  <>
-    {users.map((user) => (
-      <a
-        onClick={(event) => {
-          console.log(event.target); //bad
-        }}
-        key={user.id}
-      >
-        {user.name}
-      </a>
-    ))}
-  </>
-);
-
-// Good
-
-const onClickHandler = (event) => {
-  console.log(event.target);
-};
-
-const userLinks = users.map((user) => (
-  <a onClick={onClickHandler} key={user.id}>
-    {" "}
-    {user.name}{" "}
-  </a>
-));
-
-return <>{userLinks}</>;
-```
-
-3. husky：确保在提交代码时也能够运行 lint 检查
-
-#### git 规范
-
-按照 git 工作流的形式，主要是四个分支
-
-![](https://pic.imgdb.cn/item/641835e4a682492fcc153b12.jpg)
-
-- master：
-  - 所有线上的发布都必须基于 master 分支，不能基于 release、feature、hotfix 分支
-  - 无论是 release 还是 hotfix 合并到 master，在 master 分支合并后，需要基于 package.json 中的 version 对 master 打 tag，注意只能对 master 分支打 tag，不能对 release、feature、hotfix 分支打 tag
-  - 如果在某一时刻同时有 release1 和 release2 两个分支在开发，当 release1 测试通过并 merge 到 master 后，需要将 master 再 merge 回 release2，确保 release2 最新
-- Release：
-  - 从 master checkout 创建
-  - 创建后更改 package.json 的 version，version 的组成形式为 majorVersion.minorVersion.patchVersion，创建 release 分支时应该更改 minor version，比如从 0.5.1 改为 0.6.0
-  - release 分支是受保护分支，严禁直接提交代码到 release 分支，只能通过 MR 对 release 代码进行变更
-  - 当 feature 分支完成一块相对独立的功能时，就可以从 feature 分支 发起 merge request 到 release 分支
-  - 提测前需要确保所有 feature 分支的代码已经合并进 release 分支，然后将 release 分支部署到 boe 环境
-  - 发布到线上前将 release 分支 merge 到 master，此处的 code reveiw 只需要大体过一下即可，因为 diff 内容都在 feature 往 release 分支合并时仔细 review 过了
-  - 如果某一个时刻基于 release1 分支有 feature1 和 feature2 两个分支，当 feature1 通过 code review 合并到 release1 后，也需要将 release1 合并回 feature2
-  - 需要注意的是，机器人前端项目每次给 QA deb 包进行测试前，都首先要确保 package.json 中的 version 变化了，因为机器人前端项目目前是根据 package.json 中的 version 生成 deb 包的版本
-- Feature
-  - 所有的 feature 分支都应该从 release 分支 checkout 创建，即便这次 release 分支只有一个开发人员也应如此，feature 分支需要包含个人名称简写
-  - 提测前将 feature 分支 merge 到 release 分支，此处的 MR 需要严格 code review
-- Hotfix
-  - 从 master checkout 创建，然后需要修改 package.json 中的 version，创建 hotfix 分支时应该更改 patch version，比如从 0.6.0 改为 0.6.1
-  - 修改完成后创建 merge request 到 master
-  - 注意在将 hotfix 分支合并到 master 分之后，记得更新 release 分支以及 feature 分支
-
-#### eslint
-
-使用`eslint --init`即可初始化配置。
-
-配置内容
-
-- eslintrecommended、reactrecommended、tsrecommended
-- @byted/eslint-config：公司内部的 eslint 推荐配置
-- 自定义的一些
-  - 禁用魔法数字
-  - useState 建议是`[xxxState,setXxxState]`的形式，以及 useRef 必须是 xxxRef 的形式，useReducer 必须返回 xxxReducer 的形式。这三个都是自定义的插件，参考工程化中编写插件的部分。
-
-关于 plugin 的
-
-#### husky
-
-配置 husky 在 eslint 校验通过之前不允许提交。
-[husky 文档](https://typicode.github.io/husky/#/)
-[husky 配置](https://juejin.cn/post/7038143752036155428#heading-9)
-
-husky 是一个操作 git 钩子的工具。可以使用预设的钩子，在 git 各种操作的时间进行补捕获和拦截。
-比如，在 pre-commit 阶段，即提交之前先进行 lint 的检查，如果不通过就不允许提交。
-
-> Git hooks 是一种在 Git 仓库中预定义的脚本，它可以在特定的 Git 操作时自动执行。Git hooks 可以在 Git 操作之前或之后执行一些自定义代码，比如在代码提交之前运行测试，或者在代码合并之前运行代码格式化工具等。
-> 在 Git 中，每个仓库都有一个 .git/hooks 目录，其中包含了一些可用的 Git hooks 脚本模板。这些模板可以被复制并重命名为不同的钩子名称，然后在其中编写脚本代码来实现自定义操作。Git hooks 脚本必须是可执行的（即要有执行权限）。
-> husky 的核心代码其实很简单，就是通过配置 git hooks 的方式来实现要在 git hooks 阶段执行的任务。
-
-配置流程：
-
-1. 安装 lint-staged、husky、commitlint
-2. 配置 husky 在 pre-commit 阶段进行 line-stage 检查：
-
-```
-yarn husky add .husky/pre-commit "npx lint-staged"
-```
-
-当然还要配置.lintstagedrc.json 文件控制检查和操作方式
-
-```json
-{
-  "*.{js,jsx,ts,tsx}": ["eslint  --fix"]
-}
-```
-
-3. commitlint 配置 commit 规范
-   [commitlint 文档](https://commitlint.js.org/#/?id=getting-started)
-
-使用 husky 在 commit-msg 钩子上增加对 commit 的检查：
-
-```
-husky add .husky/commit-msg 'npx --no-install commitlint --edit "$1"'
-```
-
-创建 commitlint.config.js，使用预设：
-
-```js
-module.exports = { extends: ["@commitlint/config-conventional"] };
-```
-
-这个预设比较简单，就是要求提交前面必须是`fix/feat/doc`等。
-
-### 代码复用性
-
-- 拆分函数。做到“一个函数只负责一个功能”。比如说某个点击事件的回调，可能包括网络请求、改变状态、整理数据等多步，就把这几个不同的功能分别拆到不同的函数中。
-- 自定义工具函数。
-  - 对于可能重复使用的处理一段数据的代码，比如一个数组数据的 map、filter，抽象成一个函数
-  - 判断函数，比如 isXXX 类型的函数，用于代替条件判断
-  - 构造对象的函数，比如构造出的对象是某个函数的参数，或者是修改 state 的，将其抽象为一个函数甚至构造函数的函数。比如 xxxAction 和 createXXXAction
-  - 举例：深比较、深格式化数据、计算地图和真实点位对应
-- 自定义 hook：代码编写时，注意到某些 useState、useRef 以及 useEffect 的组合貌似是固定的，就将其抽出来成为一个自定义 hook。尤其是 useEffect。
-
-  - useMap：用于接收一个地图 id，调用一个外部 api，然后返回地图 url：
-
-  ```ts
-  export const loadMap = (fileId: string): Promise<string> => {
-    return new Promise(async (resolve, reject) => {
-      // ...
-      resolve(imageUrl);
-      // ...
-    });
-  };
-
-  export function useMapUrl(tenantId: string, mapId: string) {
-    const [mapUrl, setMapUrl] = useState("");
-    useEffect(() => {
-      if (mapId && mapId !== "0") {
-        getMapDetail(mapId, tenantId, false)
-          .then((map) => loadMap(map.png_file_id))
-          .then(setMapUrl);
-      }
-    }, [mapId, tenantId]);
-    return mapUrl;
-  }
-  ```
-
-  - usePolling：轮询，虽然有现成的，但是自定义的原因是为了实现当 deps 变为 false 就停止轮询这个功能。
-
-  ```ts
-  export const usePolling = (
-    callback,
-    time: number,
-    pollingDep?: boolean,
-    isImmidiate = true
-  ) => {
-    const deps = pollingDep != null ? [pollingDep] : [];
-    useEffect(() => {
-      let interval = null;
-      if (pollingDep === false) {
-        clearInterval(interval);
-        return;
-      }
-      if (isImmidiate) callback();
-      interval = setInterval(() => {
-        callback();
-      }, time);
-      return () => clearInterval(interval);
-    }, deps);
-  };
-  ```
-
-  - useImage：将 file 格式图片转为 base64，这个也很简单，在 useEffect 中调用 fr 即可：
-
-  ```ts
-  export function useImgBase64Url(img: File) {
-    const [url, setUrl] = useState<string>("");
-    useEffect(() => {
-      if (img) {
-        const fr = new FileReader();
-        fr.readAsDataURL(img);
-        fr.onload = () => {
-          setUrl(fr.result as string);
-        };
-      }
-    }, [img]);
-    return url;
-  }
-  ```
-
-- 分割组件
-
-  - 将具有自己独立状态的组件分割。比如一个 modal 内的表单，一个 drawer 内的 table 等，尽量让组件自己维护一些状态，不要全提升到父组件中
-  - 要复用的组件，比如四个 Modal，这四个 modal 虽然内部不一样，但是他们需要的外部数据基本一致（visible,robotData），内部结构也大体一致（都是一个 Alert + 一个表单），因此把表单抽成四个组件，Modal 就使用一个组件。
-
-  如下所示，Modal 组件用 React.cloneElement 给子组件注入 props，这样子组件始终含有 robotData 等关键数据。子组件通过修改父组件 ref 的形式控制 modal 点击确定时提交表单（这里应该有更好的方式）
-
-  ```tsx
-  export function MyModal({
-    robotData,
-    visible,
-    setVisible,
-    children,
-  }: ModalPropsType) {
-    const onOk = useRef<(e?: MouseEvent) => Promise<any>>(async () => {
-      setVisible(false);
-    });
-    return (
-      <Modal
-        visible={visible}
-        onCancel={() => setVisible(false)}
-        onOk={onOk.current}
-      >
-        {React.cloneElement(children, {
-          // 注入props
-          onOk,
-          robotData,
-          setVisible,
-        })}
-      </Modal>
-    );
-  }
-
-  // MyModal不改变，只改变CreateUserForm即可。
-  export function CreateUserForm({
-    onOk,
-    robotData,
-    setVisible,
-  }: CreateUserFormPropsType) {
-    const [form] = Form.useForm();
-    useEffect(() => {
-      onOk.current = async () => {
-        const res = await form.validate().catch(console.error);
-        console.log(res);
-        setVisible(false);
-      };
-    }, []);
-
-    return (
-      <>
-        <Alert type="warning" content={`${robotData.basic.device_name}`} />
-        <Form form={form}>
-          <Form.Item field="username">
-            <Input type="text" max={20} />
-          </Form.Item>
-        </Form>
-      </>
-    );
-  }
-  ```
-
-- 代码规范：变量命名规范、函数命名规范、类型命名规范、导入语句、组件名、组件文件名等。
-  - eslint 限制代码规范：默认的 extends 和 plugin，比如 react、babel、@typescript-eslint 等
-  - 自定义 rules：
-    - 禁用魔法数字
-    - camelCase 强制变量名和对象属性为小驼峰
-    - eqeqeq，配置`{"null": "ignore"}`
-  - eslint-plugin-filenames 可以限制文件名和目录名。比如：
-  ```json
-  {
-    "plugins": ["filenames"],
-    "rules": {
-      "filenames/match-regex": ["error", "^[a-z]+(-[a-z]+)*$", true] // 限制文件名为kebab-case形式
-    }
-  }
-  ```
 
 ### 需求问题
 
@@ -872,170 +510,6 @@ evtSource.onmessage = function (event) {
 
 实际上 konva 已经在内部做了很多性能优化
 
-# 秒杀平台项目
-
-遇到问题：
-
-- 请求数量大，请求需要添加 jwt，不能每次请求都配置一次；并且请求部分代码多，影响代码质量
-- 首屏加载速度很慢，第一次加载可能等数秒才显示内容
-- 针对模拟线上环境的优化，模拟秒杀系统应用场景
-
-项目重点：
-
-- 需要符合秒杀系统的应用场景，在前端做出优化。具体优化方向为减轻服务器负担，比如降低资源大小、减少请求次数等。
-- 关于技术选型相关的，比如为什么采用原生 webpack 而不是 cra，cra 相比手动配优势在哪里，cra 做了哪些配置？
-- 项目中 jwt 的使用，可能有刷新 token 的机制？
-- 关于秒杀倒计时，怎么确定倒计时准确？
-
-## 遇到问题
-
-### 请求数量大：请求封装
-
-参考超管项目的封装
-
-```tsx
-// 先创建实例
-const service = axios.create({
-  // 添加jwt头
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${api_cfg.token}`,
-  },
-  timeout: 10000,
-  baseURL: api_cfg.apiUrl,
-});
-
-// 添加响应拦截器
-service.interceptors.response.use(function (response) {
-  // 进行状态码判断
-  const { code, data = {} } = response?.data;
-  if (code === 10001) {
-    Message.error("你的token已失效，请重新登录!");
-    setTimeout(() => {
-      if (window.location.pathname !== "/login") {
-        window.location.href = "/login";
-      }
-    }, 1000);
-  }
-
-  return response;
-});
-
-// 封装请求方法request
-// 接收泛型作为返回值类型
-export default function request<T = unknown>(
-  opts: AxiosRequestConfig, // 请求对象，即url、method、data、params等属性
-  notify = true
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const reqFn = async () => {
-      try {
-        const res = await service(opts);
-        // 这里是service正常resolve的处理，即收到了响应，但可能有误
-        const { code, data = {} } = res?.data;
-        // 这里只处理了部分类型的结果
-        if (res.status === 200 && code === 0) {
-          return resolve(data);
-        } else if (code === 71002) {
-          // 约定：如，服务端错误
-          return reject(res?.data);
-          // 还可以加几个，比如状态码404，403的处理，或者约定的code的处理
-        } else {
-          // 其他情况统一reject
-          // 通过message组件全局提醒报错
-          return reject(res?.data?.msg);
-        }
-      } catch (err) {
-        // service执行错误，即根本没收到响应，比如跨域、网络中断、400/500等错误
-        // 通过message组件全局提醒报错
-        console.error(err);
-        return reject(err);
-      }
-    };
-    reqFn();
-  });
-}
-```
-
-然后具体到每个请求，具体封装：
-
-```ts
-// 定义类型：请求体类型，响应data类型
-export const getBuildingInfo = (building_id: string) =>
-  request<DtoGetBuildingInfoResp>({
-    url: "/admin/api/v1/admin/building",
-    method: "get",
-    params: { building_id },
-  });
-```
-
-有一个缺点是 request 函数还是会 reject，也就是具体函数还是要具体处理错误。
-其实这样更好，因为不同上下文调用的函数可能错误处理不同，如果请求出错不是预设错误的话，就应该直接 reject。
-
-### 优化
-
-#### 优化内容总
-
-1. 代码分割。代码分割的目的有两个：
-
-- 缓存
-- 优化代码体积，加快加载速度。
-
-代码分割的方式：
-
-- 动态加载，使用 React.lazy 包裹页面组件。
-- splitChunk，分割 vendor
-- 分割 css
-
-2. 开发模式优化
-
-- 持久化缓存
-- sourcemap 配置 eval-cheap-module-source-map
-- 关闭生产模式优化
-
-3. 生产模式优化
-
-- 代码压缩，css、js 压缩
-- tree-shaking
-- 利用 import 对图片等资源进行 prefetch
-
-4. 其他优化
-
-- 图片：
-  - webp 格式：webp-webpack-plugin
-  - 压缩：image-minimizer-webpack-plugin
-- loader：自己编写的 loader
-- 按需导入 antd 的组件和 css
-  - 组件：默认支持 tree-shaking
-  - 样式：使用 babel-plugin-import 的 style 配置来引入样式。参考https://blog.csdn.net/zwkkkk1/article/details/88823366和https://juejin.cn/post/7117293855958892574
-- 骨架屏
-
-#### 针对线上环境的优化
-
-核心：请求优化
-
-- 减小请求大小
-- 降低请求次数
-
-1. 减小请求大小，即减小打包产物大小，上述的所有压缩等减小体积的方法
-
-2. 降低请求次数：
-
-- 充分利用缓存
-- 分包不要太细碎
-- 部分数据持久化，比如秒杀到期时间戳不用频繁同步
-- 秒杀接口的节流处理，多次点击只会生效一次
-
-#### 其他方面优化
-
-这些优化方式并不一定是显式的优化，更多的是一种提升项目健壮性的方式
-
-1. 针对可能的服务端问题：做好对服务端处理速度缓慢或对服务端崩溃的处理，比如
-
-- 购买链接设置足够长的超时时间，或者通过倒计时，当时间到的时候加长超时时间。
-- 采用合适的 loading 方式，使得用户请求之后不能再请求，相当于一种节流的方式
-- 告知用户加载可能很慢等
-- 如果服务器崩溃导致不能正常显示，要采取 fallback 措施，比如服务端返回特定的错误码时（500/504）提示好用户，并暂时关闭购买按钮，设置定时器在一段时间后再开始
 
 # 特价团购项目
 
@@ -1194,7 +668,9 @@ export default function CarouselContainer(){
 
 - RCF 指标：
   - R：响应时间，主要是从用户触摸事件开始到页面做出第一帧变动的时间，主要依赖 native 测算。大致原理是“追随”点击事件的流转，直到点击事件被 JS 消费并且点击事件修改的布局在 UI 线程完成更新的时间。
-  - C：首屏加载时间。统计方式是从页面启动、native 代码加载开始，一直到 js 完成渲染、元素稳定为止。（C 指标的测量方式？）
+  - C：首屏加载时间。统计方式是从页面启动、native 代码加载开始，一直到 js 完成渲染、元素稳定为止。
+    > C 指标实际取的是 FSP，即首屏渲染时间，这个值是由开发者手动上报的。
+    > 如果不上报，则采取类似 fmp 的方式，在 shadowThread 监听，当有节点变动时判断是否是首屏节点，如果是就刷新时间。直到最后一个变动结束 n 秒后统计完毕。这个过程不涉及权重计算，而且统计的是最终完成加载的时间，因此和 fmp 也不完全相同。
   - F：实时帧率，主要是页面帧率，会考察最大连续丢帧的情况
 - 其他指标
   - mrn debugger 提供的功能
@@ -1302,6 +778,262 @@ export default function CarouselContainer(){
 - 一些非常规的优化手段，比较专项的方案。以及更多没有在项目中实际应用的方案，比如深度预加载、页面直出等等。这些内容需要多看一些技术文章来应对
 - profiler、performance、memory 等调试工具的具体使用细节
 - webview
+。
+
+### 页面加载流程分析
+
+以会场页为例，当用户从美团首页点击进入特价团购时，从观感上的流程如下：
+
+1. 一个菊花屏的加载中，尤其是首次加载时事件会比较长
+2. 骨架屏，大概有 2-2.5 秒，并且受网速影响不算很大
+3. 一小段白屏，在骨架屏消失和 FCP 之间还有一小段白屏
+4. 正式组件的渲染，携带具体数据，按照一定的优先级，当前情况为轮播图 -> 列表 -> tab -> 其他
+5. 图片加载完成，icon 加载完成，页面整体完成。
+
+这里延伸出几个问题。
+
+1. 菊花屏：主要是容器的启动时间。如果后台杀死程序再启动，菊花屏就会花比较多时间；如果美团 app 一直在线，那就不会花太多时间
+2. 骨架屏：
+
+- 首先骨架屏本身不是 js 渲染的结果，而是跟随包一起的、由 native 直接渲染完成的，因此即使没有网络也会显示一瞬间骨架屏，同时在 js 还没开始执行就已经能显示骨架屏了
+- 骨架屏背后，其实是页面的白屏。如果把骨架屏去掉，那么还是会有相等时间的白屏，说明在这段时间内完全没有进行任何渲染，而第一次渲染就是携带数据的，并且能受到分步渲染的控制，因此可以理解为组件的的 componentDidMount，而非 Update。
+- 这个白屏期间主要在干什么呢？根据流程，主要工作应该是：jsbundle 的下载和增量更新（首次）、jsbundle 的解析、jsbundle 的执行、主接口的请求，当请求结束后就会控制骨架屏消失。然后所有的组件开始初次渲染，并且此时是携带数据的
+
+3. 一小段白屏：主要是渲染所有组件的时间。骨架屏消失的时机是主接口返回数据，从这里到组件完成渲染还需要一段时间。这也是渲染优化的主要作用点，如何在这一段时间内尽快把核心内容渲染出来
+4. 正式组件渲染：按照优先级依次渲染，观感上就是显示是有明显的次序的。
+
+有一个想了一晚上的疑问点：
+按理来说，接口数据和渲染的关系应该是 jsbundle 执行 -> 组件 render -> 组件 useEffect -> 请求业务接口 -> 返回数据并更新 -> 组件 rerender
+也就是说在骨架屏背后的时间里，应该是完成了一次渲染的，主接口返回时是重新渲染；
+但是实际情况是并没有，去掉骨架屏的话就是白屏，并且后续的渲染明显是首次渲染。
+
+后来解释清楚了，具体可以看下面难点里《关于骨架屏和初次渲染的关系》，其实就是当主接口没返回数据时，业务组件都还没被挂载；只有主接口返回正常数据（不为null或者不报错）时才会渲染，因此对于业务组件来说其实都是首次渲染，并且是带上初始数据的
+
+*一小段白屏*其实就是业务组件初始化渲染的时间，从骨架屏消失到组件渲染并显示还有一段时间。因此分步渲染、按需渲染都是在优化这个过程。
+
+
+
+### DMAIC优化思路分析
+
+按照 DMAIC 的优化思路来考虑。
+注意：如果问到如何做优化，那么按照下面的来说就是最好的，也就是说有一个大概的发现问题、提出方案和解决问题的流程，而不是上来就是应用一大堆优化。
+
+#### Define
+
+Define: 定义优化的方向和目标
+
+- 方向：
+  - 首屏加载速度提升
+  - 首屏体验提升
+  - 部分闪烁和卡顿问题解决
+- 具体目标：
+  - C 指标评分从 2 分提升到 20 分左右，综合指标提升从 40 分达到 60 分
+  - 首屏加载时间，通过`RACF 指标线下测试 SOP`的方式（相当于在线下测试 racf，主要是为了检查变化，不一定准确）
+    - 优化前：
+      - 安卓中端机 3500ms
+      - ios14 2400ms
+      - 线上值：3000/3200/3500
+      - 注意：ios 比安卓要好很多，因为 oc 的代码比 java 效率高一些
+    - 优化目标
+      - 安卓中端机：2500ms
+      - ios：1800ms
+      - 线上：平均 3000ms 以内
+
+#### Measure
+
+Measure: 测量性能
+
+测量的对象：
+
+- 线下的首屏加载时间，以测试机型为准，主要方便查看变动
+- 各阶段的具体加载时间，方便针对性优化
+- 包体积、包结构
+
+测量的结果：
+
+- 整体加载时间：以一个机型为标准，测试 C 指标时间为 3500ms
+- 具体的各个流程的加载时间。线上数据只有一个整体的加载，并没有细粒度的各流程时间。可以借助 mrn 的调试工具来测试各个流程的加载时间，大致占比为：
+  - 容器创建、引擎创建：3.5%
+  - jsbundle 下载&解压：1%
+  - 业务包编译、解析：10%
+  - 业务包执行：30%
+  - 首要素渲染（App 组件 render，启动网络请求，暂未渲染业务组件）：10%
+  - 网络请求：30%
+  - 首屏渲染：15.5%
+- 包：
+  - 包体积：不同页面的包不同
+    - 会场页：约 980KB
+    - 商详页：约 350KB
+  - 包结构：通常的 bundle = index.js + Assets + 其他配置文件
+    - 会场页：
+      - index.js: 业务代码综合包，1.2MB（解压后）
+      - Assets: 各种静态资源，比如骨架屏、字体、部分 icon 图片，200KB
+      - 其他：40KB
+    - 商详页：
+      - index.js: 280Kb
+      - 静态资源：20KB
+      - 其他：30KB
+
+后续主要关注点：
+
+- 首屏加载时间的提升百分比，在测试的安卓和 ios 上的结果，以及在线下 SOP 的测试结果
+- 流程里，重点关注业务包的解析执行时间、首屏渲染时间，让这两个的时间占比降低
+
+#### Analyze
+
+Analyze：分析原因，找出解决方案
+
+针对问题，先考虑尽可能多的导致原因，然后调查、分析来排除；针对每个原因，再想尽可能多的解决方案，再去根据实际情况选择合适的方案。
+
+1. 分析潜在原因：
+
+- 包解析执行过程占比时间较长
+  - 猜测是由于包体积比较大
+  - js 部分未做代码分割，部分内容可能全量引入
+  - 未做预加载
+- 网络请求时间占比很高：
+  - 未做预请求，请求在 js 执行之后才开始
+  - 未利用到缓存，每次进入首页数据都完全重新请求
+- 业务组件渲染时间较长
+  - 组件未做分级渲染，同时全量渲染导致核心组件渲染速度慢
+  - 组件未做懒加载、懒渲染
+- 页面滚动轮播图闪烁问题
+  - 重复渲染，可能是滚动事件绑定了某个状态更新
+- 点击 tab 页吸顶卡顿问题
+  - 点击 tab 的事件和后续执行了大量计算或阻塞性的代码
+  - 点击 tab 之后大量同时执行了渲染启动任务
+  - 点击 tab 之后导致列表或其他部分的的全量重渲染
+
+2. 分析之后，需要测试原因到底是什么，预想的潜在原因是否真实
+
+- 包解析执行时间问题：
+  - 包体积大小：980KB，确实相对偏大
+  - 包结构：js 部分占到 1.2MB，并且项目中未做任何代码分割的内容。
+  - 不存在预加载内容
+- 网络问题
+  - 通过网络调试面板，每次进入都会重新全量请求，没有缓存；
+  - 通过调试面板的请求时间比较，发现请求时机被放置在 js 解析之后，并没有在 native 进入时就做预请求
+- 渲染问题：
+  - 通过录屏逐帧查看，所有模块在瞬间被同时渲染出来，包括导航栏、浮标等不太关键的模块
+  - 在商详页，猜喜模块默认进入就会渲染。
+- 页面滚动问题：
+  - 找到页面滚动事件监听，去掉所有监听的回调，再测试不存在闪烁问题
+  - 使用 wdyr 从下至上测试轮播图卡片、轮播图、轮播图父组件和专区组件，在轮播图父组件发现了重渲染是来自 useSelector 不正确的引入
+- 吸顶卡顿问题：
+  - *卡顿*的测试方式：点击 tab 到吸顶结束，通过 profiler 录制查看是否存在渲染时间过长的任务
+  - 按一定规则分析：
+    - 删除 tab 点击事件回调，点击 tab 不会卡顿，但吸顶之后发生卡顿
+    - 删除吸顶回调，没有出现卡顿
+    - 控制券包和列表渲染，发现在券包渲染时会出现卡顿
+  - 发现到券包每次吸顶都会产生 300-400ms 的渲染耗时
+
+3. 然后就是分析解决方案。同一个问题的解决方案有很多，应该根据实际情况选择最合适的。
+
+优化方案分为两个阶段
+
+- 第一阶段先解决明显的性能问题（卡顿闪烁等），其他问题采用较低成本优化的方式，进行初步优化。选择的优化方式有
+  - 优化包体积，包括删除一些库、引入 babel 插件、组件库单个安装和引用、替换旧库等
+  - 配置预请求，将会场页主接口请求提前到用户点击进入的时候，即容器加载的时候
+  - 对部分模块进行按需渲染，比如商详页的猜喜模块，进入可视区域才请求并渲染列表
+  - 其他细节优化，比如轮播图控制渲染数量、离屏销毁等
+- 第二阶段建立精细化的打点方案，统计性能瓶颈，再做专项优化，可能会存在一些高成本的方案
+  - 用 RAM+require 进行代码分割，需要确定要分割哪些模块，并且优化代码结构来方便分割。
+  - 优化分步渲染，对会场页和商详页的组件制定优先级，使用 Priority 来优化
+  - 接入普通预加载，在会场页加载稳定后，开始对用户流向较多的商详页和专区二级页进行预加载
+
+#### Improve
+
+improve，就是实际去做，并且在做的过程中要统计并测试，查看效果。
+
+根据在 Analyze 阶段确定的方案，优化分为两个阶段。
+
+1. 初步低成本优化：
+
+- **优化包体积**：大部分检查工作由 cli 完成，debug 工具和可视化 bundle 也能分析依赖的引入次数等数据
+  - 通过 cli 的功能，删除部分重复引入、没有用过的依赖，并发现一些版本较老的库进行替换
+  - 部分库替换为原生编写，比如事件总线用到的 Pubsub 库，替换为编写的全局 EventEmitter，因为仅使用部分功能
+  - 组件库优化导入，接入 babel-plugin-transform-imports 来优化。部分组件和某些模块（比如 KNB）只引入了一个，就不全量下载
+- **配置预请求**：直接配置，把会场页请求前置。主要工作其实就是编写一个 json 文件，在编译时该文件会被处理去做预请求内容。
+- **按需渲染**：通过内置组件 MCModule 的按需渲染能力来做。原理和 web 上类似，检测进入可视区域就渲染。主要处理的内容包括：
+  - 商详页的猜喜模块、评分模块等
+- **其他优化**：优化了轮播图初始渲染数量（3+2），优化了轮播图的结构（用图片和兜底色来替换较为复杂的 jsx 结构，比如把 LinearGradient、Tag 等替换成图片，利用图片缓存来优化）
+
+2. 较高成本优化：
+
+- **代码分割**：通过 RAM+require 进行分割。RAM 的配置比较简单，关键是如何配置 require 的位置，以及需要做完善的测试，防止出现加载问题。
+  - 具体工作：
+    1. 首先配置 indexedRAMBundle: true
+    2. 设置 require 的位置和加载方式：
+    - 数据驱动加载：专区模块、直播模块等，当首页接口返回值不为 null 时才执行 require 去加载
+    - 弹窗：弹窗分为用户操作弹窗和首屏进入的弹窗。对于首屏进入弹窗采用和专区相同的优化方式，根据弹窗接口的返回情况来主动加载
+    - tab 页：商品列表页，除了第一个 tab，其他 tab 都是点击 tab 之后才加载。tab 数量是固定的
+    3. 代码优化：将组件细化，部分只在某个组件内使用的依赖可以考虑单独开一个组件，然后将依赖放入，再对这个组件进行分割。不过比较理想化，实际并没有做很多修改
+    4. 输出并确定首屏需要加载的模块，然后将其加入黑名单，保证首屏加载的模块不会被分割
+  - 其他工作：
+    - 测试：每分包一部分模块就 mock 数据来测试是否能正常显示
+- **分步渲染**：利用 Priority 组件，将核心模块设定优先级。注意划分的对象应该是上面分割之后，在首次就加载的模块。也就是说这里操作的对象模块和上面分割代码的模块不冲突，这里设置的一定是上面没有 require，而是默认加载的。
+  - 具体工作：
+    1. 确定核心模块的范围和优先级的值。
+    - 采取了推荐的方法，即划为 high/normal/low 三级
+    - 承载主要数据的为 high，包括轮播图和列表。根据业务特点定义“核心”
+    - 其他的比较重要的占位元素为 normal，比如 nav、一级 tab
+    - 剩下不会造成大的布局变动，并且大概率不在首屏的，设为 low，包括浮标、二级 tab 等
+    2. 考虑更具体的情况
+    - 什么时候可以确定一个组件“渲染完成”然后“可以渲染下一个优先级”？
+      - 默认采用连续的方式，即 PriorityComponent 包裹目标组件；PriorityComponent 内的 useEffect 执行时，目标组件内的 useEffect 一定是已经执行过的，可以看做是目标组件已经完成渲染。多个 PriorityComponent 内的 useEffect 依次执行，就可以形成连续渲染的方式。也可以添加一个 delay，让每个渲染之间延迟一定时间；但提供了一个 props，为 true 时才会渲染下一个
+      - 由于作用对象是首屏渲染内容，这些内容在渲染时已经拿到了主接口的数据，或者根本没有使用接口返回，只是渲染；因此采取默认的连续渲染方式即可。
+      - 但也提供了更精细的控制方式，主要有两个方面：
+        - 对于无请求组件，直接默认就行。对于有请求组件，可以在请求的 finally 中调用下一级；对于以视频、图片为关键元素的组件，可以以视频、图片的 onload 或 onerror 来作为渲染完成的标志
+        - 对于可能会请求超时、图片加载超时的情况，可以考虑通过 Promise.race 来控制一个超时，保证在一定时间内一定会触发下一级渲染，不会卡住
+- **预加载**：接入预加载能力，主要是从美团 app 首页到会场页的预加载，和在会场页对商详页的预加载。
+  - 预加载分为普通预加载（提前准备容器、编译解析代码）和深度预加载（提前执行代码）。深度预加载需要考虑接口请求的问题，成本较高，并且兼容不佳，因此只使用基础预加载能力
+  - 在会场页对商详页预加载，主要要考虑到预加载带来的内存消耗和，因此不能同时对后续所有页面做预加载。根据页面用户流向发现从会场页进入商详页比例较高，进入其他页面较低，因此只预加载商详页。
+  - 除了商详页，在有视频的时候还会预加载视频页
+  - 执行时机：在首页的 MCPage 组件下的 useEffect 内，通过类似 requestIdleCallback 的方式，以 setTimeout 调度 api 来进行预加载，实际上就是找到空闲时间执行。
+
+实施优化的过程中，还需要对每个优化之后去做测试，尤其是高成本优化。
+优化之后需要对优化前后的性能进行比较，查看优化效果。具体优化结果数据如下：
+
+- 优化包体积：
+  - 通过 cli 删除无用依赖、重复引入、较老的库：980KB -> 920KB
+  - 引入 babel、单体下载组件库：920KB -> 860KB
+- 会场页接入请求前置：
+  - 首屏网络请求前置，提前的时间有限，测试结果：减少约 100ms
+- 按需渲染：商详页优化部分内容，几乎没有改变
+- 其他优化：解决各种问题。
+- 代码分割：包体积本身没有变化；完全配置完成后，首屏时间减少约 400ms
+- 分步渲染：不会直接影响首屏时间，但从录屏工具逐帧分析可以看到核心模块的加载速度变快。之前在骨架屏结束后仍有 200ms 的短暂白屏，优化后在 50ms 左右就出现了核心元素，后续内容在剩余 1000ms 内完全加载。
+- 预加载：初步配置了会场页主动调用 api 预加载商详页和视频沉浸页，会场页暂未被预加载。因此会场页首屏加载时间未改动，但是商详页首屏加载时间在安卓上缩短了约 20%，在 ios 上缩短约 10%
+
+最终测试结果：
+
+- 会场页：
+  - 安卓中端机：3500ms -> 2800ms
+  - ios：2400ms -> 2000ms
+  - C 指标：2 提升至 20，上线后不同机型都有 20%左右提升
+  - 包体积：从 980KB 压缩包缩减到 800KB 以下
+- 商详页：
+  - 安卓中端机：800ms -> 400ms，主要是预加载的提升
+  - ios: 500ms -> 300ms
+  - C 指标：40 提升至 70，基本达到优秀标准
+
+#### Control
+
+Control：即对于优化完成的维持和复盘。
+
+复盘：
+
+- 还有一些优化手段没有使用：
+  - 会场页的预加载、深度预加载：需要接入美团 app 首页，需要时间和价值评估
+  - 会场页主接口数据缓存：考虑到主接口包含实时性较高的专区，缓存有可能导致刷新问题。后期考虑分离一部分接口，将变动不大的接口利用缓存进行优化
+
+维持：
+
+- 业务上，根据 RCF 预报定期检查性能问题变动
+- 组内制定优化维护文档，当新增需求时要考虑到不会影响旧的优化手段
+  - 比如预请求配置，如果主接口有变动，那么预请求也需要更新配置
+  - 分包，如果有完全新加入的模块，在需求开发完后需要单独评审是否需要分割；分步渲染也是同理
+  - 包体积：一些危险的包通过 cli 来限制安装，防止体积过大；cli 每次提交代码时通过 eslint 检查冗余代码存在（引用未使用），防止无用引入；每次发包之前都会检查是否有包过期、冗余安装等问题
 
 ## 项目难点
 
@@ -1708,6 +1440,49 @@ Priority 的实现可以参考另一篇博客。
 
 优化效果：商详页 C 指标提升 20%左右，加载时间从 600ms 降低到 400ms，同时由于预加载的引入，秒开率得到提升。
 
+### 关于骨架屏和初次渲染的关系
+
+首先明确一点：骨架屏的消失应该是在数据有返回的时候。比如项目有一个主接口，当主接口返回时，骨架屏消失，然后这时才挂载具体的内容。
+
+这个时候，作为具体内容的组件实际上是在这样的情况下开始渲染的：
+
+- 主接口已经返回数据，此时传入的 props 是有具体值的
+- 只会初始化渲染而非 rerender，因此 props 不会改变
+
+参考下面的代码示例：
+
+```tsx
+function App() {
+  const appData = useAppData();
+  const showLoading = useMemo(() => !!appData, [appData]);
+  return (
+    <>
+      {showLoading ? (
+        <CoreComponents data={appData} />
+      ) : (
+        <div>
+          <h1>我是骨架屏</h1>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default App;
+```
+
+可以看到初始化是渲染骨架屏，而 CoreComponents 并没有渲染。当 appData 返回非空值时，才让骨架屏消失，然后开始渲染 CoreComponents 和他内部的子组件。
+
+因此对于实际的业务组件，即 CoreComponents 和内部组件来说，第一次渲染就是携带有具体的 appData 作为 data 的，不存在“先展示空值再请求填充”的情况。
+
+既然是初次渲染，那么分步渲染也就能生效了。
+同时也可以解释项目首屏加载发生的过程：
+
+- 骨架屏是预渲染的，因此一进入就会展示
+- 骨架屏显示期间，实际上是包解析执行+主接口请求的时间，这时虽然不包含业务组件的渲染，但业务组件之外，比如 App 组件实际上也 render 了的。
+- 主接口请求返回，骨架屏消失，业务组件开始渲染。这个过程会有短暂白屏，因为业务组件渲染需要时间；这也是对业务组件渲染的优化体现的地方，即通过分布渲染、懒加载等方式，尽快完成这里的渲染
+- 业务组件带数据渲染完毕，显示完整的页面。从这里才开始计算 FMP、FSP、LCP 等指标，最终当首屏元素稳定时，作为 C 指标的结束值。
+
 # 项目提问题
 
 ## 难点和亮点
@@ -1726,8 +1501,8 @@ Priority 的实现可以参考另一篇博客。
 
 3. 地图，主要有：
 
-- konva事件系统的探索，要实现事件委托，但事件系统不了解。通过查阅文档、搜索资料、查看issues、阅读源码，最终了解了事件流
-- 优化canvas性能，需要知道有哪些优化手段，以及有哪些内容是konva已经做得，哪些是需要我们做的
+- konva 事件系统的探索，要实现事件委托，但事件系统不了解。通过查阅文档、搜索资料、查看 issues、阅读源码，最终了解了事件流
+- 优化 canvas 性能，需要知道有哪些优化手段，以及有哪些内容是 konva 已经做得，哪些是需要我们做的
 
 亮点：
 
@@ -1736,11 +1511,10 @@ Priority 的实现可以参考另一篇博客。
 - 轮播图提供了对视频组件接入的支持，以及轮播视频的单例控制、及时销毁
 - 优化
 
-
 2. 超管项目
-  - 采用recoil
-  - 利用konva实现一些优化手段，比如可视区域加载等
 
+- 采用 recoil
+- 利用 konva 实现一些优化手段，比如可视区域加载等
 
 ## 特价团购
 
@@ -1865,7 +1639,7 @@ Priority 的实现可以参考另一篇博客。
   - 延迟渲染
   - 降低代码层级，优化复杂嵌套
 
-优化结果：首屏加载时间从 3000ms 降低到 1800ms 左右，c 指标提升到 30 分性能问题得到解决
+优化结果：首屏加载时间从 3000ms 降低到 2000ms 左右（有待商榷），c 指标提升到 30 分性能问题得到解决
 商详页降低到 600ms 左右
 
 ## 超管平台

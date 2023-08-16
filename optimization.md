@@ -141,7 +141,7 @@ el.offsetTop - document.documentElement.scrollTop <= viewPortHeight;
 - webpack 魔法注释：通过魔法注释可以直接通过 webpack 实现 prefetch & preload；
 - 应用框架工具库：比如 react-loadable；
 
-预加载的意义在于，让浏览器还在解析html的时候就对指定资源进行加载，而不是解析到了对应资源的html元素或者js时才去加载。
+预加载的意义在于，让浏览器还在解析 html 的时候就对指定资源进行加载，而不是解析到了对应资源的 html 元素或者 js 时才去加载。
 
 ### preload 和 prefetch
 
@@ -508,9 +508,8 @@ FMP 的计算方式可以参考这张图：
 
 1. 侦听页面元素的变化
 2. 遍历每次新增的元素，并计算这些元素的得分总和
-3. 如果元素可见，得分为 n * weight(权重), 其中n表示可视区域内大小。如果元素不可见那得分就是0；
-4. 最终检查页面得分总和增长最快的那个段，就可以作为FMP的具体时间。
-
+3. 如果元素可见，得分为 n \* weight(权重), 其中 n 表示可视区域内大小。如果元素不可见那得分就是 0；
+4. 最终检查页面得分总和增长最快的那个段，就可以作为 FMP 的具体时间。
 
 统计各个元素的加载完成时间的方式是通过 MutationObserver，比如下面这段
 
@@ -553,7 +552,7 @@ initObserver() {
 doTag 内的代码大致如下，其实就是 dfs 所有元素，给新插入的元素打上一个 tag
 这里的 tag 是按批次插入的。比如说，本次 dom 变动插入了 10 个元素，那么这 10 个元素的 callbackCount 都是 2，并在 statusCollector 内记录的时间相同。后面在计算加载时间的时候，只需要在 statusCollector 内获取一下对应的 callbackCount， 就可以得到该元素的加载时间了。
 
-**注意dfs的过程做了一定的优化**，并非是完全遍历所有节点，而是采取“如果子元素可见，那父元素可见，不再计算”的方式。同样的，如果最后一个元素可见，那前面的兄弟元素也可见。这样每次只需要计算一个元素即可，它的父元素可以以这个元素的值为准。
+**注意 dfs 的过程做了一定的优化**，并非是完全遍历所有节点，而是采取“如果子元素可见，那父元素可见，不再计算”的方式。同样的，如果最后一个元素可见，那前面的兄弟元素也可见。这样每次只需要计算一个元素即可，它的父元素可以以这个元素的值为准。
 
 ```js
 doTag(target, callbackCount) {
@@ -588,28 +587,29 @@ calResult(resultSet) {
 
 ```
 
-注意像图片这样的静态资源，应该以资源加载完成时间为定，可以通过performance.getEntries获取：
+注意像图片这样的静态资源，应该以资源加载完成时间为定，可以通过 performance.getEntries 获取：
 
 ```js
-performance.getEntries().forEach(item => {
+performance.getEntries().forEach((item) => {
   this.mp[item.name] = item.responseEnd;
 });
 ```
 
 接下来就是计算的过程了。
 计算过程主要有三个重要指标：
+
 1. 加载时间，以及记录过
-2. 权重。我们可以设定一个权重，比如普通元素是1，图片是2，canvas是4等等，按照页面重要程度来定。
+2. 权重。我们可以设定一个权重，比如普通元素是 1，图片是 2，canvas 是 4 等等，按照页面重要程度来定。
 3. 元素得分，以当前元素在页面上的显示面积得出，可以通过`width * height * weight * 元素在viewport的面积占比`得到。如果该元素的子元素得分比该元素高，就替换为得分最高的子元素。这样可以得到每个可视元素的得分。
 
-最后，根据得分和加载时间，确定FMP的时间。
+最后，根据得分和加载时间，确定 FMP 的时间。
 同样是两种计算方式：
+
 - 最通用的：以增长速度最快的时间点为标准，如下图。因为统计数据是一个一个段的，我们找到增长最快的那个段的时间就行
 
 ![Alt text](./images/image-2.png)
 
 - 还有一种方式是以得分最高的元素加载完成时间为基准，适用于以视频、大图为主的首屏。
-
 
 ### web-vitals
 
@@ -624,9 +624,9 @@ getFID(console.log);
 getLCP(console.log);
 ```
 
-### 秒开率指标FSP
+### 秒开率指标 FSP
 
-FSP是一个灵活性比较大的指标，他不同于FCP、LCP等比较通用的指标，而是一个具有比较强业务属性的值。也就是说他更依赖于真实业务情况，有时候需要在代码中手动打点来计算。
+FSP 是一个灵活性比较大的指标，他不同于 FCP、LCP 等比较通用的指标，而是一个具有比较强业务属性的值。也就是说他更依赖于真实业务情况，有时候需要在代码中手动打点来计算。
 
 如果想要实现非侵入式的打点方案，那么有一些方法可以实现：
 
@@ -639,15 +639,15 @@ FSP是一个灵活性比较大的指标，他不同于FCP、LCP等比较通用�
 
 结束时间常用的四种方案是：
 
-- A: 可见元素超出屏幕时刻：适用于某些从上到下排布元素的布局情况，当有可见元素被渲染出屏幕、但仍有一部分在屏幕内时，就可以认作是FSP的时间。
+- A: 可见元素超出屏幕时刻：适用于某些从上到下排布元素的布局情况，当有可见元素被渲染出屏幕、但仍有一部分在屏幕内时，就可以认作是 FSP 的时间。
 - B: 可见元素占据屏幕达到一定比例：一般是占据横轴 >= 60% 、纵轴 >= 80%就可以视作是首屏完成
 - C: 用户交互前最后一次视图树变动时机：或者说是用户可交互前（TTI）的最后一次变动。这种情况有可能会有问题，比如动画、持续变化的元素等
 - D: 首屏可见元素增幅趋于稳定的时机：这个比较抽象，举个栗子：
   比如一共经历了数个批次的更新，每次分别增量渲染了`[1,3,7,11,5,2]`个元素
-  他们的平均值是4.8，然后筛选出超过平均值的部分，即`[7,11,5]`。
-  剩下元素的最后一个时间点就是FSP的值，即增量为`5`的时间点。和FMP不同的是，FMP会选择11，但FSP方案选的是“最后一个”，那么就是增量为5这个时间点。
+  他们的平均值是 4.8，然后筛选出超过平均值的部分，即`[7,11,5]`。
+  剩下元素的最后一个时间点就是 FSP 的值，即增量为`5`的时间点。和 FMP 不同的是，FMP 会选择 11，但 FSP 方案选的是“最后一个”，那么就是增量为 5 这个时间点。
 
-MRN采用的计算FPS的值，也就是C指标值的方案是：
+MRN 采用的计算 FPS 的值，也就是 C 指标值的方案是：
 
 ```
 min(A, C) - 用户进入页面的时间
@@ -656,35 +656,33 @@ min(可见元素超出屏幕时刻, 用户交互前最后一次视图树变动�
 
 选择的原因是，可见元素超出屏幕时刻方便增量计算，这个计算过程对页面影响很小。其他的方案，比如填充率这种可能需要遍历比较多，会有性能问题。
 
-测试接入的方法是，利用rn的渲染队列机制，捕获渲染任务来做判断。
+测试接入的方法是，利用 rn 的渲染队列机制，捕获渲染任务来做判断。
 
 另外这种方案其实也只是一种近似方案，不一定能适用于所有页面，因此还需要人工测试一部分。
 
-
-### performanceTiming和PerformanceNavigationTiming
+### performanceTiming 和 PerformanceNavigationTiming
 
 参考：https://developer.mozilla.org/zh-CN/docs/Web/API/PerformanceTiming 和 https://developer.mozilla.org/zh-CN/docs/Web/API/PerformanceNavigationTiming
 
-performanceTiming提供了页面加载过程中的各种时间戳，具体参考下图：
+performanceTiming 提供了页面加载过程中的各种时间戳，具体参考下图：
 ![performanceTiming](image-6.png)
 
-注意PerformanceNavigationTiming其实是performanceTiming的升级版，后者已经逐渐被废弃。因此我们选用 PerformanceNavigationTiming 最好，可以用performanceTiming来作为兼容性的兜底。
+注意 PerformanceNavigationTiming 其实是 performanceTiming 的升级版，后者已经逐渐被废弃。因此我们选用 PerformanceNavigationTiming 最好，可以用 performanceTiming 来作为兼容性的兜底。
 
 获取方式如下：
 
 ```js
 let timing =
-    // W3C Level2  PerformanceNavigationTiming
-    // 使用了High-Resolution Time，时间精度可以达毫秒的小数点好几位。
-    performance.getEntriesByType('navigation').length > 0
-      ? performance.getEntriesByType('navigation')[0]
-      : performance.timing; // W3C Level1  (目前兼容性高，仍然可使用，未来可能被废弃)。
+  // W3C Level2  PerformanceNavigationTiming
+  // 使用了High-Resolution Time，时间精度可以达毫秒的小数点好几位。
+  performance.getEntriesByType("navigation").length > 0
+    ? performance.getEntriesByType("navigation")[0]
+    : performance.timing; // W3C Level1  (目前兼容性高，仍然可使用，未来可能被废弃)。
 ```
 
-performanceTiming有什么作用呢？我们可以根据它提供的详细时间戳，来计算一些关键加载时间，比如TCP连接时间、DNS解析时间、DOM解析耗时、资源加载时间等等。这些性能指标不同于上面的FCP、LCP，更多是一种偏向技术和开发者的指标，对用户来说不感知，但对开发者来说是性能优化的重要参考依据。
+performanceTiming 有什么作用呢？我们可以根据它提供的详细时间戳，来计算一些关键加载时间，比如 TCP 连接时间、DNS 解析时间、DOM 解析耗时、资源加载时间等等。这些性能指标不同于上面的 FCP、LCP，更多是一种偏向技术和开发者的指标，对用户来说不感知，但对开发者来说是性能优化的重要参考依据。
 
 下面这段代码，是对一些计算指标的简单封装：
-
 
 ```js
 // 获取 NT
@@ -695,7 +693,7 @@ const getNavigationTiming = () => {
       domainLookupEnd,
       connectStart,
       connectEnd,
-      secureConnectionStart, 
+      secureConnectionStart,
       requestStart,
       responseStart,
       responseEnd,
@@ -726,46 +724,44 @@ const getNavigationTiming = () => {
   const navigation =
     // W3C Level2  PerformanceNavigationTiming
     // 使用了High-Resolution Time，时间精度可以达毫秒的小数点好几位。
-    performance.getEntriesByType('navigation').length > 0
-      ? performance.getEntriesByType('navigation')[0]
+    performance.getEntriesByType("navigation").length > 0
+      ? performance.getEntriesByType("navigation")[0]
       : performance.timing; // W3C Level1  (目前兼容性高，仍然可使用，未来可能被废弃)。
   return resolveNavigationTiming(navigation);
 };
 ```
 
-
 ### PerformanceResourceTiming
 
 ![Alt text](./images/image-7.png)
 
-上面PerformanceNavigationTiming获取的是页面加载过程的一些关键时间点，PerformanceResourceTiming则是静态资源的。获取方式还是通过getEntriesByType：
+上面 PerformanceNavigationTiming 获取的是页面加载过程的一些关键时间点，PerformanceResourceTiming 则是静态资源的。获取方式还是通过 getEntriesByType：
 
 ```js
-const resource = performance.getEntriesByType('resource')
-const formatResourceArray = resource.map(item => {
+const resource = performance.getEntriesByType("resource");
+const formatResourceArray = resource.map((item) => {
   // 每个item是监控的那个资源
   return {
-    name: item.name,                    //资源地址
-    startTime: item.startTime,          //开始时间
-    responseEnd: item.responseEnd,      //结束时间
-    time: item.duration,                //消耗时间
+    name: item.name, //资源地址
+    startTime: item.startTime, //开始时间
+    responseEnd: item.responseEnd, //结束时间
+    time: item.duration, //消耗时间
     initiatorType: item.initiatorType, //资源类型
-    transferSize: item.transferSize,    //传输大小
+    transferSize: item.transferSize, //传输大小
     //请求响应耗时 ttfb = item.responseStart - item.startTime
-    //内容下载耗时 tran = item.responseEnd - item.responseStart 
+    //内容下载耗时 tran = item.responseEnd - item.responseStart
     //但是受到跨域资源影响。除非资源设置允许获取timing
   };
-})
+});
 ```
 
 除了这些资源的属性，甚至还可以获取到该资源是否命中缓存。
 如果静态资源被缓存了，它具有以下两个特征：
 
-- 静态资源的 duration 为0；
-- 静态资源的 transferSize 不为0；
+- 静态资源的 duration 为 0；
+- 静态资源的 transferSize 不为 0；
 
-另外跨域资源不能获取到connectStart、domainLookupStart等这样和网络请求相关的加载时间。如果想要获取，那么请求该跨域资源时就需要设置*响应头* Timing-Allow-Origin。
-
+另外跨域资源不能获取到 connectStart、domainLookupStart 等这样和网络请求相关的加载时间。如果想要获取，那么请求该跨域资源时就需要设置*响应头* Timing-Allow-Origin。
 
 ## 性能检测工具
 
@@ -776,7 +772,6 @@ const formatResourceArray = resource.map(item => {
 - Chrome DevTools：可以通过 devTools 的性能模块录制并检查性能问题
 - Search Console：类似 PageSpeed Insights，也是一个在线检查网站性能的工具
 - Web Vitals 扩展
-
 
 # 实际项目中的优化思路
 
@@ -796,8 +791,8 @@ Define -> Measure -> Analyze -> Improve -> Control
 2. Measure: 测量性能
 
 - react native profiler
-- react-native-performance，提供类似web端的performance api
-- xcode等ide提供的工具，比如Flipper，类似lighthouse
+- react-native-performance，提供类似 web 端的 performance api
+- xcode 等 ide 提供的工具，比如 Flipper，类似 lighthouse
 - 不要用手操+表计时
 - 可以用到屏幕录制
 - 最重要的是测量变化，变化之后也要考虑不同的设备、环境，有可能会收到外部环境影响。
@@ -812,7 +807,6 @@ Define -> Measure -> Analyze -> Improve -> Control
 
 针对这些假设，需要确定一个测试方案来帮助我们思考是否真的存在这个问题，到底影响有多大。
 
-
 4. Improve: 具体去做。
 
 对于同一个问题可能有不同的解决方案，要考虑多种解决，最终选定为什么去这样做。
@@ -826,57 +820,14 @@ Define -> Measure -> Analyze -> Improve -> Control
 ![Alt text](./images/image-1.png)
 
 要做到这些，可以采取一些方案，比如：
+
 - 设定注意点，以及常出现的可能导致性能问题的问题，列出来防止再犯，并且给出出现这些问题时的解决方案
 - 经常做测试和测量，在每个需求上线之前保证不会导致大幅度性能波动
-- 在CI、commit、线上等部分做把控
+- 在 CI、commit、线上等部分做把控
 
-# h5优化
+# h5 优化
 
-## 概述
+详细可以看 mobile-development 那篇博客内的优化内容。
+这里放一个图表示优化体系：
 
-参考：
-https://heapdump.cn/article/3676881
-https://xiaobaiha.gitbook.io/tech-share/engineering/c-duan-xing-neng-you-hua
-https://developer.aliyun.com/article/1054030
-
-之前面试被问到过这个问题。
-首先先明确什么是端内h5：端内就是通过native提供的webview来显示的h5页面，而端外就是通过浏览器加载的h5。
-端内由于是在native底层启动，因此端内h5通常可以通过一些手段来达到更好的优化效果，从用户体验上来说要好于端外。
-
-端内的h5优化方式主要有：
-
-- 离线资源。借助 native 通过 webview 统一拦截 url，将资源映射到本地离线包，打开或者更新应用的时候对版本资源检测，下载和维护本地缓存目录中的资源。
-
-也就是说把h5相关的静态资源、js、css等通过预下载的形式存储在本地，当打开页面的时候不再需要，或者只需要非首屏的网络请求
-
-![](https://pic.imgdb.cn/item/64c547c11ddac507cc423716.jpg)
-
-这个方法也有不足的点，比如离线包的体积可能会非常大。因此有一种折中方案，就是通过ssr和离线结合的方式。
-入口html使用ssr，当用户访问入口时在服务端发起请求；对这些请求，如果命中离线资源就使用离线，否则就正常请求。相当于只让一部分资源离线。
-这些请求的资源还可以通过cdn来优化
-
-- 预请求。以空间换时间的方式，在用户跳转页面同时请求该页面所需数据，与 html 加载并行执行。预请求指的是首屏显示所需要的接口数据的预请求，预请求可以被提前到webview加载的时间；
-
-当js开始请求数据时，先检查是否存在已经预请求的资源，有就使用，否则 js 也会发起接口请求并开启竞速模式。
-
-![](https://pic.imgdb.cn/item/64c54a1a1ddac507cc473f67.jpg)
-
-- ssr。ssr的基本优化其实还是那一套，就是通过服务端请求数据并填入。
-
-ssr的最大问题在于服务器压力，由于每个h5页面加载都需要服务端进行直出，因此大量请求会对服务器造成很大压力。
-
-解决方法是利用缓存，缓存的方向有几个：
-  - 接口缓存，即对ssr填入数据所需的接口进行缓存，请求时直接取数据
-  - 静态页面缓存，对于无状态的、无身份鉴权或者说没有太多变动的页面，不需要重复渲染，请求时直接返回缓存的html
-  - 如果是变动比较大的页面，那就退化为csr。
-
-- 预渲染。预渲染主要是针对spa，可以把一些指定的路由页面直接生成html。
-
-这种优化方式依赖的webpack插件有点过时，可能有新的方式来做。可以参考：https://juejin.cn/post/6844903689656893454
-
-
-
-
-## 整体思路
-
-
+![Alt text](images/image-16.png)

@@ -1511,6 +1511,170 @@ getPromiseFn().then(...);
 promise.then(...)
 ```
 
+#### promise缓存
+
+promise缓存常用于下面一个场景：
+
+当一个请求发出还没有被响应时，又连续发出了下一个请求。
+
+```js
+request('GET', '/test-api').then(response1 => {
+  // ...
+});
+request('GET', '/test-api').then(response2 => {
+  // ...
+});
+```
+
+解决方法是用类似函数缓存的逻辑，当请求函数的参数不变，就不再重复进行请求。
+
+```js
+const pendingPromises = {};
+function request(type, url, data) {
+  // 使用请求信息作为唯一的请求key，缓存正在请求的promise对象
+  // 相同key的请求将复用promise
+  const requestKey = JSON.stringify([type, url, data]);
+  if (pendingPromises[requestKey]) {
+    return pendingPromises[requestKey];
+  }
+  const fetchPromise = fetch(url, {
+    method: type,
+    data: JSON.stringify(data)
+  })
+  .then(response => response.json())
+  .finally(() => {
+    delete pendingPromises[requestKey];
+  });
+  return pendingPromises[requestKey] = fetchPromise;
+}
+```
+
+#### Promise实现koa中间件模式
+
+即实现这样一个效果：
+
+```js
+const app = new Koa();
+app.use(async (ctx, next) => {
+  console.log('a-start');
+  await next();
+  console.log('a-end');
+});
+app.use(async (ctx, next) => {
+  console.log('b-start');
+  await next();
+  console.log('b-end');
+});
+ 
+app.listen(3000);
+
+class Koa {
+  listen(port){
+    const req = {} // req模拟http请求体
+    // 调用中间件对req处理
+  }
+}
+```
+
+中间件的基本实现原理，其实就是函数的迭代调用。
+先考虑同步情况；如果每个中间件函数都是同步的，我们要达成的效果是让每个中间件函数先按照添加顺序依次执行。如果中间件函数内执行了传入的next函数，那就进入下一个中间件。
+
+当进入到最后一个中间件函数的时候，再执行next就会“回溯”，回到上一个中间件函数继续执行剩下代码，直到回到第一个中间件为止。
+
+我们需要一个next函数，每个中间件内部都需要执行这个next函数来执行下一个中间件。把这个next函数传入中间件，就形成了递归，递归边界是不再有下一个中间件为止。
+
+```js
+function next(){
+  const nextMiddleWare = middleWares[index++]
+  if(nextMiddleWare){
+    nextMiddleWare(ctx, next)
+  }
+}
+```
+
+完整代码（同步）：
+
+```js
+class Koa {
+  constructor() {
+    this.middlewares = [];
+  }
+  use(middleware) {
+    this.middlewares.push(middleware);
+  }
+  action(req) {
+    let index = 1;
+    const middlewares = this.middlewares;
+    function next() {
+      const middleware = middlewares[index++];
+      if (middleware) {
+        middleware(req, next);
+      }
+    }
+    middlewares[0](req, next);
+  }
+  listen(port) {
+    const req = {
+      port,
+      body: {
+        name: "zzx",
+      },
+    };
+    this.action(req);
+  }
+}
+
+const app = new Koa();
+app.use((ctx, next) => {
+  console.log("a-start", ctx);
+  next();
+  console.log("a-end");
+});
+app.use((ctx, next) => {
+  console.log("b-start", ctx);
+  next();
+  console.log("b-end");
+});
+app.listen(3000)
+```
+
+可以看到其实原理就是，当第一个中间件调用next时，实际上是执行了第二个中间件函数。那么当第二个中间件函数退出时，肯定就还是返回上一个中间件内部继续调用，依次类推。
+
+如果要加上promise，就是在返回结果上修改一下。因为中间件是通过await调用next函数的，因此next函数应该返回一个promise；
+
+```js
+action(req) {
+  let index = 1;
+  const middlewares = this.middlewares;
+  function next() {
+    const middleware = middlewares[index++];
+    if (middleware) {
+      return Promise.resolve(middleware(req, next))
+    }else{
+      return Promise.resolve()
+    }
+  }
+  middlewares[0](req, next);
+}
+
+// 使用
+const app = new Koa();
+app.use(async (ctx, next) => {
+  console.log("a-start", ctx);
+  await sleep() // 模拟执行异步任务
+  await next();
+  console.log("a-end");
+});
+app.use(async (ctx, next) => {
+  console.log("b-start", ctx);
+  await sleep()
+  await next();
+  console.log("b-end");
+})
+```
+
+注意其实middleware函数是没有返回值的，并且next函数的返回值也没被处理。所以next函数用Promise.resolve纯粹只是为了返回一个promise供await调用。
+
 ## 手写 async pool
 
 async pool 和 promise map 的功能类似，即限制 promise 任务的并发数量，但是实现方式不同，下面是一种实现方式：

@@ -907,6 +907,91 @@ sourcemap 的映射关系由浏览器完成，但是用于标识映射的文件�
 
 mappings 数组中的每个串可以理解为指向了编译之后代码的具体的行和列以及其在源码中对应的文件、行和列。这个含义非常复杂并且极其浓缩；但只要了解这其中的每个串都是一种映射关系就好。
 
+#### 环境变量
+
+环境变量通常使用方式有几种
+- 在webpack.config中根据不同的环境变量选择不同的配置
+- 在nodejs环境下编译解析部分库时，根据环境变量来执行不同操作，比如react的开发和生产模式代码有很大区别
+- 在实际项目代码中通过注入的自定义全局变量来操作
+
+通常传入环境变量的方式是利用命令行的`--env`
+
+```
+webpack --env goal=local --env production
+```
+
+在webpack.config中，如果导出一个函数，就可以获取到这个配置的环境变量
+
+```js
+module.exports = (env) => {
+  // Use env.<YOUR VARIABLE> here:
+  console.log('Goal: ', env.goal); // 'local'
+  console.log('Production: ', env.production); // true
+
+  return {
+    entry: './src/index.js',
+    output: {
+      filename: 'bundle.js',
+      path: path.resolve(__dirname, 'dist'),
+    },
+  };
+};
+```
+
+如果是其他在nodejs环境下运行的代码，可以借助`cross-env`这个工具进行配置，在代码中可以通过process.env.xxx来获取：
+
+比如在package.json中配置：
+
+```json
+{
+  "scripts": {
+     "build": "cross-env NAME_W=aaa webpack --config ./webpack.config.js"
+  }
+}
+```
+代码中：
+
+```js
+console.log(process.env.NAME_W, 'env'); // 'aaa'
+```
+
+如果希望在业务代码中使用，就需要适配浏览器。浏览器不存在process对象，因此需要借助DefinePlugin
+
+```js
+// webpack.config.js
+...
+new webpack.DefinePlugin({
+  __WEBPACK__ENV: JSON.stringify('packages'),
+  TWO: '1+1',
+});
+
+// src/main.js
+console.log('hello, Environment variable', __WEBPACK__ENV)
+```
+
+**注意**，webpack.definePlugins本质上是打包过程中的字符串替换。比如上面的代码，在打包过程中，如果我们代码中使用到了`__WEBPACK__ENV`，webpack会将它的值替换成为对应definePlugins中定义的值，本质上就是匹配字符串替换。
+
+也就是说输出的代码会被替换为定义的环境变量；如果我们定义的是一个表达式，那么输出的也是一个表达式。
+
+```js
+// webpack.config.js
+new webpack.DefinePlugin({
+  __WEBPACK__ENV: JSON.stringify('packages'),
+});
+
+// 输出的代码，注意packages是字符串
+console.log('hello, Environment variable', 'packages')
+
+// webpack.config.js
+new webpack.DefinePlugin({
+  __WEBPACK__ENV: 'packages',
+});
+
+// 输出代码，这里的packages变成了一个变量
+console.log('hello, Environment variable', packages)
+```
+
+
 # 优化
 
 关于 webpack 的优化有很多内容，因为其优化方式本身就有很多，原理有些也比较复杂。这里只总结一些常用或常问的，最重要的还是原理性理解

@@ -419,7 +419,7 @@ import "@arco-design/web-react/dist/css/arco.css";
 4. 组件的具体实现原理，包括 js 和 css，不同组件有所不同
 5. 组件的整理，即该分离的分离、该整合的整合，使得开发完后的组件目录下是完善的、可测试的。
 
-以Modal组件为例，后面的组件大题开发流程都是这样的，只是核心逻辑和细节实现不同。因此后面只说实现原理和关键点即可。
+以 Modal 组件为例，后面的组件大题开发流程都是这样的，只是核心逻辑和细节实现不同。因此后面只说实现原理和关键点即可。
 
 ## Modal
 
@@ -615,18 +615,18 @@ const classNames = cs(
 
 上面两步基本已经完成了核心内容，剩下的工作就是完善 props 的默认值兜底、类型设置、样式开发等等
 
-
-
 ## Drawer
 
-Drawer的实现思路和Modal差不多，主要有两个区别比较大的特点
+Drawer 的实现思路和 Modal 差不多，主要有两个区别比较大的特点
 
 - 上下左右四个方向弹出：其实就是控制布局，如果左边弹出就是`left: 0`，隐藏是`left: -100%`，其他几个方向同理
 - 显示和隐藏：通过`width: visible ? '100%' : '0'`设置，配合`transition: all .5s`就可以实现动画
-- 任意元素内插入：主要是利用ReactDOM.createPortal。向外暴露一个getContainer的方法，如果返回一个dom元素就设置为Portal，否则使用body（就是正常返回）。
+- 任意元素内插入：主要是利用 ReactDOM.createPortal。向外暴露一个 getContainer 的方法，如果返回一个 dom 元素就设置为 Portal，否则使用 body（就是正常返回）。
 
 ```js
-getContainer === false ? childDom : ReactDOM.createPortal(childDom, getContainer)
+getContainer === false
+  ? childDom
+  : ReactDOM.createPortal(childDom, getContainer);
 ```
 
-## 
+

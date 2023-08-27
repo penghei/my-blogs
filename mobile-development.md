@@ -196,7 +196,6 @@ https://godbasin.github.io/2022/08/14/front-end-performance-container/
 http://www.alloyteam.com/2019/10/h5-performance-optimize/
 https://segmentfault.com/a/1190000041701111
 
-
 ## 优化大纲
 
 https://juejin.cn/post/7249665163242307640
@@ -286,17 +285,15 @@ https://juejin.cn/post/7120907970031910942
 
 NSR（Native Side Render）：利用客户端原生做 SSR。核心思路是利用客户端启动一个 JS 引擎，执行数据请求 + HTML 文档输出，并将结果缓存。在后续的页面加载过程中，直接渲染 HTML 文档，并做 hydrate （水合）处理。
 
-注意NSR、SSR、预渲染三者区别。虽然NSR其实也是预渲染的一种，但他并没有提前启动webview，只是在native侧做了ssr在服务端做的事情：预取数据生成html。
+注意 NSR、SSR、预渲染三者区别。虽然 NSR 其实也是预渲染的一种，但他并没有提前启动 webview，只是在 native 侧做了 ssr 在服务端做的事情：预取数据生成 html。
 
 ![Alt text](images/image-15.png)
 
-NSR的本质是一个“分布式的SSR”，既能实现ssr的效果，同时又不会给服务端带来太大压力。
+NSR 的本质是一个“分布式的 SSR”，既能实现 ssr 的效果，同时又不会给服务端带来太大压力。
 
 详细可以参考
 https://www.infoq.cn/article/9ukos4xh_6wl4fh1fogl
 https://juejin.cn/post/7267436042507911179#heading-14
-
-
 
 #### 静态资源加载
 
@@ -417,8 +414,7 @@ self.addEventListener("preload", function (event) {
 ---
 
 离线包有一个通用的问题，就离线包很容易变得体积很大。
-这种情况有一个解决方法，就是将离线包和ssr结合起来。比如入口 html 文件保持 SSR，其他静态资源借助离线化。这样也能保持入口html的及时更新。
-
+这种情况有一个解决方法，就是将离线包和 ssr 结合起来。比如入口 html 文件保持 SSR，其他静态资源借助离线化。这样也能保持入口 html 的及时更新。
 
 ##### 懒加载
 

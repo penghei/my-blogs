@@ -2245,6 +2245,51 @@ flex-basis 没有默认值，但设置他其实和设置 width、height 实际�
 CSS flex-shrink 属性指定了 flex 元素的收缩规则。flex 元素**仅在默认宽度之和大于容器的时候才会发生收缩**，其收缩的大小是依据 flex-shrink 的值
 
 每个元素默认的 flex-shrink 都是 1，即如果宽度超出容器大小，则会按照每个元素等分的形式收缩每个元素。shrink 值越大表示收缩的比例越大
+
+举个栗子，下面的a和b元素，在容器内的宽度分别是多少？
+参考：https://zhuanlan.zhihu.com/p/39052660
+
+```html
+<body>
+  <div class="parent">
+    <div class="a"></div>
+    <div class="b"></div>
+  </div>
+</body>
+<style>
+  .parent{
+    width: 200px;
+    height: 100px;
+    display: flex;
+  }
+  .a{
+    width: 200px;
+    flex-shrink: 2;
+  }
+  .b{
+    width: 100px;
+    flex-shrink: 1;
+  } 
+</style>
+```
+
+首先容器当前宽度为200px，但两者的宽度和为300px，超出了100px。
+超出的部分会作为一个基础值来计算
+a元素需要缩小的空间大小为`(200 * 2) / (200 * 2 + 100 * 1) * 100 = 80`，因此a元素的实际大小为`200 - 80 = 120`
+b元素需要缩小的空间大小为`(100 * 1) / (200 * 2 + 100 * 1) * 100 = 20`，因此b元素的实际大小为`100 - 20 = 80`
+最后实际大小之和为200，符合容器大小。
+
+可以看到这里的计算公式实际上是：
+
+```
+每个元素要缩小的宽度的值 = (每个元素的默认宽度 * 该元素的shrink值) / (元素1的宽度 * 元素1的shrink值 + 元素2的宽度 * 元素2的shrink值 + ... + 元素n的宽度 * 元素n的shrink值) * (总的原来宽度 - 当前容器宽度)
+```
+
+其实就是把要缩小的总空间按照比例去分到每个元素，但是因为元素本身有自己的宽度，因此这个比例需要算上元素自己的宽度，而不是只依赖于shrink值。
+
+如果每个元素的shrink值都不设置（都为1），那么缩小过程中，每个元素的宽度仍然是他们的默认宽度比值。比如a和b的宽度比值是2:1，那么如果不设置shrink或者shrink都是1的话，不管容器缩小到多少，他们两个都会分别占容器的2/3和1/3。
+
+
 情况：
 
 1. 元素有定宽，同时设置 flex-shrink：如果宽度和超过容器宽度，会无视定宽强制收缩，除非把 shrink 设置为 0，相当于无论什么情况都不会收缩
@@ -3071,6 +3116,33 @@ box-shadow也是类似方法
 
 ```
 
+如果希望元素在任意位置时也能实现这样的效果，那么就不用设置left和top，而是控制四个方向的borderWidth来确定镂空元素的位置。
+
+比如，先通过getBoundingClientRect获取到一个元素的位置信息，然后确定样式：
+
+```js
+const element = document.getElementsByClassName(elementClassName)[0];
+if (!element) return;
+const { top, left, width, height } = element.getBoundingClientRect();
+
+{
+  position: "absolute",
+  width,
+  height,
+  borderColor: "rgba(0, 0, 0, 0.5)",
+  borderStyle: "solid",
+  borderTopWidth:`${top}px`,
+  borderBottomWidth:`calc(100vh - ${height}px - ${top}px)`,
+  borderLeftWidth:`${left}px`,
+  borderRightWidth:`calc(100vw - ${width}px - ${left}px)`,
+  background: "transparent",
+}
+```
+
+关键就在于borderTopWidth这几个边框的宽度，通过控制边框宽度让元素刚好对齐到目标位置。注意不要修改left、top；
+
+
+
 # CSS 布局
 
 ## 圣杯布局
@@ -3264,7 +3336,7 @@ box-shadow也是类似方法
 
 - `text-align:center`
 - `margin:0 auto;`
-- postion 的几种都可以
+- position 的几种都可以
 - flex 和 grid
 
 2. 知道父元素宽度，不知道子元素宽度

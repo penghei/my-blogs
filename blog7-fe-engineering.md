@@ -169,7 +169,7 @@ npm run 能正常运行的原因如下：
 这个目录不是任何一个 npm 包。目录下的文件，表示这是一个个软链接（这些文件就叫做软链接），打开文件可以看到文件顶部写着 #!/bin/sh ，表示这是一个 shell 脚本。
 比如打开 webpack，里边是这样的：
 
-```shell
+```sh
 #!/bin/sh
 basedir=$(dirname "$(echo "$0" | sed -e 's,\\,/,g')")
 
@@ -221,7 +221,7 @@ yarn 的主要特点：
 
 ## pnpm
 
-关于pnpm的结构原理参考：https://zhuanlan.zhihu.com/p/576969574
+关于 pnpm 的结构原理参考：https://zhuanlan.zhihu.com/p/576969574
 
 特点：
 
@@ -305,8 +305,7 @@ react-dom
 
 每个库都维护自己的依赖，不会把 lodash 在根 node_modules 中安装；同时，这两个 lodash 也并非重复安装，而是都来自于 pnpm 的硬链接。也就是说，lodash1.0 和 2.0 版本并非都被安装到了项目的 node_modules 中，而是都维护在 pnpm 的根目录下。当项目中需要使用时，只需要将其硬链接到位置即可。这样就解决了重复安装的问题，也不会发生版本冲突。
 
-至于幽灵依赖的问题，也不会发生，因为lodash是react和react-dom自己的node_modules里的，根本就不会安装到项目的node_modules中。这样的话，项目的package.json是什么结构，实际的node_modules内也就是什么结构，不会出现未声明的依赖。
-
+至于幽灵依赖的问题，也不会发生，因为 lodash 是 react 和 react-dom 自己的 node_modules 里的，根本就不会安装到项目的 node_modules 中。这样的话，项目的 package.json 是什么结构，实际的 node_modules 内也就是什么结构，不会出现未声明的依赖。
 
 # Babel
 
@@ -1692,7 +1691,7 @@ turbopack 由 rust 编写，主要的优势有：
 
 1. 开发环境下的打包：类似 webpack，turbopack 也会在开发环境下对源代码进行打包工作。不同与 vite 直接利用浏览器的 module 功能，Turbopack 依然会对开发环境下的源代码进行打包，不过这个打包过程使用的是 rust，因此比 webpack 更快。
 
-> vite这样做比较依赖网络，如果网络环境一般或文件过多，加载速度就会变慢
+> vite 这样做比较依赖网络，如果网络环境一般或文件过多，加载速度就会变慢
 
 2. 增量计算能力：充分利用函数级别的缓存。按照官方文档的说法就是，“永远不会把一个函数执行第二遍”。因此 Turbo 可以缓存程序中任何函数的结果。当程序再次运行时，函数将不会重新运行，除非它的参数改变了。
 
@@ -1717,7 +1716,7 @@ export default function Home() {
 
 3. 懒加载：turbopack 提供自动懒加载的功能。相对于 webpack 需要手动代码分割，turbopack 可以自动得出所需的最小代码，将其打包，而不会将整个模块全部打包。对于第一次启动来说，只需要计算入口所需的模块及其依赖，将其打包之后发送到浏览器，这个过程要比原生 esm 快得多。
 
-在配合nextjs的使用上，还可以根据用户的请求动态生成静态页面，并将其缓存起来。这意味着只有在需要时才会重新生成页面，其他情况下将直接使用缓存的版本，提供更快的页面加载速度和更高的性能。
+在配合 nextjs 的使用上，还可以根据用户的请求动态生成静态页面，并将其缓存起来。这意味着只有在需要时才会重新生成页面，其他情况下将直接使用缓存的版本，提供更快的页面加载速度和更高的性能。
 
 在懒加载之上，turbopack 还引入了请求级编译的功能，即浏览器需要什么才编译什么。比如浏览器请求 HTML，只编译 HTML，而不是 HTML 引用的任何内容。
 
@@ -1750,37 +1749,43 @@ turbopack 的缺点也很明显
 
 不同类型的异常，捕获方式不同。
 
-1. js运行时：
-  - try catch包裹代码块
-  - window.onerror
+1. js 运行时：
 
-2. promise：promise.reject抛出的异常不能被trycatch捕获，也无法被 window.onerror捕获（唯一的例外：在async函数内的await之后的promise如果reject会被try catch捕获，其他情况下不行）。
-  - window.onrejectionhandled
+- try catch 包裹代码块
+- window.onerror
 
-3. 静态资源异常：图片等静态资源的加载失败（还可能是js、css等）
-  - `window.addEventListener('error', callback, true)`，因为这类错误事件不会冒泡，只能捕获。
-  - 每个具体资源的onerror回调，比如每个img元素的onerror；在实际项目中可以封装一个img组件，onerror上设置上报方式即可。
+2. promise：promise.reject 抛出的异常不能被 trycatch 捕获，也无法被 window.onerror 捕获（唯一的例外：在 async 函数内的 await 之后的 promise 如果 reject 会被 try catch 捕获，其他情况下不行）。
 
-4. 网络请求异常：这种一般只能在开发时由开发者增加网络请求异常的捕获，比如Promise.catch，xhr.onerror等。
+- window.onrejectionhandled
+
+3. 静态资源异常：图片等静态资源的加载失败（还可能是 js、css 等）
+
+- `window.addEventListener('error', callback, true)`，因为这类错误事件不会冒泡，只能捕获。
+- 每个具体资源的 onerror 回调，比如每个 img 元素的 onerror；在实际项目中可以封装一个 img 组件，onerror 上设置上报方式即可。
+
+4. 网络请求异常：这种一般只能在开发时由开发者增加网络请求异常的捕获，比如 Promise.catch，xhr.onerror 等。
 
 5. 跨域脚本执行异常：浏览器对跨域脚本中的异常，不会报告错误的细节，它的 msg 只有 'Script error' 信息，没有具体的行、列、类型信息。
-  - 设置script crossorigin，然后服务端返回`Access-Control-Allow-Origin`，也就是采用cors获取脚本，从而获取详细信息
-  - 再通过第一种方式捕获
 
+- 设置 script crossorigin，然后服务端返回`Access-Control-Allow-Origin`，也就是采用 cors 获取脚本，从而获取详细信息
+- 再通过第一种方式捕获
 
-> window.onerror和window.addEventListener('error')的区别：
-> - onerror含有详细的error堆栈信息，存在error.stack中，而后者不行
-> - onerror会比addEventListener('error')后触发
+> window.onerror 和 window.addEventListener('error')的区别：
+>
+> - onerror 含有详细的 error 堆栈信息，存在 error.stack 中，而后者不行
+> - onerror 会比 addEventListener('error')后触发
 > - addEventListener('error')可以捕获全局的资源加载错误，因为资源加载错误不冒泡
 
 #### 监控方式
 
 具体来说，对于上线的项目，监控错误可以依靠以下几个方法：
 
-1. 开发者代码添加，即通过添加一些捕获代码来实现错误捕获和处理，防止出现uncaught的错误。
-  - trycatch捕获，可以是针对网络请求，也可以放到比较大的一个范围
-  - 通过window.error捕获
-  - react错误边界等框架捕获的方式
+1. 开发者代码添加，即通过添加一些捕获代码来实现错误捕获和处理，防止出现 uncaught 的错误。
+
+- trycatch 捕获，可以是针对网络请求，也可以放到比较大的一个范围
+- 通过 window.error 捕获
+- react 错误边界等框架捕获的方式
+
 2. 第三方监控工具。通常是利用注入代码的方式来捕获错误；捕获的原理和手动添加代码相同，但通常会采取合适的上报方式和对错误信息的自动整理、筛选等。
 
 第三方监控工具的基本原理就是通过上述错误捕获方式来监控的。比如在项目中注入代码，覆写 window.onerror：
@@ -1788,64 +1793,63 @@ turbopack 的缺点也很明显
 ```js
 oldErrorHandler = window.onerror;
 window.onerror = function (msg, url, line, column, error) {
-    // 收集异常信息并上报
-    triggerHandlers('error', {
-        column: column,
-        error: error,
-        line: line,
-        msg: msg,
-        url: url,
-    });
-    if (oldErrorHandler) {
-        return oldErrorHandler.apply(this, arguments);
-    }
-    return false;
+  // 收集异常信息并上报
+  triggerHandlers("error", {
+    column: column,
+    error: error,
+    line: line,
+    msg: msg,
+    url: url,
+  });
+  if (oldErrorHandler) {
+    return oldErrorHandler.apply(this, arguments);
+  }
+  return false;
 };
-
 ```
 
-更有甚者，为了方便捕获异步代码中的错误，还可以覆写setTimeout、rAF等原生方法：
+更有甚者，为了方便捕获异步代码中的错误，还可以覆写 setTimeout、rAF 等原生方法：
 
 ```js
 var originSetTimeout = window.setTimeout;
-window.setTimeout = function() {
-    var args = [];
-    for (var _i = 0; _i < arguments.length; _i++) {
-        args[_i] = arguments[_i];
-    }
-    var originalCallback = args[0];
-    // wrap$1 会对 setTimeout 的入参 callback 使用 try...catch 进行包装
-    // 并在 catch 中上报异常
-    args[0] = wrap$1(originalCallback, {
-        mechanism: {
-            data: { function: getFunctionName(original) },
-            handled: true,
-            // 异常的上下文是 setTimeout
-            type: 'setTimeout',
-        },
-    });
-    return original.apply(this, args);
-}
+window.setTimeout = function () {
+  var args = [];
+  for (var _i = 0; _i < arguments.length; _i++) {
+    args[_i] = arguments[_i];
+  }
+  var originalCallback = args[0];
+  // wrap$1 会对 setTimeout 的入参 callback 使用 try...catch 进行包装
+  // 并在 catch 中上报异常
+  args[0] = wrap$1(originalCallback, {
+    mechanism: {
+      data: { function: getFunctionName(original) },
+      handled: true,
+      // 异常的上下文是 setTimeout
+      type: "setTimeout",
+    },
+  });
+  return original.apply(this, args);
+};
 ```
 
-还可以覆写addEventListener等方法。覆写的目的是方便得到错误的来源。这样来自于异步、网络请求、事件等不同来源的错误都会被标记出到底是哪里的错误。
+还可以覆写 addEventListener 等方法。覆写的目的是方便得到错误的来源。这样来自于异步、网络请求、事件等不同来源的错误都会被标记出到底是哪里的错误。
 
 #### 注意事项
 
 有一些特殊情况可能会影响错误上报：
-- 脚本跨域。即上面说的script标签是跨域请求的脚本，只会返回一个script error
-解决方法是设置为`<script crossorigin="anonymous"></script>`，*同时服务端也要返回Access-Control-Allow-Origin*。其实就是相当于跨域请求脚本了。
-- sourceMap。线上的产物通常是webpack经过压缩、打包过的产物，因此会出现调用栈报错代码无法指明原本位置的情况。解决方法是开启sourceMap。
-但是sourceMap只在部分浏览器上支持，因此通过加入map文件的形式就会出现兼容问题。解决的方式是换个途径使用sourceMap，即：
-  - 使用能在客户端和服务端都能运行的库来生成sourceMap，比如[这个库](https://github.com/mozilla/source-map)
-  - 只在服务端通过sourceMap解析，将错误信息上报在服务端分析，也能防止代码泄漏的问题。
 
+- 脚本跨域。即上面说的 script 标签是跨域请求的脚本，只会返回一个 script error
+  解决方法是设置为`<script crossorigin="anonymous"></script>`，_同时服务端也要返回 Access-Control-Allow-Origin_。其实就是相当于跨域请求脚本了。
+- sourceMap。线上的产物通常是 webpack 经过压缩、打包过的产物，因此会出现调用栈报错代码无法指明原本位置的情况。解决方法是开启 sourceMap。
+  但是 sourceMap 只在部分浏览器上支持，因此通过加入 map 文件的形式就会出现兼容问题。解决的方式是换个途径使用 sourceMap，即：
+  - 使用能在客户端和服务端都能运行的库来生成 sourceMap，比如[这个库](https://github.com/mozilla/source-map)
+  - 只在服务端通过 sourceMap 解析，将错误信息上报在服务端分析，也能防止代码泄漏的问题。
 
 ### 性能监控
 
-和错误上报方式类似，可以通过获取performance相关的api来得到性能检测数据。由于每个用户的情况可能不同，因此需要监控一些关键数据，并在生产环境中保留这些关键数据。
+和错误上报方式类似，可以通过获取 performance 相关的 api 来得到性能检测数据。由于每个用户的情况可能不同，因此需要监控一些关键数据，并在生产环境中保留这些关键数据。
 
-除了performance，外部的监控方式也是一种可以参考的依据，比如chrome的lighthouse。不过这种方式依赖于外部工具，可能会受到用户网络、设备的影响，可能不够权威和可信，因此只能作为测试数据，方便开发环境下的调整，不太适合用于生产环境的主要监控。
+除了 performance，外部的监控方式也是一种可以参考的依据，比如 chrome 的 lighthouse。不过这种方式依赖于外部工具，可能会受到用户网络、设备的影响，可能不够权威和可信，因此只能作为测试数据，方便开发环境下的调整，不太适合用于生产环境的主要监控。
 
 一些前端监控平台也可以对性能进行监控，比如当加载速度过慢时，就会上报一个警告。监控和上报的方式和错误上报类似。
 
@@ -1859,18 +1863,19 @@ window.setTimeout = function() {
 
 1. 以用户为中心的性能指标。
 
-什么叫以用户为中心的性能指标呢？其实就是可以直接的体现出用户的使用体验的指标；目前 Google 定义了FCP、LCP、CLS 等体验指标，已经成为了目前业界的标准；对于用户体验来说，指标可以简单归纳为 加载速度、视觉稳定、交互延迟等几个方面；
+什么叫以用户为中心的性能指标呢？其实就是可以直接的体现出用户的使用体验的指标；目前 Google 定义了 FCP、LCP、CLS 等体验指标，已经成为了目前业界的标准；对于用户体验来说，指标可以简单归纳为 加载速度、视觉稳定、交互延迟等几个方面；
 
 - 加载速度 决定了 用户是否可以尽早感受到页面已经加载完成
 - 视觉稳定 衡量了 页面上的视觉变化对用户造成的负面影响大小
 - 交互延迟 决定了 用户是否可以尽早感受到页面已经可以操作
 
 这些性能指标具体包括：
+
 - FP、FCP、FMP
 - LCP
 - CLS
 
-为什么不包含TTI、FID等指标？其实这只是一种分类方式，因为这两个对用户来说感知不算很明显，不像首屏加载时间那样那么突出易算
+为什么不包含 TTI、FID 等指标？其实这只是一种分类方式，因为这两个对用户来说感知不算很明显，不像首屏加载时间那样那么突出易算
 
 这些指标的计算方式可以参考性能章节的 性能的检测和计算方式
 
@@ -1878,14 +1883,14 @@ window.setTimeout = function() {
 
 很多指标和关键的加载时间对于用户来说或许并不需要知道，但是 对于技术人员来说 ，采集其中有意义的时间段，做成瀑图，可以让我们从精确数据的角度对网站的性能有一个定义，有一个优化的方向；
 
-比如TCP连接时间、DNS解析时间等指标，这些指标对于用户来说是没有意义的，但对开发者来说却能基于这些数值来进行一些专项优化。
+比如 TCP 连接时间、DNS 解析时间等指标，这些指标对于用户来说是没有意义的，但对开发者来说却能基于这些数值来进行一些专项优化。
 
 具体包含：
 
 - 加载过程的关键时间点
   - FP
   - TTI
-  - DOMReady，即documentContentLoaded
+  - DOMReady，即 documentContentLoaded
   - window.onload
 - 关键时间段
   - DNS
@@ -1898,14 +1903,13 @@ window.setTimeout = function() {
 ![Alt text](./images/image-5.png)
 
 另外这些时间点和时间段的计算方式，通常是需要我们手动进行计算的。
-比如TCP连接时间的计算，就需要通过`connectEnd - connectStart`来计算得出。具体指标计算方式可以参考：
+比如 TCP 连接时间的计算，就需要通过`connectEnd - connectStart`来计算得出。具体指标计算方式可以参考：
 
 3. 静态资源的加载相关指标
 
 我们可以获取每次加载时所访问的静态资源，将收集到的静态资源做成瀑图等分析图形，来找出导致静态资源加载时间过长的问题所在。
 
-可以获取的指标包括资源的大小、类型、开始和结束获取时间，以及获取资源时的SSL、TCP连接等时间消耗。同时还可以通过判断获取时间是否为0，来判断该资源是否被缓存，从而统计每一次用户进入时的一个缓存命中率。
-
+可以获取的指标包括资源的大小、类型、开始和结束获取时间，以及获取资源时的 SSL、TCP 连接等时间消耗。同时还可以通过判断获取时间是否为 0，来判断该资源是否被缓存，从而统计每一次用户进入时的一个缓存命中率。
 
 ### 监控平台设计
 
@@ -1923,7 +1927,7 @@ window.setTimeout = function() {
 
 监控平台设计有一些关键点：
 
-#### 错误去重和id
+#### 错误去重和 id
 
 - 在用户的一次会话中，如果产生了同一个错误，那么将这同一个错误上报多次是没有意义的；
 - 在用户的不同会话中，如果产生了同一个错误，那么将不同会话中产生的错误进行上报是有意义的；
@@ -1931,27 +1935,27 @@ window.setTimeout = function() {
 举个栗子，如果一个错误是用户点击按钮触发的，那么如果反复点击按钮，触发的错误是相同的，没必要反复上报。
 但是如果点击其他地方也产生这样的错误，那就是有意义的，因为导致错误的来源肯定不同。
 
-出于这个考虑，我们可以给每个上报的错误生成一个uid；生成这个uid的时候，传入错误信息、错误行号、错误列号、错误文件等可能的关键信息的一个集合，这样可以保证错误在同一个位置触发时，生成的uid一样；
+出于这个考虑，我们可以给每个上报的错误生成一个 uid；生成这个 uid 的时候，传入错误信息、错误行号、错误列号、错误文件等可能的关键信息的一个集合，这样可以保证错误在同一个位置触发时，生成的 uid 一样；
 
-当然，除了这个uid，每个错误也需要一个完全独立的id。可以在生成id时加入时间等信息，然后生成一个hash值来作为上报的id，这个id是完全独立的，每个错误都不一样。
+当然，除了这个 uid，每个错误也需要一个完全独立的 id。可以在生成 id 时加入时间等信息，然后生成一个 hash 值来作为上报的 id，这个 id 是完全独立的，每个错误都不一样。
 
 #### 错误监控和性能监控的上报方式
 
 不仅是适用于这两个方面，前端的日志上报、埋点上报其实都可以参考下面的方式。
-如果每个日志都采用fetch/xhr的形式来上报，那么如果出现大量错误，就会造成请求的阻塞，可能会影响页面正常请求。
+如果每个日志都采用 fetch/xhr 的形式来上报，那么如果出现大量错误，就会造成请求的阻塞，可能会影响页面正常请求。
 
-解决方法是避开xhr的请求方式，采用一些其他方法来上报，具体包括：
+解决方法是避开 xhr 的请求方式，采用一些其他方法来上报，具体包括：
 
-1. 构造空Image对象，利用图片请求，原因是请求图片并不涉及到跨域的问题
+1. 构造空 Image 对象，利用图片请求，原因是请求图片并不涉及到跨域的问题
 
 ```js
-var url = 'xxx';
+var url = "xxx";
 new Image().src = url;
 ```
 
-不过浏览器和服务器对于GET请求其实有url的长度限制，过长的url可能不能这样发送。
+不过浏览器和服务器对于 GET 请求其实有 url 的长度限制，过长的 url 可能不能这样发送。
 
-2. HEAD方法上报：还是使用http，不过因为我们不需要请求体，也不需要响应，因此可以通过HEAD方法来进行上报，最小化请求。同时也可以让服务端返回204状态码，即不返回响应体；但是http请求上报需要考虑跨域问题。
+2. HEAD 方法上报：还是使用 http，不过因为我们不需要请求体，也不需要响应，因此可以通过 HEAD 方法来进行上报，最小化请求。同时也可以让服务端返回 204 状态码，即不返回响应体；但是 http 请求上报需要考虑跨域问题。
 
 3. [sendBeacon](https://developer.mozilla.org/zh-CN/docs/Web/API/Navigator/sendBeacon)方法，这个方法可用于通过 HTTP POST 将少量数据 异步 传输到 Web 服务器。
 
@@ -1960,15 +1964,15 @@ navigator.sendBeacon(url);
 navigator.sendBeacon(url, data);
 ```
 
-sendBeacon方法常用于在页面卸载之前，也就是用户离开页面之前向服务端发送数据，它不会延迟页面的卸载或影响下一导航的载入性能，并且是可靠的。
+sendBeacon 方法常用于在页面卸载之前，也就是用户离开页面之前向服务端发送数据，它不会延迟页面的卸载或影响下一导航的载入性能，并且是可靠的。
 
-如果采用在unload或beforeunload中发送xhr请求的方式，那么会有几个问题：
+如果采用在 unload 或 beforeunload 中发送 xhr 请求的方式，那么会有几个问题：
 
 - 移动端不一定会触发 unload、beforeunload 或 pagehide 事件
-- 在这些事件中，xhr请求不能保证发送
-- 如果采用同步xhr，又会造成阻塞
+- 在这些事件中，xhr 请求不能保证发送
+- 如果采用同步 xhr，又会造成阻塞
 
-因此采用sendBeacon，一般在`visibilitychange`事件或 `pagehide` 事件中发送。
+因此采用 sendBeacon，一般在`visibilitychange`事件或 `pagehide` 事件中发送。
 
 ```js
 document.addEventListener("visibilitychange", function logData() {
@@ -1978,10 +1982,11 @@ document.addEventListener("visibilitychange", function logData() {
 });
 ```
 
-> 并不是说sendBeacon只能在页面卸载时发送，这只是一种建议方式，比如在收集了一定数量的错误信息之后，再统一在页面卸载时发送。sendBeacon本质上和xhr请求一样，可以任意控制发送
+> 并不是说 sendBeacon 只能在页面卸载时发送，这只是一种建议方式，比如在收集了一定数量的错误信息之后，再统一在页面卸载时发送。sendBeacon 本质上和 xhr 请求一样，可以任意控制发送
 
-不过sendBeacon的兼容性不是很好，所以兜底考虑使用xhr来发送；当sendBeacon不可用时转为xhr：
+不过 sendBeacon 的兼容性不是很好，所以兜底考虑使用 xhr 来发送；当 sendBeacon 不可用时转为 xhr：
 示例代码：
+
 ```js
 beaconTransport = (): Function => {
   const handler = (data: TransportStructure) => {
@@ -2009,41 +2014,40 @@ xmlTransport = (): Function => {
 - 上报时机：
   - PV、错误、用户自定义行为 都是触发后立即就进行上报；
   - 性能数据 需要等待页面加载完成、数据采集完毕后进行上报；
-  - API请求数据 会进行本地暂存，在数据量达到一定数量时触发一次上报，并且在页面可见性变化、以及页面关闭之前进行上报；
-  - 如果还有用户点击行为等其余的数据，跟 API请求数据 一样的上报时机；
+  - API 请求数据 会进行本地暂存，在数据量达到一定数量时触发一次上报，并且在页面可见性变化、以及页面关闭之前进行上报；
+  - 如果还有用户点击行为等其余的数据，跟 API 请求数据 一样的上报时机；
 - 上报优化：
   - http2
-  - 上报的方法使用requestIdleCallback或setTimeout
+  - 上报的方法使用 requestIdleCallback 或 setTimeout
 
 #### 削峰限流
 
-假设说，有某一个时间点，突然间流量爆炸，无数的数据向服务器访问过来，这时如果没有一个削峰限流的策略，很可能会导致机器Down掉，
+假设说，有某一个时间点，突然间流量爆炸，无数的数据向服务器访问过来，这时如果没有一个削峰限流的策略，很可能会导致机器 Down 掉，
 所以说我们有必要去做一个削峰限流，从概率学的角度上讲，在大数据量的基础上我们对于整体数据做一个百分比的截断，并不会影响整体的一个数据比例。
 
 对前端来说，最简单的方案就是通过随机丢弃策略进行限流。其实就是设置随机数，让一定比例的请求真正发送，其余的抛弃。
 
 ```js
-if(Math.random()<0.5) return;
+if (Math.random() < 0.5) return;
 ```
 
-或者采用请求分散的策略，将请求根据随机数分散到n秒内执行。当用户进入页面时命中一个随机数，作为请求延迟发送的时间；然后在用户需要发送请求时，延迟这段时间再去发送。
+或者采用请求分散的策略，将请求根据随机数分散到 n 秒内执行。当用户进入页面时命中一个随机数，作为请求延迟发送的时间；然后在用户需要发送请求时，延迟这段时间再去发送。
 
 后端对削峰限流的控制较多，比如令牌桶算法、计数算法等。
 
 #### 其他方面
 
-- 上报数据加工：对上报数据添加ip、服务器版本号等信息，以及用户uid、会话sid等，方便后期追踪
+- 上报数据加工：对上报数据添加 ip、服务器版本号等信息，以及用户 uid、会话 sid 等，方便后期追踪
 - 上报数据清洗和聚合
   - 数据清洗是为了白名单、黑名单过滤等的业务需要，还有避免已关闭的应用数据继续入库；
   - 数据聚合是为了将相同信息的数据进行抽象聚合成 issue，以便查询和追踪；
-- 源码映射：sourceMap不能直接放在客户端，而是可以提前上传到，或者在客户端主动发送到错误监控的服务端。之后客户端发送的错误堆栈信息可以在监控平台的服务端进行解析。
+- 源码映射：sourceMap 不能直接放在客户端，而是可以提前上传到，或者在客户端主动发送到错误监控的服务端。之后客户端发送的错误堆栈信息可以在监控平台的服务端进行解析。
 
 # 关于项目中技术选型的替换问题
 
 最好不要在项目过程中删除、替换已经在使用的技术栈。比如替换正在使用的状态管理库等。
 
 如果一定要替换，那么最好的方式是这样：
+
 1. 渐进式替换，可以让新代码使用新的技术栈，让老的代码依旧使用旧的，然后慢慢替换旧的代码中的内容
-2. 做好测试，包括单测、自测等，同时可能需要QA同学再做测试，以保证功能的正常使用。
-
-
+2. 做好测试，包括单测、自测等，同时可能需要 QA 同学再做测试，以保证功能的正常使用。

@@ -923,7 +923,7 @@ const fetchSomeData = async (dispatch, getState) => {
 store.dispatch(fetchSomeData);
 ```
 
-在组件内部，需要对这几种状态处理。比如当loading状态时显示loading内容，其他情况处理结果和错误
+在组件内部，需要对这几种状态处理。比如当 loading 状态时显示 loading 内容，其他情况处理结果和错误
 
 ```js
 export const PostsList = () => {
@@ -959,23 +959,23 @@ export const PostsList = () => {
 }
 ```
 
-redux提供了一个createAsyncThunk可以方便创建上面所需的函数。配合createSlice的extraReducers，就可以简化上述步骤。
-在slice内部的extraReducers下，通过builder添加的case可以包含不同状态的thunk对应的type。如下所示，即我们不再需要单独在reducer中自己处理关于这几种状态的的case了。
+redux 提供了一个 createAsyncThunk 可以方便创建上面所需的函数。配合 createSlice 的 extraReducers，就可以简化上述步骤。
+在 slice 内部的 extraReducers 下，通过 builder 添加的 case 可以包含不同状态的 thunk 对应的 type。如下所示，即我们不再需要单独在 reducer 中自己处理关于这几种状态的的 case 了。
 
 ```js
-export const fetchPosts = createAsyncThunk('posts/fetchPosts', async () => {
-  const response = await client.get('/fakeApi/posts')
-  return response.data
-})
+export const fetchPosts = createAsyncThunk("posts/fetchPosts", async () => {
+  const response = await client.get("/fakeApi/posts");
+  return response.data;
+});
 
 const initialState = {
   posts: [],
-  status: 'idle',
-  error: null
-}
+  status: "idle",
+  error: null,
+};
 
 const postsSlice = createSlice({
-  name: 'posts',
+  name: "posts",
   initialState,
   reducers: {
     // 处理其他type
@@ -983,34 +983,32 @@ const postsSlice = createSlice({
   extraReducers(builder) {
     builder
       .addCase(fetchPosts.pending, (state, action) => {
-        state.status = 'loading'
+        state.status = "loading";
       })
       .addCase(fetchPosts.fulfilled, (state, action) => {
-        state.status = 'succeeded'
+        state.status = "succeeded";
         // Add any fetched posts to the array
-        state.posts = state.posts.concat(action.payload)
+        state.posts = state.posts.concat(action.payload);
       })
       .addCase(fetchPosts.rejected, (state, action) => {
-        state.status = 'failed'
-        state.error = action.error.message
-      })
-  }
-})
+        state.status = "failed";
+        state.error = action.error.message;
+      });
+  },
+});
 ```
 
-createAsyncThunk还可以接受参数，以实现发送数据的效果
+createAsyncThunk 还可以接受参数，以实现发送数据的效果
 
 ```js
-
 export const addNewPost = createAsyncThunk(
-  'posts/addNewPost',
-  async initialPost => {
-    const response = await client.post('/fakeApi/posts', initialPost)
-    return response.data
+  "posts/addNewPost",
+  async (initialPost) => {
+    const response = await client.post("/fakeApi/posts", initialPost);
+    return response.data;
   }
-)
+);
 ```
-
 
 # React-Redux
 
@@ -1068,10 +1066,10 @@ subscription 上的 listeners 是在 useSelector 函数内部被加入的，在�
 
 ### selector 和 useSelector
 
-#### 旧版useSelector
+#### 旧版 useSelector
 
 参考：https://juejin.cn/post/6960838627945349151
-旧版的useSelector其实逻辑比较简单，这里直接贴出源码：
+旧版的 useSelector 其实逻辑比较简单，这里直接贴出源码：
 
 ```js
 const refEquality = (a, b) => a === b
@@ -1155,13 +1153,14 @@ export const useSelector = /*#__PURE__*/ createSelectorHook()
 ```
 
 核心内容其实就是下面几点：
-1. 通过selector函数得到派生状态，也就是组件中真正需要的状态
-2. 通过useRef记录上一次的派生状态
-3. 每次订阅到state改变时，通过本次的selector计算得到本次的select状态，然后和上一次的状态进行比较。比较的函数是equalityFn，默认就是索引比较。如果不相等，那么触发一次更新
-4. 触发更新的方式是一个setState
 
-从这里可以很明显看出，当selector函数返回的是一个新建的对象时，那就永远不会和旧state相等，也就始终会导致组件更新。
-同样的，如果selector取得的状态比较顶层，也会有这个问题。比如：
+1. 通过 selector 函数得到派生状态，也就是组件中真正需要的状态
+2. 通过 useRef 记录上一次的派生状态
+3. 每次订阅到 state 改变时，通过本次的 selector 计算得到本次的 select 状态，然后和上一次的状态进行比较。比较的函数是 equalityFn，默认就是索引比较。如果不相等，那么触发一次更新
+4. 触发更新的方式是一个 setState
+
+从这里可以很明显看出，当 selector 函数返回的是一个新建的对象时，那就永远不会和旧 state 相等，也就始终会导致组件更新。
+同样的，如果 selector 取得的状态比较顶层，也会有这个问题。比如：
 
 ```js
 const initState = {
@@ -1179,36 +1178,36 @@ const reducer = (state,{type,payload}) => {
 // ...
 const listData = useSelector(state => state.list)
 ```
-上面的useSelector内部直接取的是整个list对象，那么当listOffset变化时，整个list都会被重新创建，这时比较结果肯定不同，就会引起不必要的渲染。
 
-另一方面，如果在useSelector中使用filter等会返回新对象的方法时，也会有这个问题：
+上面的 useSelector 内部直接取的是整个 list 对象，那么当 listOffset 变化时，整个 list 都会被重新创建，这时比较结果肯定不同，就会引起不必要的渲染。
+
+另一方面，如果在 useSelector 中使用 filter 等会返回新对象的方法时，也会有这个问题：
 
 ```js
-const postsForUser = useSelector(state => {
-  const allPosts = selectAllPosts(state)
-  return allPosts.filter(post => post.user === userId)
-})
+const postsForUser = useSelector((state) => {
+  const allPosts = selectAllPosts(state);
+  return allPosts.filter((post) => post.user === userId);
+});
 ```
 
-同样的问题，当调用selector时返回的一定是一个新的状态。
+同样的问题，当调用 selector 时返回的一定是一个新的状态。
 
-这个问题的解决方式是使用reselect库，在redux中则是直接使用createSelector方法来创建一个“记忆化的”selector：
+这个问题的解决方式是使用 reselect 库，在 redux 中则是直接使用 createSelector 方法来创建一个“记忆化的”selector：
 
 ```js
 export const selectPostsByUser = createSelector(
   [selectAllPosts, (state, userId) => userId],
-  (posts, userId) => posts.filter(post => post.user === userId)
-)
-const postsForUser = useSelector(state => selectPostsByUser(state, userId))
+  (posts, userId) => posts.filter((post) => post.user === userId)
+);
+const postsForUser = useSelector((state) => selectPostsByUser(state, userId));
 ```
 
-经过包装后的selector，只会在 posts 或 userId 发生变化时重新执行输出 selector
-reselect的原理可以参考：https://juejin.cn/post/7147294478074658823
+经过包装后的 selector，只会在 posts 或 userId 发生变化时重新执行输出 selector
+reselect 的原理可以参考：https://juejin.cn/post/7147294478074658823
 
-基本原理可以总结为：reselect 使用闭包保存上一次的参数 lastArgs 与结果 lastResult ，只有当依赖中的某个 Redux state 发生了变化，导致前后参数比对不一致了，才会触发 selector 的再次计算。selector重新计算，那么就和上面逻辑一样，根据比较判断是否需要更新。
+基本原理可以总结为：reselect 使用闭包保存上一次的参数 lastArgs 与结果 lastResult ，只有当依赖中的某个 Redux state 发生了变化，导致前后参数比对不一致了，才会触发 selector 的再次计算。selector 重新计算，那么就和上面逻辑一样，根据比较判断是否需要更新。
 
-
-#### 新版useSelector
+#### 新版 useSelector
 
 useSelector 简化如下：
 
@@ -1231,9 +1230,9 @@ function useSelector<TState, Selected extends unknown>(
 }
 ```
 
-可以看到核心的函数实际上是一个 useSyncExternalStoreWithSelector。这个函数和useSyncExternalStore一样都是React18提供的新hook，前者增加了selector和equalityFn的接入，便于以“selector”的方式来订阅更新。
+可以看到核心的函数实际上是一个 useSyncExternalStoreWithSelector。这个函数和 useSyncExternalStore 一样都是 React18 提供的新 hook，前者增加了 selector 和 equalityFn 的接入，便于以“selector”的方式来订阅更新。
 
-简单来说就是会在state发生变动时，通过selector得到state的派生状态，然后比较两次派生state是否相等（默认索引相等，比较函数就是equalityFn），如果不相等就会更新。
+简单来说就是会在 state 发生变动时，通过 selector 得到 state 的派生状态，然后比较两次派生 state 是否相等（默认索引相等，比较函数就是 equalityFn），如果不相等就会更新。
 
 #### useSyncExternalStore
 
@@ -1379,7 +1378,7 @@ export function configureStore(options) {
 }
 ```
 
-## 其他api
+## 其他 api
 
 ### connect
 
@@ -1680,19 +1679,17 @@ Redux 官方文档除了介绍 Redux 的使用之外，还讲述了不少 Redux 
 
 ## 三大原则
 
-redux的三大原则是
+redux 的三大原则是
 
 - 单一数据源：整个应用的 全局 state 被储存在一棵 object tree 中，并且这个 object tree 只存在于唯一一个 store 中。
   - 维持数据的单一来源，便于状态的调试和监控，只需要在顶层检查即可
-  - 在ssr或其他应用中，可以很方便实现数据持久化、序列化等，比如从服务端初始化后序列化发送给客户端并注入
-- state只读，是immutable的，改变state需要通过派发action。主要原因在于
-  - redux中包含很多通过浅比较来判断是否需要更新的地方，比如selector
-  - 维持数据的可追踪性，任何时候只需要回溯不同的action，就可以得到旧的或新的状态，也可以被方便地打印、储存、调试、测试等等
-  - state应该是可序列化的，即不能包含类、函数这样的类型
-- 纯函数：用于改变state的reducer是一个纯函数
-  - 直接更改state，state的值会改变，但state本身没有改变。在需要浅比较更新的地方，比较结果就会相同，导致无法触发更新。
-
-
+  - 在 ssr 或其他应用中，可以很方便实现数据持久化、序列化等，比如从服务端初始化后序列化发送给客户端并注入
+- state 只读，是 immutable 的，改变 state 需要通过派发 action。主要原因在于
+  - redux 中包含很多通过浅比较来判断是否需要更新的地方，比如 selector
+  - 维持数据的可追踪性，任何时候只需要回溯不同的 action，就可以得到旧的或新的状态，也可以被方便地打印、储存、调试、测试等等
+  - state 应该是可序列化的，即不能包含类、函数这样的类型
+- 纯函数：用于改变 state 的 reducer 是一个纯函数
+  - 直接更改 state，state 的值会改变，但 state 本身没有改变。在需要浅比较更新的地方，比较结果就会相同，导致无法触发更新。
 
 ## xxxManager
 
@@ -2187,22 +2184,22 @@ function postReducer(state, { type, payload }) {
 
 这部分内容其实和 redux 没啥关系，但是文档提出了一种实现 undo-redo 的方式，可以学习一下。
 
-## redux的性能
+## redux 的性能
 
-关于redux的性能问题其实很大程度上是react本身的state性能问题，即当state改变后，如何最小程度上降低渲染消耗，同时还能保持组件正常渲染。
+关于 redux 的性能问题其实很大程度上是 react 本身的 state 性能问题，即当 state 改变后，如何最小程度上降低渲染消耗，同时还能保持组件正常渲染。
 
-在react-redux中，可能造成重渲染的点主要有两个
-1. useContext和Provider。当context改变时，所有使用该context的组件都会更新；但在react-redux中，context初始化为{store, subscription}之后就不会再变动，后续状态更新都是通过store.getState获取，以发布订阅模式来通知更新。
-2. useSelector。前面讲过useSelector的原理和引起更新的情况，因此针对useSelector导致的重渲染，解决方案就是考虑selector函数的合理性，以及使用reselect来保存selector函数执行结果。
+在 react-redux 中，可能造成重渲染的点主要有两个
 
-剩下的重复渲染问题本质上都是react的问题。比如经典的10k列表问题（10k个列表元素，点击一个改变状态），其实放在useState中也是一样的，解决方法都是要么给子组件加上memo，要么不要触发父组件的重渲染。
+1. useContext 和 Provider。当 context 改变时，所有使用该 context 的组件都会更新；但在 react-redux 中，context 初始化为{store, subscription}之后就不会再变动，后续状态更新都是通过 store.getState 获取，以发布订阅模式来通知更新。
+2. useSelector。前面讲过 useSelector 的原理和引起更新的情况，因此针对 useSelector 导致的重渲染，解决方案就是考虑 selector 函数的合理性，以及使用 reselect 来保存 selector 函数执行结果。
 
-还有一些其他的性能问题考虑，和react无关的一些，比如
-- reducer的调用消耗：因为每个dispatch都会执行所有的reducer内部逻辑。但是reducer内部其实真正执行的代码不多
-- 拷贝状态的内存消耗：react推崇的是状态的浅拷贝而非深拷贝。如果只需要修改其中几个属性，其他属性直接复用就可以了。当然更好的优化方式是直接使用immutable数据或immer（redux的状态可以是immutable类型的）。当然如果state嵌套过深，就需要考虑扁平化state
-- 批量更新：redux的多个dispatch不会被react自动批处理，因为不在同一更新内。因此redux提供了一个batch函数用于合并多个同步dispatch的更新。不过react18内不再需要了
+剩下的重复渲染问题本质上都是 react 的问题。比如经典的 10k 列表问题（10k 个列表元素，点击一个改变状态），其实放在 useState 中也是一样的，解决方法都是要么给子组件加上 memo，要么不要触发父组件的重渲染。
 
+还有一些其他的性能问题考虑，和 react 无关的一些，比如
 
+- reducer 的调用消耗：因为每个 dispatch 都会执行所有的 reducer 内部逻辑。但是 reducer 内部其实真正执行的代码不多
+- 拷贝状态的内存消耗：react 推崇的是状态的浅拷贝而非深拷贝。如果只需要修改其中几个属性，其他属性直接复用就可以了。当然更好的优化方式是直接使用 immutable 数据或 immer（redux 的状态可以是 immutable 类型的）。当然如果 state 嵌套过深，就需要考虑扁平化 state
+- 批量更新：redux 的多个 dispatch 不会被 react 自动批处理，因为不在同一更新内。因此 redux 提供了一个 batch 函数用于合并多个同步 dispatch 的更新。不过 react18 内不再需要了
 
 # Recoil
 
@@ -2221,7 +2218,7 @@ https://cloud.tencent.com/developer/article/1961153
 1. 清晰易辨。由于状态都是以最小单位 atom 保存的，因此不同的 atom 之间相互独立
 2. 状态之间不会互相影响，即下面说的 items 问题，如果不希望一个 item 的改变会导致其他 item 都被更新，那么将每个 item 单独管理就是很好的方法，再通过 atomFamily 等方式将其整合起来。这样每个状态都是独立的，修改状态并不会影响其他 item 的状态
 3. （缺点）不容易获得全局状态。不像 reducer 本身就是在维护全局状态，atom 的缺点就是难以一眼看清全局有哪些状态，不过可以用 snapshot 做为弥补
-4. 便于代码分割。类似redux的状态管理库有一个问题，store被放置在顶层，如果希望某个组件被分离出去，那么对应的state和reducer也要一并被拆分和分割。如果是原生的react状态提升，那么就会出现矛盾情况，提升不够高可能会无法共享，提升太高则导致难以分离。
+4. 便于代码分割。类似 redux 的状态管理库有一个问题，store 被放置在顶层，如果希望某个组件被分离出去，那么对应的 state 和 reducer 也要一并被拆分和分割。如果是原生的 react 状态提升，那么就会出现矛盾情况，提升不够高可能会无法共享，提升太高则导致难以分离。
 
 ### 数据流
 
@@ -2426,23 +2423,27 @@ Recoil 可以实现在正常的数据流图中直接添加异步函数来实现�
 但是 recoil 的异步则是直接在数据流中的。通过 selector 设置一个异步函数，消费这个 selector 的组件，类似于 react 提出的 suspense 用法，会让渲染和请求同时启动，当异步任务完成后才渲染完成。
 参考 React 对 suspense 组件的新用法：https://beta.reactjs.org/reference/react/Suspense ，可以看到第一和第二个例子中，Suspense 包裹的组件内部直接渲染的数据实际上是一个在 render 阶段执行的异步任务，这和普通 React 组件要求在 useEffect 内完成不同。Recoil 的异步实现也类似于这种方式。
 
-需要注意的是，由于recoil的selector推崇的是一种“幂等”，也就是说多次调用selector的返回值应该是相等的，因为recoil可能会对selector进行追踪，并且 selector 的计算可能被缓存、重启或多次执行。所以selector内的异步要求必须也是幂等的，即对于请求来说，多次请求的返回值应该是一样的（错误不算）；而对于常规的副作用，比如定时器，则不能在selector中使用。
+需要注意的是，由于 recoil 的 selector 推崇的是一种“幂等”，也就是说多次调用 selector 的返回值应该是相等的，因为 recoil 可能会对 selector 进行追踪，并且 selector 的计算可能被缓存、重启或多次执行。所以 selector 内的异步要求必须也是幂等的，即对于请求来说，多次请求的返回值应该是一样的（错误不算）；而对于常规的副作用，比如定时器，则不能在 selector 中使用。
 
-如果希望更通用，或者说能支持非幂等的请求，那可以用atom代替，然后再利用useRecoilCallback来强制更新atom：
+如果希望更通用，或者说能支持非幂等的请求，那可以用 atom 代替，然后再利用 useRecoilCallback 来强制更新 atom：
 
 ```js
 const userInfoState = atomFamily({
-  key: 'UserInfo',
-  default: userID => fetch(userInfoURL(userID)),
+  key: "UserInfo",
+  default: (userID) => fetch(userInfoURL(userID)),
 });
 
 // 刷新查询的 React 组件
-function RefreshUserInfo({userID}) {
+function RefreshUserInfo({ userID }) {
   // useRecoilCallback返回一个可以用于更新atom的函数
-  const refreshUserInfo = useRecoilCallback(({set}) => async id => {
-    const userInfo = await request({userID});
-    set(userInfoState(userID), userInfo); // 强制设置atom
-  }, [userID]);
+  const refreshUserInfo = useRecoilCallback(
+    ({ set }) =>
+      async (id) => {
+        const userInfo = await request({ userID });
+        set(userInfoState(userID), userInfo); // 强制设置atom
+      },
+    [userID]
+  );
 
   // 每秒钟刷新一次用户信息
   useEffect(() => {
@@ -2777,46 +2778,45 @@ reaction(
 
 ### 异步数据
 
-在mobx内其实不用关心什么副作用，因为在mobx的类内部本身就是响应式的，不同于react或redux的设计。
+在 mobx 内其实不用关心什么副作用，因为在 mobx 的类内部本身就是响应式的，不同于 react 或 redux 的设计。
 需要注意的只是数据的更新应该有效。
-最简单的方法是，在action内调用异步或副作用，然后通过runInAction来修改状态：
+最简单的方法是，在 action 内调用异步或副作用，然后通过 runInAction 来修改状态：
 
 ```js
 class Store {
-    data = []
-    state = "pending" // "pending" / "done" / "error"
-    constructor(){
-      makeAutoObservable(this)
+  data = [];
+  state = "pending"; // "pending" / "done" / "error"
+  constructor() {
+    makeAutoObservable(this);
+  }
+
+  async fetchProjects() {
+    this.data = [];
+    this.state = "pending";
+    try {
+      const data = await fetchData();
+      // await 之后，再次修改状态需要动作:
+      runInAction(() => {
+        this.state = "done";
+        this.data = data;
+      });
+    } catch (error) {
+      runInAction(() => {
+        this.state = "error";
+      });
     }
-    
-    async fetchProjects() {
-        this.data = []
-        this.state = "pending"
-        try {
-            const data = await fetchData()
-            // await 之后，再次修改状态需要动作:
-            runInAction(() => {
-                this.state = "done"
-                this.data = data
-            })
-        } catch (error) {
-            runInAction(() => {
-                this.state = "error"
-            })
-        }
-    }
+  }
 }
 ```
-
 
 ### 性能
 
 参考：https://www.v2think.com/mobx-redux-performance
-通用的说法是，mobx拥有比redux更好的性能。原因大致是，mobx使用了更精准的状态更新方式，能使得状态更新时引起的订阅数量达到尽可能小。
+通用的说法是，mobx 拥有比 redux 更好的性能。原因大致是，mobx 使用了更精准的状态更新方式，能使得状态更新时引起的订阅数量达到尽可能小。
 
-mobx的更新“精准”在哪里？
+mobx 的更新“精准”在哪里？
 
-举个栗子，假设有一个状态，该状态是一个user对象，里边有8个不同的属性。B组件只获取了其中的一个，比如说user.name；当然对象内的具体属性是通过computed派生得到的
+举个栗子，假设有一个状态，该状态是一个 user 对象，里边有 8 个不同的属性。B 组件只获取了其中的一个，比如说 user.name；当然对象内的具体属性是通过 computed 派生得到的
 
 ```js
 class Store {
@@ -2830,9 +2830,9 @@ class Store {
 }
 ```
 
-当A组件更新其他属性时，B组件因为没有获取其他属性，因此不在触发的listeners中，也就不会更新；但当A组件修改user.name时，mobx就能精确地调用B组件的更新，让B组件内的数据更新到最新。
+当 A 组件更新其他属性时，B 组件因为没有获取其他属性，因此不在触发的 listeners 中，也就不会更新；但当 A 组件修改 user.name 时，mobx 就能精确地调用 B 组件的更新，让 B 组件内的数据更新到最新。
 
-相比之下，redux天生就不具备这种能力，它只能修改整个状态，然后在selector函数内通过比较的方式来确定是否需要更新。虽然从渲染角度来说，两者都可以达到无关属性不影响渲染，但是由于redux本身需要调用reducer、拷贝state、执行每个selector，这些消耗就导致性能要比mobx略差一些。
+相比之下，redux 天生就不具备这种能力，它只能修改整个状态，然后在 selector 函数内通过比较的方式来确定是否需要更新。虽然从渲染角度来说，两者都可以达到无关属性不影响渲染，但是由于 redux 本身需要调用 reducer、拷贝 state、执行每个 selector，这些消耗就导致性能要比 mobx 略差一些。
 
 ### 和 React 结合
 
@@ -2949,8 +2949,6 @@ mobx 每次都是修改的同一个状态对象，基于响应式代理，也就
 2. redux 推崇纯函数的函数式编程，而 mobx 是面向对象的思想
 
 3. mobx 的响应式能精准的通知依赖做更新，而 redux 只能全局通知，而且 mobx 只是修改同一个对象，不是每次创建新对象，性能会比 redux 更高。
-
-
 
 mobx 的问题：
 

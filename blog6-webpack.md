@@ -3017,8 +3017,9 @@ plugins: [
     NAME: "'zzx'",
   }),
 ],
-  //a.js
-  console.log(NAME);
+
+//a.js
+console.log(NAME);
 ```
 
 此外，webpack 也同样可以使用 process.env 访问环境变量；比如常用`process.env.NODE_ENV === 'production'`判断是否在生产环境
@@ -3255,7 +3256,7 @@ webpack 默认只会编译修改模块化部分，而不会改变源代码。
 
 函数内部从上到下依次定义：
 
-- `__webpack_modules__` 对象，包含了除入口外的所有模块，如示例中的 a.js 模块；
+- `__webpack_modules__` 对象，包含了除入口外的所有模块，如示例中的 a.js 模块；`__webpack_modules__.m`就表示模块对象，里边会包含实际的代码
 - `__webpack_module_cache__` 对象，用于存储被引用过的模块；
 - `__webpack_require__` 函数，实现模块引用(require) 逻辑；
 - `__webpack_require__.d` ，工具函数，实现将模块导出的内容附加的模块对象上；
@@ -3269,6 +3270,115 @@ webpack 默认只会编译修改模块化部分，而不会改变源代码。
 
 - 使用异步加载时，注入 `__webpack_require__.e`、`__webpack_require__.f` 等模块；
 - 使用 HMR 时，注入 `__webpack_require__.hmrF`、webpack/runtime/hot 等模块。
+
+对于不同的模块化方案，webpack统一使用上面的运行时来解析加载这些模块。常见的esm和cjs都会被处理为`__webpack_modules__`，在模块对象内保存具体的导出内容。
+
+以一个简单的esm模块为例，包含导入导出：
+
+源文件
+
+```js
+// ========== 源文件 ========== start
+// src/module-es6.js
+export let moduleValue = "moduleValue"
+export default function () {
+  console.log("this is es6-module")
+}
+
+// src/index.js
+import moduleDefault, { moduleValue } from "./module-es6.js";
+// ========== 源文件 ========== end
+```
+
+编译打包结果如下：
+
+```js
+// ========== 编译打包结果 ========== start
+'./src/index.js':
+(function (module, __webpack_exports__, __webpack_require__) {
+  "use strict";
+  __webpack_require__.r(__webpack_exports__);
+  var _module_es6_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(
+    "./src/module-es6.js"
+  );
+  console.log(_module_es6_js__WEBPACK_IMPORTED_MODULE_0__["default"]);
+});
+
+'./src/module-es6.js':
+/*! exports provided: moduleValue, default */
+(function (module, __webpack_exports__, __webpack_require__) {
+  "use strict";
+  __webpack_require__.r(__webpack_exports__);
+  __webpack_require__.d(__webpack_exports__, "moduleValue", function () {
+    return moduleValue;
+  });
+  __webpack_require__.d(__webpack_exports__, "default", function () {
+    return f;
+  });
+  var moduleValue = "moduleValue";
+  function f() {
+    console.log("this is es6-module");
+  }
+});
+
+// ========== 编译打包结果 ========== end
+```
+
+分析打包结果:
+
+```js
+// 先从module-es6.js 导出对象来分析(即 导出过程__webpack_require__函数的返回值 module.exports)
+{
+    default: f(), // 对应 export default 关键字
+    moduleValue: 'moduleValue', // 对应 export 关键字
+    __esModule:true  // 用于标识 es6模块
+}
+
+// index.js 中通过import引入es6模块 
+// import 实际上通过__webpack_require__函数引入
+var _module_es6_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__( "./src/module-es6.js")
+
+// 对应变量的使用也转化为导出对象的属性访问
+_module_es6_js__WEBPACK_IMPORTED_MODULE_0__['default']
+_module_es6_js__WEBPACK_IMPORTED_MODULE_0__['moduleValue']
+```
+
+每个模块都被整理成立一个IIFE，会在调用该模块时传入`module, __webpack_exports__, __webpack_require__`这三个对象。
+模块导出的内容会通过` __webpack_require__.d`方法把具体的导出对象安插在`__webpack_exports__`内部。比如
+
+```js
+__webpack_require__.d(__webpack_exports__, "default", function() { return f; }))
+```
+
+实际上就是导出一个名为default的属性到`__webpack_exports__`对象上，值就是具体导出的那个函数。
+
+导入的内容则先通过`__webpack_require__`方法，传入一个模块路径的参数，获取到导出的`__webpack_exports__`对象。然后在其上获取具体的导出内容。参考上面的分析打包结果，其上就是index.js内部的内容。
+
+需要注意的是，由于是esm，因此模块内容是在编译阶段解析加载的，但没有执行。当执行到index.js时，可以看到才会去执行`__webpack_require__`函数来同步获取导入内容。
+
+---
+
+如果是cjs，那么有一点小差别，就是会通过`__webpack_require__.n`方法来在index.js中获取被导出的exports对象
+
+```js
+// ========== 编译打包结果 ========== start
+"./src/index.js":
+
+(function (module, __webpack_exports__, __webpack_require__) {
+  "use strict";
+  __webpack_require__.r(__webpack_exports__);
+  var _module_commonjs_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(
+    "./src/module-commonjs.js"
+  );
+  var _module_commonjs_js__WEBPACK_IMPORTED_MODULE_0___default =
+    __webpack_require__.n(_module_commonjs_js__WEBPACK_IMPORTED_MODULE_0__);
+  console.log(_module_commonjs_js__WEBPACK_IMPORTED_MODULE_0___default.a);
+  console.log(
+    _module_commonjs_js__WEBPACK_IMPORTED_MODULE_0__["moduleValue1"],
+    _module_commonjs_js__WEBPACK_IMPORTED_MODULE_0__["moduleValue2"]
+  );
+});
+```
 
 
 # 练习配置

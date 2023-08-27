@@ -43,7 +43,7 @@ HTML 外部资源链接元素 (`<link>`) 规定了当前文档与外部资源的
   - stylesheet：指定作为样式表的外部资源，引入 css 的方法
   - tag：指定当前文档使用的标签、关键词
   - preload：对资源进行预加载，加载会在 html 的主要渲染之前，可以通过在预加载标签中添加一些媒体元素或者包含请求的 js 来加快渲染之后的资源加载速度。
-    一般需要和 as 属性配合确定预加载的资源属于哪种类型。as属性在发起具体的HTTP请求时会充当一个Accept头的效果
+    一般需要和 as 属性配合确定预加载的资源属于哪种类型。as 属性在发起具体的 HTTP 请求时会充当一个 Accept 头的效果
   ```html
   <link rel="preload" href="style.css" as="style" />
   <link rel="preload" href="main.js" as="script" />
@@ -53,12 +53,13 @@ HTML 外部资源链接元素 (`<link>`) 规定了当前文档与外部资源的
   <link rel="preload" href="music.mp3" as="audio" />
   <link rel="preload" href="pic.png" as="image" />
   ```
-  preload请求到的js、css等并不会立即执行。他只是开启了并行的请求，和页面load同步开始请求资源，当遇到了具体的script标签才会开始执行
+  preload 请求到的 js、css 等并不会立即执行。他只是开启了并行的请求，和页面 load 同步开始请求资源，当遇到了具体的 script 标签才会开始执行
 
-> 和preload对应的还有prefetch。prefecth和preload的主要区别体现在预加载的资源什么时候使用、给不给当前页面使用
-> - preload 是一个声明式 fetch，可以强制浏览器在不阻塞 document 的 onload 事件的情况下请求资源。preload的优先级更高，会强制浏览器立即开始请求资源，不管用不用的上
-> - prefetch 告诉浏览器这个资源将来可能需要，但是什么时间加载这个资源是由浏览器来决定的。并且请求到资源不一定要给本页面使用，可能是其他第三方页面或者子页面。prefetch请求到的资源会将其放入缓存至少5分钟（无论资源是否可以缓存）；并且，当页面跳转时，未完成的prefetch请求不会被中断；
-> preload和prefetch请求的资源会被放在浏览器的memory cache种
+> 和 preload 对应的还有 prefetch。prefecth 和 preload 的主要区别体现在预加载的资源什么时候使用、给不给当前页面使用
+>
+> - preload 是一个声明式 fetch，可以强制浏览器在不阻塞 document 的 onload 事件的情况下请求资源。preload 的优先级更高，会强制浏览器立即开始请求资源，不管用不用的上
+> - prefetch 告诉浏览器这个资源将来可能需要，但是什么时间加载这个资源是由浏览器来决定的。并且请求到资源不一定要给本页面使用，可能是其他第三方页面或者子页面。prefetch 请求到的资源会将其放入缓存至少 5 分钟（无论资源是否可以缓存）；并且，当页面跳转时，未完成的 prefetch 请求不会被中断；
+>   preload 和 prefetch 请求的资源会被放在浏览器的 memory cache 种
 
 上述两个是最主要的属性，一般引入 css、设置网站 icon 等都只需要 href 和 rel 属性；还有一些其他的属性和这两者同级：
 
@@ -82,7 +83,6 @@ HTML 外部资源链接元素 (`<link>`) 规定了当前文档与外部资源的
 
 - sizes：指定图标的大小，只对属性 `rel="icon"`生效
 - type：说明外部资源的 MIME 类型，如 text/css、image/x-icon
-
 
 关于预请求的部分还有一些，可以参考：https://cloud.tencent.com/developer/article/1552083
 
@@ -143,7 +143,7 @@ viewport 是移动端的网页可视窗口，通常这个虚拟的"窗口"（vie
 
 #### 2. http-equiv：
 
-可以定义一些 http 头、字符集等，其定义属性相当于定义了http响应头。比如设置csp的值，就相当于服务端发来的响应头的设置
+可以定义一些 http 头、字符集等，其定义属性相当于定义了 http 响应头。比如设置 csp 的值，就相当于服务端发来的响应头的设置
 
 - X-UA-Compatible：浏览器采取何种版本渲染当前页面
 - cache-control：指定请求和响应遵循的缓存机制，可以用来避免页面转码，比如设置为
@@ -154,7 +154,7 @@ viewport 是移动端的网页可视窗口，通常这个虚拟的"窗口"（vie
 
 - expires: 网页到期时间，参数是 utc 时间
 - Set-Cookie：cookie 设定，已废弃
-- content-security-policy：用于设置CSP，详见网络
+- content-security-policy：用于设置 CSP，详见网络
 
 #### 3. charset
 
@@ -188,9 +188,9 @@ script 标签还有一些特殊的属性：
 - async：该属性指定 JavaScript 代码为异步执行，即异步请求（不挤占 html 解析）、但立即执行（请求完成后依然会占用 html 解析时间执行）
 - defer：该属性指定 JavaScript 代码不是立即执行，即异步请求（和 async 一样）、末尾执行（整个 html 加载完毕后才执行）
 
-> async和defer都不会影响css的解析。defer会在dom和cssom都解析之后才执行；async下载完毕后会立即执行，即使仍有未解析的css，也不会去解析css
+> async 和 defer 都不会影响 css 的解析。defer 会在 dom 和 cssom 都解析之后才执行；async 下载完毕后会立即执行，即使仍有未解析的 css，也不会去解析 css
 
-具体来说，是在html解析到script标签时启动请求，然后在dom树构建完毕后开始执行，并在DomContentLoaded之前完成执行。
+具体来说，是在 html 解析到 script 标签时启动请求，然后在 dom 树构建完毕后开始执行，并在 DomContentLoaded 之前完成执行。
 
 ![](https://pic.imgdb.cn/item/6224a74b5baa1a80ab63d1c8.jpg)
 
@@ -202,76 +202,76 @@ script 标签还有一些特殊的属性：
 </script>
 ```
 
-> type="module"也可以保证script代码的异步执行：
+> type="module"也可以保证 script 代码的异步执行：
 > ![](https://pic.imgdb.cn/item/6400ca41f144a01007503551.jpg)
 
 - crossorigin：如果采用这个属性，就会采用跨域的方式加载外部脚本，即 HTTP 请求的头信息会加上 origin 字段。
-  script标签本来就是可以跨域进行请求的，即可以执行不同源的脚本，这也是jsonp的原理。
-  不过script执行跨域脚本有一些限制：比如不能捕获到跨域脚本内部出现的具体错误，而只能得到一个“script error”的错误。并且请求script的请求头中也不携带origin字段。
-  如果有crossorigin，则会按照CORS的规则去请求。具体来说request会带上origin头，然后会要求服务器进行cors校验，后面就和简单请求的cors流程相同了。如果服务端没有做cors的相关响应头设置的话，那么请求就会抛出跨域错误，同时也不会执行脚本。
-  crossorigin的取值有：
-  - anonymous：默认值，表示使用cors，但不会发送cookie到不同源。
-  - use-credentials：可以跨域发送cookie等
-  除了script，img、video等元素都有crossorigin属性，他们的执行原则和script标签相同。
+  script 标签本来就是可以跨域进行请求的，即可以执行不同源的脚本，这也是 jsonp 的原理。
+  不过 script 执行跨域脚本有一些限制：比如不能捕获到跨域脚本内部出现的具体错误，而只能得到一个“script error”的错误。并且请求 script 的请求头中也不携带 origin 字段。
+  如果有 crossorigin，则会按照 CORS 的规则去请求。具体来说 request 会带上 origin 头，然后会要求服务器进行 cors 校验，后面就和简单请求的 cors 流程相同了。如果服务端没有做 cors 的相关响应头设置的话，那么请求就会抛出跨域错误，同时也不会执行脚本。
+  crossorigin 的取值有：
+  - anonymous：默认值，表示使用 cors，但不会发送 cookie 到不同源。
+  - use-credentials：可以跨域发送 cookie 等
+    除了 script，img、video 等元素都有 crossorigin 属性，他们的执行原则和 script 标签相同。
 - integrity：给出外部脚本的哈希值，防止脚本被篡改。只有哈希值相符的外部脚本，才会执行。
 - nonce：一个密码随机数，由服务器在 HTTP 头信息里面给出，每次加载脚本都不一样。它相当于给出了内嵌脚本的白名单，只有在白名单内的脚本才能执行。
 - referrerpolicy：HTTP 请求的 Referer 字段的处理方法。
-
 
 # viewport
 
 参考：https://www.jianshu.com/p/7c5fdf90c0ef
 
-
 ## 概念
 
-移动设备上的viewport就是设备的屏幕上能用来显示我们的网页的那一块区域，即浏览器上用来显示网页的那部分区域。
+移动设备上的 viewport 就是设备的屏幕上能用来显示我们的网页的那一块区域，即浏览器上用来显示网页的那部分区域。
 
-viewport的大小决定了网页的大小。对pc端来说，可以看做是viewport就是电脑屏幕的大小
+viewport 的大小决定了网页的大小。对 pc 端来说，可以看做是 viewport 就是电脑屏幕的大小
 
-可以理解为我们使用vw、媒体查询等方式获取的页面宽度就是viewport的大小，也就是屏幕显示网页的大小。
-我们设置`width=media-width`就是将页面的宽度值设为设备宽度值，这样的话，比如说某个元素的样式是`width:100%`，那么在pc端可能就是1920px，而在移动端可能就是300px，这取决于viewport的大小。
+可以理解为我们使用 vw、媒体查询等方式获取的页面宽度就是 viewport 的大小，也就是屏幕显示网页的大小。
+我们设置`width=media-width`就是将页面的宽度值设为设备宽度值，这样的话，比如说某个元素的样式是`width:100%`，那么在 pc 端可能就是 1920px，而在移动端可能就是 300px，这取决于 viewport 的大小。
 
-对于移动端来说，宽度肯定是要远小于pc端的。但是如果简单粗暴的把移动端的viewport设置为300px这种比较小的单位，那么页面的总宽度就变成了300px，这样的话如果没有做响应式，整个页面都会乱掉。
+对于移动端来说，宽度肯定是要远小于 pc 端的。但是如果简单粗暴的把移动端的 viewport 设置为 300px 这种比较小的单位，那么页面的总宽度就变成了 300px，这样的话如果没有做响应式，整个页面都会乱掉。
 
-移动设备上的浏览器都会把自己**默认的viewport**设为980px或1024px（也可能是其它值，这个是由设备自己决定的），但带来的后果就是浏览器会出现横向滚动条，因为浏览器可视区域的宽度是比这个默认的viewport的宽度要小的。
+移动设备上的浏览器都会把自己**默认的 viewport**设为 980px 或 1024px（也可能是其它值，这个是由设备自己决定的），但带来的后果就是浏览器会出现横向滚动条，因为浏览器可视区域的宽度是比这个默认的 viewport 的宽度要小的。
 
+## 三个 viewport
 
-## 三个viewport
+实际上，移动设备上有三个 viewport：
 
-实际上，移动设备上有三个viewport：
+1. layout viewport(布局视口)：在 PC 端上，布局视口等于浏览器窗口的宽度。而在移动端上，由于要使为 PC 端浏览器设计的网站能够完全显示在移动端的小屏幕里，此时的布局视口会**远大于移动设备的屏幕**，就会出现滚动条。js 获取布局视口：`document.documentElement.clientWidth | document.body.clientWidth`；
 
-1. layout viewport(布局视口)：在PC端上，布局视口等于浏览器窗口的宽度。而在移动端上，由于要使为PC端浏览器设计的网站能够完全显示在移动端的小屏幕里，此时的布局视口会**远大于移动设备的屏幕**，就会出现滚动条。js获取布局视口：`document.documentElement.clientWidth | document.body.clientWidth`；
-
-可以理解为，这是移动端浏览器的一种保护措施。如果这个默认的viewport宽度过小，那么那些没有做移动端适配的网页的布局就会完全乱掉（相当于页面宽度从几千缩小到了几百）。
-布局视口是决定css相对属性值的根据，即百分比、vw这样的相对单位的基础就是布局视口的宽度。比如布局视口大小为980px，那么在移动端上的100%宽度就是980px。
+可以理解为，这是移动端浏览器的一种保护措施。如果这个默认的 viewport 宽度过小，那么那些没有做移动端适配的网页的布局就会完全乱掉（相当于页面宽度从几千缩小到了几百）。
+布局视口是决定 css 相对属性值的根据，即百分比、vw 这样的相对单位的基础就是布局视口的宽度。比如布局视口大小为 980px，那么在移动端上的 100%宽度就是 980px。
 
 ![](https://pic.imgdb.cn/item/640b8ca5f144a01007e3195a.jpg)
 
-2. visual viewport(视觉视口)：用户正在看到的网页的区域。用户可以通过缩放来查看网站的内容。如果用户缩小网站，我们看到的网站区域将变大，此时视觉视口也变大了，同理，用户放大网站，我们能看到的网站区域将缩小，此时视觉视口也变小了。不管用户如何缩放，都不会影响到布局视口的宽度。js获取视觉视口：`window.innerWidth`；
+2. visual viewport(视觉视口)：用户正在看到的网页的区域。用户可以通过缩放来查看网站的内容。如果用户缩小网站，我们看到的网站区域将变大，此时视觉视口也变大了，同理，用户放大网站，我们能看到的网站区域将缩小，此时视觉视口也变小了。不管用户如何缩放，都不会影响到布局视口的宽度。js 获取视觉视口：`window.innerWidth`；
 
 这个值即真正意义上的“视口”的大小，即**浏览器可视区域的大小**。如果浏览器可视区域发生变化，这个值也会变化。
 比如打开控制台，那么浏览器显示页面的区域变小了，这个值也会变小。又比如放大页面时，相当于视觉视口变小。因此这个值并非固定值，是一个很容易动态变化的值。
 
 ![](https://pic.imgdb.cn/item/640b8cb8f144a01007e33203.jpg)
 
-3. ideal viewport(理想视口)：布局视口的一个理想尺寸，只有当布局视口的尺寸等于设备屏幕的尺寸时，才是理想视口。js获取理想视口：`window.screen.width`；
+3. ideal viewport(理想视口)：布局视口的一个理想尺寸，只有当布局视口的尺寸等于设备屏幕的尺寸时，才是理想视口。js 获取理想视口：`window.screen.width`；
 
-ideal viewport 是最适合移动设备的viewport，它的**宽度等于移动设备的屏幕宽度**，只要在css中把某一元素的宽度设为ideal viewport的宽度(单位用px)，那么这个元素的宽度就是设备屏幕的宽度了，也就是宽度为100%的效果。
-ideal viewport 的意义在于，无论在何种分辨率的屏幕下，那些针对ideal viewport 而设计的网站，不需要用户手动缩放，也不需要出现横向滚动条，都可以完美的呈现给用户。
+ideal viewport 是最适合移动设备的 viewport，它的**宽度等于移动设备的屏幕宽度**，只要在 css 中把某一元素的宽度设为 ideal viewport 的宽度(单位用 px)，那么这个元素的宽度就是设备屏幕的宽度了，也就是宽度为 100%的效果。
+ideal viewport 的意义在于，无论在何种分辨率的屏幕下，那些针对 ideal viewport 而设计的网站，不需要用户手动缩放，也不需要出现横向滚动条，都可以完美的呈现给用户。
 
-相对于visual viewport，ideal viewport是一个相对固定的值。比如在pc端不管打不打开控制台，这个值都是固定的1920，表示一种“理想”状态下的宽度，而非实际可视区域的宽度。
-
+相对于 visual viewport，ideal viewport 是一个相对固定的值。比如在 pc 端不管打不打开控制台，这个值都是固定的 1920，表示一种“理想”状态下的宽度，而非实际可视区域的宽度。
 
 如果我们把布局视口的尺寸定为理想视口，相当于在移动端上的所有布局大小都是以理想视口的大小为依据。
-比如一台手机宽度为540px，那么我们以540px为基础宽度，元素的百分比、媒体查询、vw等都以540px为基准，就可以实现在移动端上的布局。这就是响应式布局的基础。
+比如一台手机宽度为 540px，那么我们以 540px 为基础宽度，元素的百分比、媒体查询、vw 等都以 540px 为基准，就可以实现在移动端上的布局。这就是响应式布局的基础。
 
 方式就是这样：
+
 ```html
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+/>
 ```
 
-如果不这样的设定的话，就会使用那个比屏幕宽的默认viewport，也就是说会出现横向滚动条。
+如果不这样的设定的话，就会使用那个比屏幕宽的默认 viewport，也就是说会出现横向滚动条。
 
 # 常见事件
 
@@ -469,7 +469,7 @@ localStorage、sessionStorage、indexDB，详见 WebAPI
 ## 主要特点
 
 - 不能直接在 `worker` 线程中操纵 DOM 元素
-- 不能使用 `window` 对象中对象的默认方法和属性，但依然可以使用ws、indexDB等
+- 不能使用 `window` 对象中对象的默认方法和属性，但依然可以使用 ws、indexDB 等
 - `workers` 运行在另一个全局上下文中,不同于当前的`window`. 因此，在 `Worker` 内通过 `window`获取全局作用域 (而不是 self) 将返回错误。
 - 主线程和 `worker` 线程相互之间使用 `postMessage()` 方法来发送信息, 并且通过 `onmessage` 来接收信息（传递的信息包含在 `Message` 这个事件的 data 属性内) 。数据的交互方式为传递副本，而不是直接共享数据。
 - worker 可以另外生成新的 worker，这些 worker 与它们父页面的宿主相同。 此外，worker 可以通过 `XMLHttpRequest `来访问网络，只不过 `XMLHttpRequest` 的 `responseXML` 和 `channel` 这两个属性的值将总是 `null` 。
@@ -532,31 +532,27 @@ close();
 
 更多 api 可以参考 https://developer.mozilla.org/zh-CN/docs/Web/API/Web_Workers_API/Using_web_workers
 
+## webworker 和主线程的通信
 
-## webworker和主线程的通信
-
-webworker的本质还是运行在浏览器进程内的多线程架构，因此webworker和js主线程的通信基本也和进程下的多线程通信方式一致：
+webworker 的本质还是运行在浏览器进程内的多线程架构，因此 webworker 和 js 主线程的通信基本也和进程下的多线程通信方式一致：
 
 通信方式有三种：
+
 1. Structured Clone：Structured Clone 是 postMessage 默认的通信方式，如下图所示，复制一份线程 A 的 js object 内存给到线程 B，线程 B 能获取和操作新复制的内存。
-Structured Clone 通过复制内存的方式简单有效的隔离了不同线程的内存，避免冲突；且传输的 object 数据结构很灵活，但复制过程中，线程 A 要 同步执行 Object Serialization，线程 B 要 同步执行 Object Deserialization，如果 object 规模过大，会占用大量的线程时间。
+   Structured Clone 通过复制内存的方式简单有效的隔离了不同线程的内存，避免冲突；且传输的 object 数据结构很灵活，但复制过程中，线程 A 要 同步执行 Object Serialization，线程 B 要 同步执行 Object Deserialization，如果 object 规模过大，会占用大量的线程时间。
 
 这种方式也被称为是“拷贝”，其实是现在最多的通信方式
 
 ![](https://pic.imgdb.cn/item/641d6a8ea682492fccabd1ba.jpg)
 
 2. Transfer Memory
-Transfer Memory 意味着转移内存，它不需要序列化和反序列化，能大大减少传输过程占用的线程时间。如下图所示，线程 A 将制定内存的所有权和操作权转交给线程 B，但转然后线程 A 无法在访问这块内存。
-Transfer Memory 以失去控制权来换取高效传输，通过内存独占给多线程并发加锁，但只能转让 ArrayBuffer 等大小规整的二进制数据，对矩阵数据（比如 RGB图片）比较适用，实践上要考虑从 js object 生成二进制数据的运算成本
+   Transfer Memory 意味着转移内存，它不需要序列化和反序列化，能大大减少传输过程占用的线程时间。如下图所示，线程 A 将制定内存的所有权和操作权转交给线程 B，但转然后线程 A 无法在访问这块内存。
+   Transfer Memory 以失去控制权来换取高效传输，通过内存独占给多线程并发加锁，但只能转让 ArrayBuffer 等大小规整的二进制数据，对矩阵数据（比如 RGB 图片）比较适用，实践上要考虑从 js object 生成二进制数据的运算成本
 
 ![](https://pic.imgdb.cn/item/641d6b4ea682492fccacff45.jpg)
 
 3. Shared Array Buffers
-Shared Array Buffers 是共享内存，线程 A 和线程 B 可以 同时访问和操作 同一块内存空间，数据都共享了，也就没什么传输的事了。
-但多个并行的线程共享内存，会产生竞争问题，不像前两种传输方式默认加锁，Shared Array Buffers 把难题抛给了开发者，开发者可以用 Atomics 来维护这块共享的内存。作为较新的传输方式，浏览器兼容性可想而知，目前只有 Chrome 68+ 支持。
+   Shared Array Buffers 是共享内存，线程 A 和线程 B 可以 同时访问和操作 同一块内存空间，数据都共享了，也就没什么传输的事了。
+   但多个并行的线程共享内存，会产生竞争问题，不像前两种传输方式默认加锁，Shared Array Buffers 把难题抛给了开发者，开发者可以用 Atomics 来维护这块共享的内存。作为较新的传输方式，浏览器兼容性可想而知，目前只有 Chrome 68+ 支持。
 
 ![](https://pic.imgdb.cn/item/641d6b5ca682492fccad16dc.jpg)
-
-
-
-

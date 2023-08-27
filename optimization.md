@@ -536,12 +536,12 @@ initObserver() {
     });
     // 当页面元素加载完成后，开始计算
     if (document.readyState === "complete") {
-      this.calFinallScore();
+      this.calFinalScore();
     } else {
       window.addEventListener(
         "load",
         () => {
-          this.calFinallScore();
+          this.calFinalScore();
         },
         true
       );
@@ -665,7 +665,7 @@ min(可见元素超出屏幕时刻, 用户交互前最后一次视图树变动�
 参考：https://developer.mozilla.org/zh-CN/docs/Web/API/PerformanceTiming 和 https://developer.mozilla.org/zh-CN/docs/Web/API/PerformanceNavigationTiming
 
 performanceTiming 提供了页面加载过程中的各种时间戳，具体参考下图：
-![performanceTiming](image-6.png)
+![performanceTiming](./images/image-6.png)
 
 注意 PerformanceNavigationTiming 其实是 performanceTiming 的升级版，后者已经逐渐被废弃。因此我们选用 PerformanceNavigationTiming 最好，可以用 performanceTiming 来作为兼容性的兜底。
 

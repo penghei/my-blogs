@@ -153,57 +153,58 @@ rn 的性能主要关注点有以下几个：
 ### RAM Bundles 和内联引用优化
 
 严格来说，这种优化方式不能称作“分包”，而应该叫做**代码分割**。
-分包的场景一般出现在 Native 为主，React Native 为辅的场景里。因此大多数分包工作是由native完成的，分包的对象一般是整个JSBundle，按照业务代码和基础包（React、rn等库代码）进行分割。
+分包的场景一般出现在 Native 为主，React Native 为辅的场景里。因此大多数分包工作是由 native 完成的，分包的对象一般是整个 JSBundle，按照业务代码和基础包（React、rn 等库代码）进行分割。
 
 类似于在 web 端进行的代码分割，在 rn 中也有一些手段可以对模块进行分割、手动加载等方式。具体来说有两种
 
 - 使用 RAM 格式的包
 - 通过 require 方式进行内联引用优化。其实就是一种代码分割
 
-RAM 的全称为 Random Access Modules，它是⼀种 bundle 的格式。RAM bundle 的作⽤是：让打包后的产物以 JS 模块（⼀个 JS ⽂件会被打包成⼀个JS 模块）粒度获取，可有实现按需进⾏加载。
+RAM 的全称为 Random Access Modules，它是⼀种 bundle 的格式。RAM bundle 的作⽤是：让打包后的产物以 JS 模块（⼀个 JS ⽂件会被打包成⼀个 JS 模块）粒度获取，可有实现按需进⾏加载。
 如下图所示，加载 bundle 的时候会⾸先加载⼀段初始代码，代码⾥⾯会执⾏⼊⼝模块，但是这个时候⼊⼝模块 A 还没有被加载到 JS 引擎中，所以会去加载 A 模块并执⾏，执⾏ A 模块时⼜会执⾏ A 模块的依赖模块，直到所有依赖模块被执⾏，⾸屏展示。
 
 ![](https://pic.imgdb.cn/item/64b04c571ddac507cc240b51.jpg)
 
 RAM bundle 需要配合内联引⽤⼀起使⽤才会有优化效果，否则的话，模块虽然是被⼀个个加载进去的，但是在⼊⼝模块加载后，会直接将当前 bundle 所⽤到的所有模块都⼀个个的加载进去，反⽽拖慢了⻚⾯加载时间。配合内联引⽤可以将⾮⾸屏模块，延迟到需要使⽤时才加载，从⽽实现⾸屏优化。
 
-RN官⽅打包⼯具 metro 对于 RAM bundle 提供了两种实现，分别是：File RAM bundle 和 Indexed RAM Bundle。
+RN 官⽅打包⼯具 metro 对于 RAM bundle 提供了两种实现，分别是：File RAM bundle 和 Indexed RAM Bundle。
 
 - File RAM Bundle：每个模块都存储为⼀个⽂件，名称为 js-modules/${id} .js，外加⼀个名为 UNBUNDLE 的⽂件。这种打包⽅式存在⼩⽂件过多，⽂件损坏⼏率变⼤的问题
 
 ![](https://pic.imgdb.cn/item/64b04dae1ddac507cc25b78b.jpg)
 
-- Indexed RAM Bundle：这种打包⽅式，打包出来的包格式为⼆进制⽂件，但仍然以每个文件为单位。内部维护了一个偏移表，偏移表⾥⾯存储了每个 module 的代码开始位置和代码⻓度。通过偏移表可以确定每个module的位置
+- Indexed RAM Bundle：这种打包⽅式，打包出来的包格式为⼆进制⽂件，但仍然以每个文件为单位。内部维护了一个偏移表，偏移表⾥⾯存储了每个 module 的代码开始位置和代码⻓度。通过偏移表可以确定每个 module 的位置
 
 ---
 
 注意，内联引用是一种“懒执行”而非“懒加载”。也就是说内联引用的包在初始化时也被加载到了主包里边，只是没有执行。
-举个例子，如果我们采用import导入一个组件，那么这个组件内的代码会在一开始就被执行。
-但如果通过内联引用，实现的效果就是执行到require之后才会执行，然后把模块的导出值返回。这样其实分离的是包执行的时间，而包在执行之前需要的解析、加载时间没有减少。
+举个例子，如果我们采用 import 导入一个组件，那么这个组件内的代码会在一开始就被执行。
+但如果通过内联引用，实现的效果就是执行到 require 之后才会执行，然后把模块的导出值返回。这样其实分离的是包执行的时间，而包在执行之前需要的解析、加载时间没有减少。
 
-因此为了实现更加彻底的“分割”，就需要配合RAMBundles使用。RAM将包按照文件分成一个个模块，然后加载时从入口代码开始，按照导入顺序去依次加载各个模块。
+因此为了实现更加彻底的“分割”，就需要配合 RAMBundles 使用。RAM 将包按照文件分成一个个模块，然后加载时从入口代码开始，按照导入顺序去依次加载各个模块。
 
 这里有两个点要注意：
-- RAM并不是必须和require绑定，通过普通的import也能正常导入分包后的代码。require是提供了一种手动加载的方式，当调用require时，会通过bridge向native发起模块请求，然后加载、编译模块。
-- 使用RAM后，所有模块默认都会被分离，而需要在首屏加载的模块不应该也被分离，否则需要从入口模块开始一一加载，会浪费时间和性能。因此需要把可能的首屏模块通过预加载的方式和入口模块打包在一起。
 
-具体的操作方法是，把模块加载情况输出，然后把首次导入的模块输出，再把这些模块输出成一个对象，添加到metro的配置中。metro为这些模块开通一个“黑名单”，即这些模块不会进行分包，会和入口模块一起被加载。
+- RAM 并不是必须和 require 绑定，通过普通的 import 也能正常导入分包后的代码。require 是提供了一种手动加载的方式，当调用 require 时，会通过 bridge 向 native 发起模块请求，然后加载、编译模块。
+- 使用 RAM 后，所有模块默认都会被分离，而需要在首屏加载的模块不应该也被分离，否则需要从入口模块开始一一加载，会浪费时间和性能。因此需要把可能的首屏模块通过预加载的方式和入口模块打包在一起。
+
+具体的操作方法是，把模块加载情况输出，然后把首次导入的模块输出，再把这些模块输出成一个对象，添加到 metro 的配置中。metro 为这些模块开通一个“黑名单”，即这些模块不会进行分包，会和入口模块一起被加载。
 
 ```js
 const modules = require.getModules();
 const moduleIds = Object.keys(modules);
 const loadedModuleNames = moduleIds
-  .filter(moduleId => modules[moduleId].isInitialized)
-  .map(moduleId => modules[moduleId].verboseName);
+  .filter((moduleId) => modules[moduleId].isInitialized)
+  .map((moduleId) => modules[moduleId].verboseName);
 const waitingModuleNames = moduleIds
-  .filter(moduleId => !modules[moduleId].isInitialized)
-  .map(moduleId => modules[moduleId].verboseName);
+  .filter((moduleId) => !modules[moduleId].isInitialized)
+  .map((moduleId) => modules[moduleId].verboseName);
 
 // make sure that the modules you expect to be waiting are actually waiting
 console.log(
-  'loaded:',
+  "loaded:",
   loadedModuleNames.length,
-  'waiting:',
+  "waiting:",
   waitingModuleNames.length
 );
 
@@ -211,18 +212,18 @@ console.log(
 console.log(`module.exports = ${JSON.stringify(loadedModuleNames.sort())};`);
 
 // metro.config.js
-const modulePaths = require('./packager/modulePaths');
-const resolve = require('path').resolve;
-const fs = require('fs');
+const modulePaths = require("./packager/modulePaths");
+const resolve = require("path").resolve;
+const fs = require("fs");
 
 // Update the following line if the root folder of your app is somewhere else.
-const ROOT_FOLDER = resolve(__dirname, '..');
+const ROOT_FOLDER = resolve(__dirname, "..");
 
 const config = {
   transformer: {
     getTransformOptions: () => {
       const moduleMap = {};
-      modulePaths.forEach(path => {
+      modulePaths.forEach((path) => {
         if (fs.existsSync(path)) {
           moduleMap[resolve(path)] = true;
         }
@@ -238,7 +239,6 @@ const config = {
 
 module.exports = config;
 ```
-
 
 ## 组件
 
@@ -571,19 +571,18 @@ js 是一个不能自执行的语言，意思就是 js 必需一个执行它的�
 
 ---
 
-在JSToNative的通信⽅式中，⼜分为两种调⽤⽅式：异步调⽤和同步调⽤。
-rn主要依靠异步调⽤；调⽤的发起在JS线程，异步的⽅式不会阻塞JS线程。
+在 JSToNative 的通信⽅式中，⼜分为两种调⽤⽅式：异步调⽤和同步调⽤。
+rn 主要依靠异步调⽤；调⽤的发起在 JS 线程，异步的⽅式不会阻塞 JS 线程。
 
 大致流程为：
 
-1. 调⽤具体的NativeModule时，会触发C++的调⽤流程，这个过程就是创建或者查找对应Module的过程。根据JS侧提供的module信息⽣成具体的Module实例。
-2. 当调⽤Module具体⽅法时，会将对应模块的调⽤信息存放在⼀个数组中，我们称之为Queue；这个Queue中的消息要么是在⼩于5ms的情况下等待Java侧的事件驱动调⽤并清空，要么是⼤于5ms，⾃动触发调⽤并清空。queue等待java或oc线程来取数据，因此这个过程是异步的；
-3. 接下来就⾛到了C++层的调⽤流程，通过JSToNativeBridge将Java层的调⽤信息放到NativeModulesThread消息队列中，等待调⽤。
-4. 然后就进⼊Java层的调⽤，找到与C++侧同名的Java Module包装类，调⽤其invoke⽅法，通过反射实现对应Native Module⽅法的调⽤。
-5. 如果有数据回调的话，其回调流程会通过NativeToJsBridge，调⽤流程与Native调⽤JS⽅法⼤致相同，主要的区别是回传的参数，传递的是callId和结果，其信息存储在JS侧，可以通过callId找到对应的回调函数，并执⾏回调。回调的过程又是一次放入消息队列等待js取出执行的过程，因此异步调用将会花费较多时间。
+1. 调⽤具体的 NativeModule 时，会触发 C++的调⽤流程，这个过程就是创建或者查找对应 Module 的过程。根据 JS 侧提供的 module 信息⽣成具体的 Module 实例。
+2. 当调⽤ Module 具体⽅法时，会将对应模块的调⽤信息存放在⼀个数组中，我们称之为 Queue；这个 Queue 中的消息要么是在⼩于 5ms 的情况下等待 Java 侧的事件驱动调⽤并清空，要么是⼤于 5ms，⾃动触发调⽤并清空。queue 等待 java 或 oc 线程来取数据，因此这个过程是异步的；
+3. 接下来就⾛到了 C++层的调⽤流程，通过 JSToNativeBridge 将 Java 层的调⽤信息放到 NativeModulesThread 消息队列中，等待调⽤。
+4. 然后就进⼊ Java 层的调⽤，找到与 C++侧同名的 Java Module 包装类，调⽤其 invoke ⽅法，通过反射实现对应 Native Module ⽅法的调⽤。
+5. 如果有数据回调的话，其回调流程会通过 NativeToJsBridge，调⽤流程与 Native 调⽤ JS ⽅法⼤致相同，主要的区别是回传的参数，传递的是 callId 和结果，其信息存储在 JS 侧，可以通过 callId 找到对应的回调函数，并执⾏回调。回调的过程又是一次放入消息队列等待 js 取出执行的过程，因此异步调用将会花费较多时间。
 
 ![](https://pic.imgdb.cn/item/64b1ced21ddac507cc8ce3ab.jpg)
-
 
 ### native 调用 js
 
@@ -593,20 +592,20 @@ native 调用 js 代码就比较简单了，通过 moduleid 和 methodid 完成�
 
 ---
 
-NativeToJS的⽅法调⽤，是异步的操作，会在NativeToJsBridge上做⼊队处理，这个消息队列没有优先级且是串⾏执⾏，所以它的执⾏时间会受到队列消息是否拥堵的影响。
+NativeToJS 的⽅法调⽤，是异步的操作，会在 NativeToJsBridge 上做⼊队处理，这个消息队列没有优先级且是串⾏执⾏，所以它的执⾏时间会受到队列消息是否拥堵的影响。
 
 ![](https://pic.imgdb.cn/item/64b1cf311ddac507cc8dacc7.jpg)
 
 大致流程为：
 
-1. 执⾏JSModule⽅法时，我们先通过JSModule注册表，找到对应的实例，没有就初始化并缓存，有就直接使⽤。
-2. 发起C++侧的调⽤流程。
-3. Native调⽤JS⽅法，最终⾛到NativeToJsBridge上，此处做了⼀个线程切换，由主线程切换到JS线程，⽅法调⽤进⼊消息队列。等对应⽅法被执⾏时，就会触发JS侧callFunctionReturnFlushedQueue的⽅法调⽤，进⼊JS侧的调⽤流程。
-4. JS侧直接根据Module名、⽅法名找到对应的Module和⽅法，传⼊参数调⽤即完成了整个过程。
+1. 执⾏ JSModule ⽅法时，我们先通过 JSModule 注册表，找到对应的实例，没有就初始化并缓存，有就直接使⽤。
+2. 发起 C++侧的调⽤流程。
+3. Native 调⽤ JS ⽅法，最终⾛到 NativeToJsBridge 上，此处做了⼀个线程切换，由主线程切换到 JS 线程，⽅法调⽤进⼊消息队列。等对应⽅法被执⾏时，就会触发 JS 侧 callFunctionReturnFlushedQueue 的⽅法调⽤，进⼊ JS 侧的调⽤流程。
+4. JS 侧直接根据 Module 名、⽅法名找到对应的 Module 和⽅法，传⼊参数调⽤即完成了整个过程。
 
-这个过程中js侧并不会立即相映native的调用，而是类似eventLoop这样的处理机制。
+这个过程中 js 侧并不会立即相映 native 的调用，而是类似 eventLoop 这样的处理机制。
 
-对于这个过程中数据的交换，诸如参数等，在旧的架构都是通过JSON序列化的方式完成。在新的JSI架构中则可以转换两者的数据类型，从而实现直接传递。
+对于这个过程中数据的交换，诸如参数等，在旧的架构都是通过 JSON 序列化的方式完成。在新的 JSI 架构中则可以转换两者的数据类型，从而实现直接传递。
 
 ## 其他概念
 
@@ -954,7 +953,7 @@ class App extends Component {
 - 异步渲染/延迟渲染：通过 setTimeout 等形式，让一些组件在某些组件完成渲染之后再去渲染。比如一个长页面下有不同的模块（🌰，商详页，上面是商品详情，下面是其他推荐，可以把可视区域内按优先级渲染，区域外按延迟渲染或懒渲染），部分模块不在首屏显示，就可以将其放在主要模块渲染完成之后再执行渲染。
 - 分级渲染/分批渲染：通过类似 Priority 这样的机制，让元素按照一定优先级进行渲染。这种不同于异步渲染，渲染的过程本质是同步的，当一个元素渲染完成后会立即调用下一优先级的元素渲染。而且一般不需要手动控制渲染。这种一般用于页面的主要模块和次要模块之间的分批次。（🌰，页面主要的是列表，其他元素都可以放较低优先级。🌰，或者比如多级 tab，按照优先级顺序依次渲染多个 tab 栏）
 
-> 分布渲染这里其实还有一些可以注意的地方，即不同的组件、元素对于“完成渲染”的定义不同。比如常规的组件可能是在useEffect执行时，但图片组件可能会在图片的onLayout回调执行时。
+> 分布渲染这里其实还有一些可以注意的地方，即不同的组件、元素对于“完成渲染”的定义不同。比如常规的组件可能是在 useEffect 执行时，但图片组件可能会在图片的 onLayout 回调执行时。
 
 - 懒加载或渲染：类似虚拟列表的效果，当某个区域滑动到可视区域时才渲染。这种方式虽然最省性能，但是有可能导致用户快速滑动时，对应的模块才开始渲染，就会感觉到卡顿
 
@@ -1009,54 +1008,50 @@ class App extends Component {
 
 - 预请求
 - 页面带参：重要参数可以通过上游⻚⾯带过来，比如拿一些基础信息和头图部分信息带到详情⻚，使得头图和基础信息模块的数据可以第⼀时间得以展示，加快了⻚⾯⾸屏展示速度。
-- 请求前置：将请求时机前置到Native⻚⾯初始化时，和MRN框架创建、加载JS等操作并⾏执⾏。比如直接让native侧执行请求，而不需等待js端的执行
+- 请求前置：将请求时机前置到 Native ⻚⾯初始化时，和 MRN 框架创建、加载 JS 等操作并⾏执⾏。比如直接让 native 侧执行请求，而不需等待 js 端的执行
 - 请求分级：降低请求并发，或通过聚合的形式减少发请求的次数
 
 4. 包体优化
 
-- tree-shaking，可以参考webpack章节对tree-shaking的讲解，在rn中其实是类似的，大致都是减少副作用、规范代码、设置babel等。这里有一些tree-shaking的参考文章：
-https://zhuanlan.zhihu.com/p/32831172
-https://juejin.cn/post/6844903544756109319
-https://juejin.cn/post/6844903687412776974
-- 删除lodash、moment.js等非常庞大的js库。只使用其中的小功能，可以自己造轮子，或者采用内部库的一些精简过的功能库
-- 对于icon使用的svg、image，要注意不要全量引入庞大的svg库，导入大量无用的svg文件等。其他资源类似Ï
+- tree-shaking，可以参考 webpack 章节对 tree-shaking 的讲解，在 rn 中其实是类似的，大致都是减少副作用、规范代码、设置 babel 等。这里有一些 tree-shaking 的参考文章：
+  https://zhuanlan.zhihu.com/p/32831172
+  https://juejin.cn/post/6844903544756109319
+  https://juejin.cn/post/6844903687412776974
+- 删除 lodash、moment.js 等非常庞大的 js 库。只使用其中的小功能，可以自己造轮子，或者采用内部库的一些精简过的功能库
+- 对于 icon 使用的 svg、image，要注意不要全量引入庞大的 svg 库，导入大量无用的 svg 文件等。其他资源类似 Ï
 
 ## 优化工具
 
 ### why-did-you-render
 
-wdyr在rn中的使用可以参考：https://yajanarao.medium.com/how-to-use-why-did-you-render-library-in-react-native-a95121978a75
+wdyr 在 rn 中的使用可以参考：https://yajanarao.medium.com/how-to-use-why-did-you-render-library-in-react-native-a95121978a75
 
-wdyr可以检测执行的组件的渲染情况，在控制台打印出渲染原因。
+wdyr 可以检测执行的组件的渲染情况，在控制台打印出渲染原因。
 
 ![](https://pic.imgdb.cn/item/64afde8f1ddac507cca1dfbf.jpg)
 
-下面是一个codesandbox例子：https://codesandbox.io/s/why-did-you-render-sandbox-forked-q73lpx
+下面是一个 codesandbox 例子：https://codesandbox.io/s/why-did-you-render-sandbox-forked-q73lpx
 
-
-wdyr还可以用来检查redux的useSelector，具体可参考官方文档https://github.com/welldone-software/why-did-you-render
-关于useSelector的一个例子（注意wdyr依赖应该更新到最新）：https://codesandbox.io/s/why-did-you-render-4-tracking-of-pure-components-forked-k2g4h4?file=/src/App.js
-
+wdyr 还可以用来检查 redux 的 useSelector，具体可参考官方文档https://github.com/welldone-software/why-did-you-render
+关于 useSelector 的一个例子（注意 wdyr 依赖应该更新到最新）：https://codesandbox.io/s/why-did-you-render-4-tracking-of-pure-components-forked-k2g4h4?file=/src/App.js
 
 ### Profiler
 
-使用真机和电脑链接后，可以通过chrome的开发者工具进行调试，其中也包括chrome的profiler。
+使用真机和电脑链接后，可以通过 chrome 的开发者工具进行调试，其中也包括 chrome 的 profiler。
 
-和web端的使用方式类似，profiler可以检查各个线程的执行时间，并以火山图的形式展示，便于查看问题所在。
-
-
+和 web 端的使用方式类似，profiler 可以检查各个线程的执行时间，并以火山图的形式展示，便于查看问题所在。
 
 ### RN debugger
 
-RN debugger提供的React⾯板也有一些功能。
+RN debugger 提供的 React ⾯板也有一些功能。
 比如，它可以用于显示组件重复渲染次数，便于发现有问题的组件。
 
 ![](https://pic.imgdb.cn/item/64affa4c1ddac507cc15eddb.jpg)
 
-用它可以和wdyr配合，找到准确的重复渲染元素。
+用它可以和 wdyr 配合，找到准确的重复渲染元素。
 
-RN debugger还有的其他功能有
+RN debugger 还有的其他功能有
 
-- js函数调用次数监测
-- 显示页面的性能指标时间，比如FCP等指标
-- 监测JS与native通信情况
+- js 函数调用次数监测
+- 显示页面的性能指标时间，比如 FCP 等指标
+- 监测 JS 与 native 通信情况

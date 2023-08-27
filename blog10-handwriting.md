@@ -2380,6 +2380,111 @@ const render = (node) => {
 // };
 ```
 
+## 手写 querySelectorAll
+
+实现一个简单的querySelector，描述见下注释内容：
+
+```js
+/**
+ * 遍历html dom实现一个querySelectorAll('.class1 .class2 .class3')
+ *
+ * 根节点从document.body出发，仅需考虑class选择器，嵌套层数不限
+ *
+ * 返回满足条件的元素集合
+ *
+ * 例如
+ * <body>
+ *   <div class="app">
+ *      <button id="btn1" class="btn"></button>
+ *      <div>
+ *      	<button id="btn2" class="btn"></button>
+ *      </div>
+ *   </div>
+ *   <button id="btn3" class="btn"></button>
+ * </body>
+ * 输入
+ * expr = '.app .btn'
+ * 返回
+ * [ 元素btn1, 元素btn2 ]
+ *
+ * 帮助api
+ * 判断元素是否有 class1 : el.classList.contains('class1')
+ * 元素所有子节点: el.children
+ *
+ * @param {string} expr
+ * @return {HTMLElement[]}
+ */
+function querySelectorAll(expr) {
+}
+```
+
+基本思路就是dfs，对于从body节点开始的每个节点来说：
+- 如果当前节点的classList包含class的一个，那么就让class序号向后走一个，然后递归所有的子元素
+- 如果当前节点不包含class的某一个，那么不改变class的序号，继续向下递归所有子元素
+- 如果当前匹配到的序号为最后一个class，说明找到了，直接返回
+
+代码如下：
+
+```js
+const myQuerySelectorAll = (query) => {
+  const classes = query.split(" ").map((classStr) => classStr.slice(1));
+  const root = document.body;
+  const res = [];
+  function dfs(node, index) {
+    if (!node) return;
+    if (node.classList.contains(classes[index])) {
+      if (index === classes.length - 1) res.push(node);
+      else {
+        const children = node.children;
+        if (!children) return;
+        for (const child of children) {
+          dfs(child, index + 1);
+        }
+      }
+    } else {
+      const children = node.children;
+      if (!children) return;
+      for (const child of children) {
+        dfs(child, index);
+      }
+    }
+  }
+  dfs(root, 0);
+  return res.length === 0 ? null : res;
+};
+```
+
+这里能实现基本的功能，但是存在一个问题，选择器是按照从左向右匹配的。我们知道css选择器采用的是从右向左的匹配方式，为了尽可能减小匹配的遍历复杂度。
+
+我们可以从右到左倒序匹配；通过getElementsByClass先获取到所有最小的选择器的元素，然后逐个向上检查是否存在匹配的class序列，直到body元素为止。
+
+不过这种方法需要借助getElementsByClassName先获取每个最小的结点，如果不能使用getElementsByClassName的话，也要先想办法得到每个class匹配的元素，然后逐个向上查找。
+
+```js
+const myQuerySelectorAll = (query) => {
+  const classes = query.split(" ").map((classstr) => classstr.slice(1));
+  const lastClass = classes[classes.length - 1];
+  const baseNodes = document.getElementsByClassName(lastClass);
+  if(classes.length === 1) return [...baseNodes]
+  const res = [];
+  function find(node, index, baseNodeIndex) {
+    if (index < 0) return;
+    if (node === document.body) return;
+    if (node.classList.contains(classes[index])) {
+      if (index === 0) res.push(baseNodes[baseNodeIndex]);
+      else find(node.parentElement, index - 1, baseNodeIndex);
+    } else {
+      find(node.parentElement, index, baseNodeIndex);
+    }
+  }
+  for (let i = 0; i < baseNodes.length; i++) {
+    find(baseNodes[i], classes.length - 2, i);
+  }
+  return res;
+};
+```
+
+
 ## 手写类似Vue模板字符串转化
 
 即实现类似效果：
@@ -2415,7 +2520,7 @@ html;
 
 因此：
 ```js
-const parseRegExp = /\{\{(\s?[a-zA-Z0-9\.\[\]]+\s?)\}\}/;
+const parseRegExp = /\{\{(\s*[a-zA-Z0-9\.\[\]]+\s*)\}\}/;
 ```
 
 然后通过exec方法获取到括号内的匹配值。
@@ -2449,7 +2554,7 @@ const getDataByKeys = (obj, keyStr) => {
 };
 
 const parse = (str, data) => {
-  const parseRegExp = /\{\{(\s?[a-zA-Z0-9\.\[\]]+\s?)\}\}/;
+  const parseRegExp = /\{\{(\s*[a-zA-Z0-9\.\[\]]+\s*·)\}\}/;
   while (parseRegExp.exec(str) != null) {
     const content = parseRegExp.exec(str)[1]; // 这里要取第二项
     let val = getDataByKeys(data, content);
